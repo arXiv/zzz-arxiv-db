@@ -1,39 +1,51 @@
-"""Socket.IO moderator collaboration app"""
+"""Socket.IO moderator collaboration app
 
-import os
+Soft lock 
+
+To listen to locks and unlocks subscribe to lock and unlock.
+
+To  lock:
+
+emit lock {id: 1234, user: bob}
+
+To unlock:
+
+emit unlock {id: 1234, user: bob}
+"""
+
 import socketio
-from .config import allow_origins
+from .config import allow_origins, debug
 
+    
 sio = socketio.AsyncServer(
     async_mode="asgi",
     cors_allowed_origins=allow_origins,
-    logger=bool(os.environ.get("DEBUG", False)),
-    engineio_logger=bool(os.environ.get("DEBUG", False)),
+    logger=debug,
+    engineio_logger=debug,
 )
 
 
 @sio.event
-async def in_edit(sid, data):
-    """Items on system that are in an edit"""
-    print("in_edit", data)
-    await sio.emit("in_edit", data) # rebroadcast
-
-
-@sio.on("join")
-async def handle_join(sid, *args, **kwargs):
-    await sio.emit("lobby", "User joined")
-
-
-@sio.on("test")
-async def test(sid, *args, **kwargs):
-    await sio.emit("hey", "joe")
+async def lock(sid, *args, **kwargs):
+    # TODO validate data
+    # TODO save lock
+    await sio.emit("lock", args)
 
 
 @sio.event
-def connect(sid, env):
-    print("connect ", sid, env)
+async def unlock(sid, *args, **kwargs):
+    # TODO validate data
+    # TODO Remove lock from store
+    await sio.emit("unlock", args)
 
 
 @sio.event
-def disconnect(sid):
+async def connect(sid, env):
+    sio.logger.error(f"{__file__} CONNECTED {sid}")
+    sio.logger.error(f"{__file__} ENV IS: {env}")
+
+
+@sio.event
+async def disconnect(sid):
+    # TODO unlock all held by this sid
     print("disconnect ", sid)

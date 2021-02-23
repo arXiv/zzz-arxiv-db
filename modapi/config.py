@@ -1,3 +1,5 @@
+import os
+
 allow_origins=[
     "https://beta.arxiv.org",
     "https://arxiv.org",
@@ -5,3 +7,5 @@ allow_origins=[
     "http://localhost:8000",
     "http://localhost:3000",
     ]
+
+debug = bool(os.environ.get("DEBUG", False))
