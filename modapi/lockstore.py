@@ -34,8 +34,8 @@ async def lock(sub_id, sid, username):
 
 async def unlock(sub_id, sid, username):
     async with _semaphore:
-        if sub_id in _locks:
-            return f"Id {sub_id} already locked"
+        if sub_id not in _locks:
+            return f"Id {sub_id} not locked"
         elif sid != _locks[sub_id].sid and username != _locks[sub_id].username:
             return f"Id is not locked by either {sid} or {username}"
         else:
