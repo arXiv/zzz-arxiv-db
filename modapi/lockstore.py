@@ -4,7 +4,6 @@ from asyncio import Semaphore
 from typing import Dict, NamedTuple
 
 
-
 class Lock(NamedTuple):
     username: str
     sid: int
@@ -60,4 +59,3 @@ async def unlock_for_sid(sid):
 async def current_locks():
     async with _semaphore:
         return _locks.copy()
- 
