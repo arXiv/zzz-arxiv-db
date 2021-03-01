@@ -1,5 +1,7 @@
 import os
 
+db_url = os.environ['DATABASE_URL'] # arXiv legacy DB URL
+
 allow_origins = [
     "https://beta.arxiv.org",
     "https://arxiv.org",

@@ -1,7 +1,14 @@
 import socketio
 
-from .rest_app import fast_app
-from .collab_app import sio
+from .rest.rest_app import fast_app
+from .collab.collab_app import sio
+import modapi.config as config
+
+
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
 
 # Avoid taking over the fast_app root by setting the socketio_path
 # socket.io client path will need to be set in the JS
@@ -12,6 +19,8 @@ app = socketio.ASGIApp(
     fast_app,  # pass everything not handled to fast_app
     socketio_path=socketio_path,
 )
+
+
 
 if __name__ == "__main__":
     import logging

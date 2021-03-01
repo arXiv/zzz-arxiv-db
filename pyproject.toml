@@ -7,10 +7,12 @@ authors = ["Brian D. Caruso <bdc34@cornell.edu>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 fastapi = "^0.63.0"
-databases = "^0.4.1"
+databases = {extras = ["mysql"], version = "^0.4.1"}
 uvicorn = "^0.13.3"
 python-socketio = {extras = ["client"], version = "^5.0.4"}
 websockets = "^8.1"
+aiomysql = "^0.0.21"
+mysqlclient = "^2.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
