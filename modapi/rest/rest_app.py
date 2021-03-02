@@ -1,23 +1,22 @@
-from fastapi import FastAPI, HTTPException
+"""arXiv Moderator API"""
 
-from typing import Optional, List
+from fastapi import FastAPI, HTTPException
+from fastapi import status as httpstatus
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+
+from sqlalchemy.sql import text, select
 
 from modapi.collab.collab_app import sio
 import modapi.config as config
+
+from modapi.db import database, engine, metadata
+
 from . import schema
 
-from modapi.services.arxiv_tables import arXiv_submissions
+from modapi.services.arxiv_tables import arXiv_submissions, arXiv_submission_mod_hold
 
-
-import databases
-import sqlalchemy
-
-SQLALCHEMY_DATABASE_URL = config.db_url
-database = databases.Database(SQLALCHEMY_DATABASE_URL)
-engine = sqlalchemy.create_engine(SQLALCHEMY_DATABASE_URL)
-metadata = sqlalchemy.MetaData()
-
+metadata.create_all(engine)
 
 fast_app = FastAPI()
 
@@ -33,6 +32,7 @@ fast_app.add_middleware(
 @fast_app.on_event("startup")
 async def startup():
     await database.connect()
+    await database.fetch_one(text("SELECT 1"))  # Test DB connection on startup
 
 
 @fast_app.on_event("shutdown")
@@ -52,20 +52,64 @@ async def rtos():
 
 @fast_app.get("/status")
 async def status():
-    """Get the status of the ModAPI service."""
+    """Get the status of the ModAPI service.
+
+    Use the HTTP status code for the status. This returns an empty body on
+    success.
+    """
+    await database.fetch_one(text("SELECT 1"))  # Test DB connection.
     return ""
 
 
 @fast_app.post("/submission/modhold")
-async def modhold(modhold: schema.ModHold):
-    return modhold
+async def modhold(hold: schema.ModHold):
+    """Put a submission on moderator hold."""
+
+    # TODO use a transaction for all of this
+
+    chk = (
+        select([arXiv_submissions.c.status, arXiv_submission_mod_hold.c.reason])
+        .select_from(arXiv_submissions.outerjoin(arXiv_submission_mod_hold))
+        .where(arXiv_submissions.c.submission_id == hold.subid)
+    )
+    exists = await database.fetch_one(chk)
+
+    if not exists:
+        return JSONResponse(
+            status_code=httpstatus.HTTP_409_CONFLICT,
+            content={"msg": f" submission {hold.subid} not found"},
+        )
+
+    if exists and (exists["status"] == ON_HOLD or exists["reason"]):
+        return JSONResponse(
+            status_code=httpstatus.HTTP_409_CONFLICT,
+            content={"msg": f"mod hold on {hold.subid} exists"},
+        )
+
+    # TODO need to decode the auth JWT to get the mod's username for the comment
+    
+    # TODO Set a admin_log comment so the admins will have some sort of idea about this.
+    # addcomment = arXiv_admin_log.insert().values(
+    #     username = ??,
+    #     program = 'modapi.rest',
+    #     command = 'modhold',
+    #     logtext = f'moderator hold "{reason}"'
+    #     submission_id = hold.subid,
+    # )
+
+    stmt = arXiv_submission_mod_hold.insert().values(
+        submission_id=hold.subid, reason=hold.reason
+    )
+    await database.execute(stmt)
+    return ""
 
 
 @fast_app.get("/submission/{submission_id}", response_model=schema.Submission)
 async def submission(submission_id: int):
-    import pdb
-    pdb.set_trace()
-    query = arXiv_submissions.select().where(arXiv_submissions.c.submission_id == submission_id)
+    """Gets a submission. (WIP)"""
+    query = arXiv_submissions.select().where(
+        arXiv_submissions.c.submission_id == submission_id
+    )
     return await database.fetch_one(query)
 
 
@@ -170,3 +214,6 @@ Possible routes:
 # @fast_app.put("/view_flag/{submission_id}")
 # async def view_flag_put(submission_id: int):
 #     return {"error": "not implemented"}
+
+ON_HOLD = 2
+"""Submission table status for on hold"""
