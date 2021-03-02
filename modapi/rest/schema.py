@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Literal, Optional
-
+from typing import List, Literal, Optional, Union
+from enum import Enum
 
 class User(BaseModel):
     is_admin: bool
@@ -125,3 +125,15 @@ class SubmissionFull(BaseModel):
 
     class Config:
         orm_mode = True  #  Reads from non-dict
+
+
+class ModHoldReasons(str, Enum):
+    discussion = 'discussion'
+    moretime = 'moretime'
+
+
+class ModHold(BaseModel):
+    subid: int
+    reason: ModHoldReasons
+
+    

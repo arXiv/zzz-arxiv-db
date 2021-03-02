@@ -1,29 +1,22 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 
 from modapi.collab.collab_app import sio
 import modapi.config as config
-
-# from modapi.services import submissions
-import modapi.database as database
-from sqlalchemy.orm import Session
-
-# import databases
-
 from . import schema
 
-from modapi.arxiv_model import (
-    ArXivDocuments,
-    ArXivSubmissions,
-    ArXivSubmissionAbsClassifierData,
-    ArXivSubmissionCategory,
-    ArXivSubmissionCategoryProposal,
-    ArXivSubmissionViewFlag,
-    TapirNicknames,
-    TapirUsers,
-)
+from modapi.services.arxiv_tables import arXiv_submissions
+
+
+import databases
+import sqlalchemy
+
+SQLALCHEMY_DATABASE_URL = config.db_url
+database = databases.Database(SQLALCHEMY_DATABASE_URL)
+engine = sqlalchemy.create_engine(SQLALCHEMY_DATABASE_URL)
+metadata = sqlalchemy.MetaData()
 
 
 fast_app = FastAPI()
@@ -37,43 +30,14 @@ fast_app.add_middleware(
 )
 
 
-# Dependency
-def get_db():
-    db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        
-# db.init_db(config.db_url)
-
-# database = databases.Database(config.db_url)
-# metadata = sqlalchemy.MetaData()
-
-# @fast_app.on_event("startup")
-# async def startup():
-#     await database.connect()
+@fast_app.on_event("startup")
+async def startup():
+    await database.connect()
 
 
-# @fast_app.on_event("shutdown")
-# async def shutdown():
-#     await database.disconnect()
-
-
-# SQLALCHEMY_DATABASE_URL = config.db_url 
-# # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
-
-# engine = create_engine(
-#     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-# )
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base = declarative_base()
-
-
-@fast_app.get("/")
-async def root():
-    return {"status": "ready"}
+@fast_app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
 
 
 @fast_app.get("/testRestToSocket")
@@ -92,11 +56,17 @@ async def status():
     return ""
 
 
+@fast_app.post("/submission/modhold")
+async def modhold(modhold: schema.ModHold):
+    return modhold
+
+
 @fast_app.get("/submission/{submission_id}", response_model=schema.Submission)
-def submission(submission_id: int, db: Session = Depends(get_db)):
-    return db.query(ArXivSubmissions)\
-             .filter(ArXivSubmissions.submission_id == submission_id) \
-             .first()
+async def submission(submission_id: int):
+    import pdb
+    pdb.set_trace()
+    query = arXiv_submissions.select().where(arXiv_submissions.c.submission_id == submission_id)
+    return await database.fetch_one(query)
 
 
 # @fast_app.get("/submission/{submission_id}")
@@ -200,4 +170,3 @@ Possible routes:
 # @fast_app.put("/view_flag/{submission_id}")
 # async def view_flag_put(submission_id: int):
 #     return {"error": "not implemented"}
-
