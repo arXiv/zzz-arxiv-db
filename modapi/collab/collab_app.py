@@ -12,14 +12,13 @@ To unlock:
 
 emit unlock {id: 1234}
 """
-from asyncio import Semaphore, gather
-from typing import Dict, List, NamedTuple
-from collections import defaultdict
+from asyncio import gather
+from typing import List
 
 import socketio
 
-import modapi.lockstore as lockstore
-from .config import allow_origins, debug
+import modapi.collab.lockstore as lockstore
+from modapi.config import allow_origins, debug
 
 
 sio = socketio.AsyncServer(
