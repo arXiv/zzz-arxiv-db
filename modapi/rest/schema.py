@@ -133,7 +133,7 @@ class ModHoldReasons(str, Enum):
 
 
 class ModHold(BaseModel):
-    subid: int
+    submission_id: int
     reason: ModHoldReasons
 
     

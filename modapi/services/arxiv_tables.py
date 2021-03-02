@@ -9,6 +9,7 @@ arXiv_submission_mod_hold = Table(
     'arXiv_submission_mod_hold', metadata,
     Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), primary_key=True),
     Column('reason', VARCHAR(30)),
+    Column('comment_id', ForeignKey('arXiv_admin_log.id'), nullable=False),
 )
 
 Subscription_UniversalInstitution = Table(
