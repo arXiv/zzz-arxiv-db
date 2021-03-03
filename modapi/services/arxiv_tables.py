@@ -428,7 +428,7 @@ arXiv_white_email = Table(
 )
 
 
-t_arXiv_xml_notifications = Table(
+arXiv_xml_notifications = Table(
     'arXiv_xml_notifications', metadata,
     Column('control_id', INTEGER(10), index=True),
     Column('type', Enum('submission', 'cross', 'jref')),
