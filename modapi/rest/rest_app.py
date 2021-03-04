@@ -15,7 +15,7 @@ from modapi.db import database, engine, metadata
 
 from . import schema
 
-from modapi.services.arxiv_tables import (
+from modapi.db.arxiv_tables import (
     arXiv_submissions,
     arXiv_submission_mod_hold,
     arXiv_admin_log,
