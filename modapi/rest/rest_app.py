@@ -1,17 +1,19 @@
 """arXiv Moderator API"""
-from typing import List
+from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Cookie, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from sqlalchemy.sql import text, select
+from sqlalchemy.sql import text, select, and_
 
 from modapi.collab.collab_app import sio
 import modapi.config as config
 
 from modapi.db import database, engine, metadata
+
+from modapi.auth import decode
 
 from . import schema
 
@@ -19,6 +21,8 @@ from modapi.db.arxiv_tables import (
     arXiv_submissions,
     arXiv_submission_mod_hold,
     arXiv_admin_log,
+    arXiv_submission_mod_flag,
+    tapir_nicknames
 )
 
 metadata.create_all(engine)
@@ -37,48 +41,55 @@ fast_app.add_middleware(
 @fast_app.on_event("startup")
 async def startup():
     await database.connect()
-    await database.fetch_one(text("SELECT 1"))  # Test DB connection on startup
+#    await database.fetch_one(text("SELECT 1"))  # Test DB connection on startup
 
 
 @fast_app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
 
+    
+async def ng_jwt(ARXIVNG_SESSION_ID: Optional[str] = Cookie(None)):
+    return decode(ARXIVNG_SESSION_ID, config.jwt_secret)
 
-@fast_app.get("/testRestToSocket")
-async def rtos():
-    """A test of emiting a socket.io event during a rest call"""
-    await sio.emit("in_edit", {"id": "submission1234", "editor": "bob", "scope": "mod"})
-    return {"did it": True}
+
+# @fast_app.get("/testRestToSocket")
+# async def rtos():
+#     """A test of emiting a socket.io event during a rest call"""
+#     await sio.emit("in_edit", {"id": "submission1234", "editor": "bob", "scope": "mod"})
+#     return {"did it": True}
 
 
 #################### fast_api ####################
 
 
 @fast_app.get("/status")
-async def status():
+async def status(jwt: Optional[dict] = Depends(ng_jwt)):
     """Get the status of the ModAPI service.
 
     Use the HTTP status code for the status. This returns an empty body on
     success.
     """
-    await database.fetch_one(text("SELECT 1"))  # Test DB connection.
-    return ""
+    #await database.fetch_one(text("SELECT 1"))  # Test DB connection.
+    ###    data = decode(ARXIVNG_SESSION_ID, config.jwt_secret)
+    # return data
+    #return jwt
+    return ''
 
 
-@fast_app.get("/submission/{submission_id}", response_model=schema.Submission)
-async def submission(submission_id: int):
-    """Gets a submission. (WIP)"""
-    query = arXiv_submissions.select().where(
-        arXiv_submissions.c.submission_id == submission_id
-    )
-    return await database.fetch_one(query)
+# @fast_app.get("/submission/{submission_id}", response_model=schema.Submission)
+# async def submission(submission_id: int):
+#     """Gets a submission. (WIP)"""
+#     query = arXiv_submissions.select().where(
+#         arXiv_submissions.c.submission_id == submission_id
+#     )
+#     return await database.fetch_one(query)
 
 
-@fast_app.post("/submission/modhold")
-async def modhold(hold: schema.ModHold):
+@fast_app.post("/submission/{submission_id}/modhold")
+async def modhold(submission_id: int, hold: schema.ModHold):
     """Put a submission on moderator hold."""
-
+    
     # TODO use a transaction for all of this
     exists = await _modhold_check(hold.submission_id)
     if not exists:
@@ -122,18 +133,8 @@ async def modhold(hold: schema.ModHold):
     return f"success, logcomment {comment_id}"
 
 
-@fast_app.get("/modholds", response_model=List[schema.ModHold])
-async def modholds():
-    """Gets all existing mod holds"""
-    query = select(
-        [arXiv_submission_mod_hold.c.submission_id, arXiv_submission_mod_hold.c.reason]
-    ).select_from(arXiv_submission_mod_hold)
-
-    return await database.fetch_all(query)
-
-
-@fast_app.post("/submission/{submission_id}/mod_hold_release", response_model=str)
-async def modhold_release(submission_id: int):
+@fast_app.post("/submission/{submission_id}/modhold/delete", response_model=str)
+async def modhold_delete(submission_id: int):
     """Releases a mod hold. 
 
     The submission must be both on hold and have a row in
@@ -170,6 +171,64 @@ async def modhold_release(submission_id: int):
     #TODO sticky_status?
     #TODO do correct release time. See arXiv::Schema::Result::Submission.propert_release_from_hold()
     return f"{mh_n} {s_n}"
+
+
+@fast_app.get("/modholds", response_model=List[schema.ModHold])
+async def modholds():
+    """Gets all existing mod holds"""
+    # TODO filter to just the holds for the user
+    query = select(
+        [arXiv_submission_mod_hold.c.submission_id, arXiv_submission_mod_hold.c.reason]
+    ).select_from(arXiv_submission_mod_hold)
+
+    return await database.fetch_all(query)
+
+
+
+@fast_app.put("/submission/{submission_id}/flag")
+async def put_flag(submission_id: int, flag: schema.ModFlag):
+    # TODO validate user
+
+    # TODO handle duplicate entry better, right now it is a 500
+    # due to a pymysql.err.IntegrityError. Do a 409
+    stmt = arXiv_submission_mod_flag.insert().values(
+        user_id=flag.user_id,
+        flag=schema.modflag_to_int[flag.flag],
+        submission_id=submission_id,
+    )
+    await database.execute(stmt)
+
+
+@fast_app.post("/submission/{submission_id}/flag/delete")
+async def del_flag(submission_id: int, flag: schema.ModFlagDel):
+    # validate user
+
+    # TODO check that user owns the flag
+
+    await database.execute(
+        arXiv_submission_mod_flag.delete()
+        .where( and_(arXiv_submission_mod_flag.c.submission_id == submission_id,
+                     arXiv_submission_mod_flag.c.user_id == flag.user_id ))
+    )
+    
+
+@fast_app.get("/flags", response_model=List[schema.ModFlagOut])
+async def modflags():
+    """Gets list of submissions with checkmarks"""
+    # TODO check the user
+    
+    # TODO filter to just the checkmarks for the user
+    query = select(
+        [arXiv_submission_mod_flag.c.submission_id,
+         arXiv_submission_mod_flag.c.updated,
+         text('tapir_nicknames.nickname as username')]
+    ).select_from(arXiv_submission_mod_flag
+                  .join(tapir_nicknames,
+                        arXiv_submission_mod_flag.c.user_id == tapir_nicknames.c.user_id))
+
+    return await database.fetch_all(query)
+
+
 
 
 # @fast_app.get("/submission/{submission_id}")

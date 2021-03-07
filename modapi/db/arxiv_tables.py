@@ -1,5 +1,4 @@
-# coding: utf-8
-from sqlalchemy import BINARY, CHAR, Column, Date, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, MetaData, String, TIMESTAMP, Table, Text, text
+from sqlalchemy import BINARY, CHAR, Column, Date, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, MetaData, String, TIMESTAMP, Table, Text, text, UniqueConstraint
 from sqlalchemy.dialects.mysql import BIGINT, CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 
 from modapi.db import metadata
@@ -11,6 +10,8 @@ arXiv_submission_mod_hold = Table(
     Column('reason', VARCHAR(30)),
     Column('comment_id', ForeignKey('arXiv_admin_log.id'), nullable=False),
 )
+
+
 
 Subscription_UniversalInstitution = Table(
     'Subscription_UniversalInstitution', metadata,
@@ -1531,3 +1532,32 @@ arXiv_ownership_requests_audit = Table(
     Column('tracking_cookie', String(255), nullable=False, server_default=text("''")),
     Column('date', INTEGER(10), nullable=False, server_default=text("'0'"))
 )
+
+
+
+arXiv_submission_mod_flag = Table(
+    'arXiv_submission_mod_flag', metadata,
+    Column('mod_flag_id', INTEGER, primary_key=True, nullable=False, autoincrement=True),
+    Column('flag', TINYINT, nullable=False, server_default=text("'0'")),
+    Column('updated', TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")),
+    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), nullable=False),
+    Column('user_id', ForeignKey('tapir_users.user_id'), primary_key=True, nullable=False, server_default=text("'0'")),
+    UniqueConstraint('submission_id', 'user_id', name='uniq_one_flag_per_mod')
+
+)
+
+submission_mod_flag_create="""
+    CREATE TABLE `arXiv_submission_mod_flag` (
+  `mod_flag_id` int(11) NOT NULL AUTO_INCREMENT,
+    `flag` tinyint not null default '0',
+  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `submission_id` int(11) NOT NULL,
+  `user_id` int(4) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`mod_flag_id`),
+  KEY `submission_id` (`submission_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `arXiv_submission_mod_flag_ibfk_1` FOREIGN KEY (`submission_id`) REFERENCES `arXiv_submissions` (`submission_id`) ON DELETE CASCADE,
+  CONSTRAINT `arXiv_submission_mod_flag_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `tapir_users` (`user_id`),
+  UNIQUE( submission_id, user_id )
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+"""

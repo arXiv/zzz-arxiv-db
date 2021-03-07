@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Literal, Optional, Union
 from enum import Enum
 
+
 class User(BaseModel):
     is_admin: bool
     is_moderator: bool
@@ -36,7 +37,7 @@ SubTypeLiterals = Literal["new", "rep", "jref", "cross", "wdr"]
 
 StatusLiteral = Literal[1, 2, 4]
 
-    
+
 class Submission(BaseModel):
     submission_id: int
 
@@ -128,12 +129,30 @@ class SubmissionFull(BaseModel):
 
 
 class ModHoldReasons(str, Enum):
-    discussion = 'discussion'
-    moretime = 'moretime'
+    discussion = "discussion"
+    moretime = "moretime"
 
 
 class ModHold(BaseModel):
     submission_id: int
     reason: ModHoldReasons
 
-    
+
+ModFlagLiterals = Literal["checkmark"]
+
+modflag_to_int = {"checkmark": 1}
+
+
+class ModFlag(BaseModel):
+    user_id: int
+    flag: ModFlagLiterals
+
+
+class ModFlagDel(BaseModel):
+    user_id: int
+
+
+class ModFlagOut(BaseModel):
+    username: str
+    updated: datetime
+    submission_id: int
