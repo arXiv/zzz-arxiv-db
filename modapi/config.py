@@ -2,7 +2,12 @@ import os
 
 db_url = os.environ['CLASSIC_DATABASE_URI']  # arXiv legacy DB URL
 
+
 allow_origins = [
+    "https://dev.arxiv.org",
+    "http://dev.arxiv.org:8001",
+    "https://services.dev.arxiv.org",
+    "http://services.dev.arxiv.org:8001",
     "https://api.beta.arxiv.org",
     "http://api.beta.arxiv.org:8001",
     "https://beta.arxiv.org",
@@ -15,4 +20,4 @@ allow_origins = [
 
 debug = bool(os.environ.get("DEBUG", False))
 
-jwt_secret = os.environ['JWT_SECRET'] # NG JWT_SECRET
+jwt_secret = os.environ['JWT_SECRET']  # NG JWT_SECRET

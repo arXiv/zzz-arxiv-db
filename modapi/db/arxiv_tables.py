@@ -4,15 +4,6 @@ from sqlalchemy.dialects.mysql import BIGINT, CHAR, DECIMAL, INTEGER, MEDIUMINT,
 from modapi.db import metadata
 
 
-arXiv_submission_mod_hold = Table(
-    'arXiv_submission_mod_hold', metadata,
-    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), primary_key=True),
-    Column('reason', VARCHAR(30)),
-    Column('comment_id', ForeignKey('arXiv_admin_log.id'), nullable=False),
-)
-
-
-
 Subscription_UniversalInstitution = Table(
     'Subscription_UniversalInstitution', metadata,
     Column('resolver_URL', String(255)),
@@ -1534,22 +1525,30 @@ arXiv_ownership_requests_audit = Table(
 )
 
 
+arXiv_submission_mod_hold = Table(
+    'arXiv_submission_mod_hold', metadata,
+    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), primary_key=True),
+    Column('reason', VARCHAR(30)),
+    Column('comment_id', ForeignKey('arXiv_admin_log.id'), nullable=False),
+)
+
 
 arXiv_submission_mod_flag = Table(
     'arXiv_submission_mod_flag', metadata,
     Column('mod_flag_id', INTEGER, primary_key=True, nullable=False, autoincrement=True),
+    Column('username', String(20), nullable=False, server_default=text("'0'")),
+    
     Column('flag', TINYINT, nullable=False, server_default=text("'0'")),
     Column('updated', TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")),
     Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), nullable=False),
-    Column('user_id', ForeignKey('tapir_users.user_id'), primary_key=True, nullable=False, server_default=text("'0'")),
-    UniqueConstraint('submission_id', 'user_id', name='uniq_one_flag_per_mod')
+    UniqueConstraint('submission_id', 'username', name='uniq_one_flag_per_mod')
 
 )
 
 submission_mod_flag_create="""
-    CREATE TABLE `arXiv_submission_mod_flag` (
+CREATE TABLE `arXiv_submission_mod_flag` (
   `mod_flag_id` int(11) NOT NULL AUTO_INCREMENT,
-    `flag` tinyint not null default '0',
+  `flag` tinyint not null default '0',
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `submission_id` int(11) NOT NULL,
   `user_id` int(4) unsigned NOT NULL DEFAULT '0',

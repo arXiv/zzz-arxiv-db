@@ -144,12 +144,12 @@ modflag_to_int = {"checkmark": 1}
 
 
 class ModFlag(BaseModel):
-    user_id: int
+    username: str
     flag: ModFlagLiterals
 
 
 class ModFlagDel(BaseModel):
-    user_id: int
+    username: str
 
 
 class ModFlagOut(BaseModel):

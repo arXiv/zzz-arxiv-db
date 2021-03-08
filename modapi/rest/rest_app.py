@@ -22,7 +22,8 @@ from modapi.db.arxiv_tables import (
     arXiv_submission_mod_hold,
     arXiv_admin_log,
     arXiv_submission_mod_flag,
-    tapir_nicknames
+    tapir_nicknames,
+    submission_mod_flag_create
 )
 
 metadata.create_all(engine)
@@ -49,8 +50,8 @@ async def shutdown():
     await database.disconnect()
 
     
-async def ng_jwt(ARXIVNG_SESSION_ID: Optional[str] = Cookie(None)):
-    return decode(ARXIVNG_SESSION_ID, config.jwt_secret)
+#async def ng_jwt(ARXIVNG_SESSION_ID: Optional[str] = Cookie(None)):
+#    return decode(ARXIVNG_SESSION_ID, config.jwt_secret)
 
 
 # @fast_app.get("/testRestToSocket")
@@ -64,7 +65,8 @@ async def ng_jwt(ARXIVNG_SESSION_ID: Optional[str] = Cookie(None)):
 
 
 @fast_app.get("/status")
-async def status(jwt: Optional[dict] = Depends(ng_jwt)):
+async def status():
+#    async def status(jwt: Optional[dict] = Depends(ng_jwt)):
     """Get the status of the ModAPI service.
 
     Use the HTTP status code for the status. This returns an empty body on
@@ -192,7 +194,7 @@ async def put_flag(submission_id: int, flag: schema.ModFlag):
     # TODO handle duplicate entry better, right now it is a 500
     # due to a pymysql.err.IntegrityError. Do a 409
     stmt = arXiv_submission_mod_flag.insert().values(
-        user_id=flag.user_id,
+        username=flag.username,
         flag=schema.modflag_to_int[flag.flag],
         submission_id=submission_id,
     )
@@ -208,7 +210,7 @@ async def del_flag(submission_id: int, flag: schema.ModFlagDel):
     await database.execute(
         arXiv_submission_mod_flag.delete()
         .where( and_(arXiv_submission_mod_flag.c.submission_id == submission_id,
-                     arXiv_submission_mod_flag.c.user_id == flag.user_id ))
+                     arXiv_submission_mod_flag.c.username == flag.username ))
     )
     
 
@@ -217,14 +219,13 @@ async def modflags():
     """Gets list of submissions with checkmarks"""
     # TODO check the user
     
-    # TODO filter to just the checkmarks for the user
+    # TODO filter to just the checkmarks for the submisions
+    # in the moderator's queues.
     query = select(
         [arXiv_submission_mod_flag.c.submission_id,
          arXiv_submission_mod_flag.c.updated,
-         text('tapir_nicknames.nickname as username')]
-    ).select_from(arXiv_submission_mod_flag
-                  .join(tapir_nicknames,
-                        arXiv_submission_mod_flag.c.user_id == tapir_nicknames.c.user_id))
+         arXiv_submission_mod_flag.c.username]
+    ).select_from(arXiv_submission_mod_flag)                  
 
     return await database.fetch_all(query)
 
