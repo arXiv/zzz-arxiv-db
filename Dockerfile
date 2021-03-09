@@ -27,7 +27,7 @@ RUN poetry config virtualenvs.create false && \
     poetry install --no-dev --no-interaction --no-ansi
 RUN pip uninstall -y poetry 
  
-RUN echo $git_commit > /git-commit.txt
+RUN echo $git_commit > /opt/arxiv/git-commit.txt
 ADD modapi /opt/arxiv/modapi
 
 ENV SQLALCHEMY_TRACK_MODIFICATIONS False
