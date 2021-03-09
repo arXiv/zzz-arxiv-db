@@ -21,6 +21,8 @@ asynctest = "^0.13.0"
 asyncio = "^3.4.3"
 aiohttp = "^3.7.3"
 pytest-asyncio = "^0.14.0"
+mypy = "^0.812"
+pylint = "^2.7.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

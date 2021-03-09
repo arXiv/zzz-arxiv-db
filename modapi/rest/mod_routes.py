@@ -2,18 +2,15 @@ from typing import List, Optional
 
 from fastapi import APIRouter
 
-from fastapi import HTTPException, Cookie, Depends
+from fastapi import Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 
 from sqlalchemy.sql import select, and_
 
-#from modapi.collab.collab_app import sio
-import modapi.config as config
+from modapi.db import database
 
-from modapi.db import database, engine
-
-from modapi.auth import auth
+from modapi.auth import auth, Auth, User, auth_user
 
 from . import schema
 
@@ -28,17 +25,9 @@ from modapi.db.arxiv_tables import (
 
 router = APIRouter()
 
-# @router.get("/submission/{submission_id}", response_model=schema.Submission)
-# async def submission(submission_id: int):
-#     """Gets a submission. (WIP)"""
-#     query = arXiv_submissions.select().where(
-#         arXiv_submissions.c.submission_id == submission_id
-#     )
-#     return await database.fetch_one(query)
-
 
 @router.post("/submission/{submission_id}/modhold")
-async def modhold(submission_id: int, hold: schema.ModHold):
+async def modhold(submission_id: int, hold: schema.ModHold, user:User = Depends(auth_user)):
     """Put a submission on moderator hold."""
     
     # TODO use a transaction for all of this
@@ -57,11 +46,11 @@ async def modhold(submission_id: int, hold: schema.ModHold):
 
     # TODO don't let mods put submissions in strange statuses on hold
     
-   # TODO need to decode the auth JWT to get the mod's username for the comment
+    
 
     # TODO Set a admin_log comment so the admins will have some sort of idea about this.
     stmt = arXiv_admin_log.insert().values(
-        username="TODO",
+        username=user.username,
         program="modapi.rest",
         command="modhold",
         logtext=f'moderator hold "{hold.reason}"',
@@ -179,3 +168,26 @@ async def modflags():
     return await database.fetch_all(query)
 
 
+ON_HOLD = 2
+"""Submission table status for on hold"""
+
+SUBMITTED = 1
+"""Submission table status for submitted and not on hold"""
+
+async def _modhold_check(submission_id: int):
+    """Check for a mod hold.
+
+    Returns None if no submission.
+
+    Returns {status: int, reason: str} if submission exists and mod hold exists.
+
+    Returns {status: int} if submission exists but mod hold doesn't exist.
+    """
+    chk = (
+        # outer join becasue we want to dstinguish between submission
+        # doesn't exist and submission is already on mod-hold.
+        select([arXiv_submissions.c.status, arXiv_submission_mod_hold.c.reason])
+        .select_from(arXiv_submissions.outerjoin(arXiv_submission_mod_hold))
+        .where(arXiv_submissions.c.submission_id == submission_id)
+    )
+    return await database.fetch_one(chk)
