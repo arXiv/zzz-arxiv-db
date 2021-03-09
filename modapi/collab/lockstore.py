@@ -14,6 +14,12 @@ _locks: Dict[int, Lock] = {}
 
 Must aquire semaphore before using this"""
 
+# TODO Since single thread operation is needed for uvicorn when doing
+# socket.io, a semaphore might not be needed.  Each async function
+# should run to completion without interuption so they define the
+# whole "happens before" semantics.  OTOH it should cause little
+# overhead if it is never waits.
+
 _semaphore = Semaphore()
 """Semaphore for both locks and users"""
 
