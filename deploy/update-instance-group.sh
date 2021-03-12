@@ -20,7 +20,7 @@ fi
 NEW_IMAGE_URL=$1
 
 set -ef
-TEMPLATE="$PREFIX-template-$(date +%Y%m%d-%H%M%S)"
+TEMPLATE="$TYPE-$PREFIX-template-$(date +%Y%m%d-%H%M%S)"
 
 #### UPDATE PROCESS ####
 

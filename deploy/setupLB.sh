@@ -2,37 +2,37 @@
 
 set -evu
 
-# Create a backend service
-# This looks for a port named "http" on the instance group by default.
-gcloud compute backend-services create modapi-backend \
-       --project=$PROJ \
-       --health-checks=modapi-health-check \
-       --global
+# # Create a backend service
+# # This looks for a port named "http" on the instance group by default.
+# gcloud compute backend-services create $TYPE-$PREFIX-backend \
+#        --project=$PROJ \
+#        --health-checks=modapi-health-check \
+#        --global
 
-# WARNING: This is a place where socket.io could get messed up.
-# What could max-rate mean with a long lived TCP socket connection?
-#
-# Add backend as a link to instance group
-gcloud compute backend-services add-backend modapi-backend \
-       --project=$PROJ \
-       --instance-group=$MODAPI_MIG \
-       --instance-group-zone=$ZONE \
-       --balancing-mode=RATE \
-       --max-rate=200 \
-       --global
+# # WARNING: This is a place where socket.io could get messed up.
+# # What could max-rate mean with a long lived TCP socket connection?
+# #
+# # Add backend as a link to instance group
+# gcloud compute backend-services add-backend $TYPE-$PREFIX-backend \
+#        --project=$PROJ \
+#        --instance-group=$MODAPI_MIG \
+#        --instance-group-zone=$ZONE \
+#        --balancing-mode=RATE \
+#        --max-rate=200 \
+#        --global
 
 
 
 #################### Load Balancer ####################
 
-gcloud compute ssl-certificates  create api-beta-arxiv-org-cert \
+gcloud compute ssl-certificates create $CERT \
      --project=$PROJ \
-     --certificate=api_beta_arxiv_org_cert.cer \
-     --private-key=api.beta.arxiv.org.key \
+     --certificate=$DOMAIN_CERT \
+     --private-key=$DOMAIN_KEY \
      --global
 
 # reserve an IP address
-gcloud compute addresses create api-beta-arxiv-lb-ipv4 \
+gcloud compute addresses create $LB_IP \
        --project=$PROJ \
        --ip-version=IPV4 \
        --global
@@ -43,25 +43,25 @@ gcloud compute addresses create api-beta-arxiv-lb-ipv4 \
 # This becomes the name of the load balancer in the GCP UI
 gcloud compute url-maps create $LOAD_BALANCER \
        --project=$PROJ \
-       --default-service modapi-backend \
+       --default-service $TYPE-$PREFIX-backend \
        --global
 
 # Create a target HTTP(S) proxy to route requests to your URL map.
 # The proxy is the portion of the load balancer that holds the SSL
 # certificate.
-gcloud compute target-https-proxies create api-beta-arxiv-target-https-proxy \
+gcloud compute target-https-proxies create $TYPE-$PREFIX-target-https-proxy \
        --project=$PROJ \
-       --ssl-certificates=api-beta-arxiv-org-cert \
+       --ssl-certificates=$CERT \
        --url-map=$LOAD_BALANCER \
        --global
 
 
 # Create the frontend of the LB
 # Create a global forwarding rule to route incoming requests to the proxy.
-gcloud compute forwarding-rules create api-beta-arxiv-lb-forwarding-rule \
+gcloud compute forwarding-rules create $TYPE-$PREFIX-lb-forwarding-rule \
        --project=$PROJ \
-       --address=api-beta-arxiv-lb-ipv4 \
-       --target-https-proxy=api-beta-arxiv-target-https-proxy \
+       --address=$LB_IP \
+       --target-https-proxy=$TYPE-$PREFIX-target-https-proxy \
        --ports=443 \
        --global
 

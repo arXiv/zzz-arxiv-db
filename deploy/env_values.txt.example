@@ -1,3 +1,8 @@
-SQLALCHEMY_TRACK_MODIFICATIONS=False
+
 DEBUG=True
+
+#TODO
 CLASSIC_DATABASE_URI=mysql://rwarxivuser:1234passwd@12.12.12.12:3306/arXiv
+
+#TODO
+JWT_SECRET=arxiv-auth-jwt-secret
