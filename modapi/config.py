@@ -1,6 +1,7 @@
 import os
+import secrets
 
-db_url = os.environ['CLASSIC_DATABASE_URI']  # arXiv legacy DB URL
+db_url = os.environ.get('CLASSIC_DATABASE_URI', 'mysql://not-set-check-config.py/0000')  # arXiv legacy DB URL
 
 
 allow_origins = [
@@ -20,4 +21,7 @@ allow_origins = [
 
 debug = bool(os.environ.get("DEBUG", False))
 
-jwt_secret = os.environ['JWT_SECRET']  # NG JWT_SECRET
+jwt_secret = os.environ.get('JWT_SECRET', 'not-set-' + secrets.token_urlsafe(16))
+"""NG JWT_SECRET from arxiv-auth login service.
+
+Extra from urlsafe for when misconfigured."""
