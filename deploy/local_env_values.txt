@@ -1,4 +1,0 @@
-SQLALCHEMY_TRACK_MODIFICATIONS=False
-DEBUG=True
-CLASSIC_DATABASE_URI=mysql://arxivrw:notmuch44@127.0.0.1/arXiv
-
