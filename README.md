@@ -25,3 +25,12 @@ Then run:
     docker run --env_list env_values.txt --network host arxiv/modapi
 
 Then open a browser to http://localhost:8000/docs
+
+# To run tests
+I had problems using the fast-api test client so test are run like this:
+
+    python bin/launch_test_server.py &  # start test db, load test db, start API server
+    pytest 
+    # At this point the db and API will still be running, end with:
+    fg
+    CTRL-C

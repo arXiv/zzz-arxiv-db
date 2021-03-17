@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Literal, Optional, Union
 from enum import Enum
+from typing import List, Literal, Optional, Union
+
+from pydantic import BaseModel
 
 
 class User(BaseModel):

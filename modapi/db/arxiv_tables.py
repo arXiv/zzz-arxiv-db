@@ -322,7 +322,7 @@ arXiv_stats_monthly_downloads = Table(
 
 arXiv_stats_monthly_submissions = Table(
     'arXiv_stats_monthly_submissions', metadata,
-    Column('ym', Date, primary_key=True, server_default=text("'0000-00-00'")),
+    Column('ym', Date, primary_key=True, server_default=text("'1970-01-01'")),
     Column('num_submissions', SMALLINT(5), nullable=False),
     Column('historical_delta', TINYINT(4), nullable=False, server_default=text("'0'"))
 )
@@ -1114,7 +1114,7 @@ arXiv_moderators = Table(
     Column('no_reply_to', TINYINT(1), index=True, server_default=text("'0'")),
     Column('daily_update', TINYINT(1), server_default=text("'0'")),
     ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class']),
-    Index('user_id', 'archive', 'subject_class', 'user_id', unique=True)
+    Index('arxiv_moderator_idx_user_id', 'archive', 'subject_class', 'user_id', unique=True)
 )
 
 
@@ -1235,7 +1235,7 @@ arXiv_submissions = Table(
 
 arXiv_top_papers = Table(
     'arXiv_top_papers', metadata,
-    Column('from_week', Date, primary_key=True, nullable=False, server_default=text("'0000-00-00'")),
+    Column('from_week', Date, primary_key=True, nullable=False, server_default=text("'1970-01-01'")),
     Column('class', CHAR(1), primary_key=True, nullable=False, server_default=text("''")),
     Column('rank', SMALLINT(5), primary_key=True, nullable=False, server_default=text("'0'")),
     Column('document_id', ForeignKey('arXiv_documents.document_id'), nullable=False, index=True, server_default=text("'0'")),
@@ -1264,7 +1264,10 @@ tapir_admin_audit = Table(
     Column('affected_user', ForeignKey('tapir_users.user_id'), nullable=False, index=True, server_default=text("'0'")),
     Column('tracking_cookie', String(255), nullable=False, server_default=text("''")),
     Column('action', String(32), nullable=False, server_default=text("''")),
-    Column('data', Text, nullable=False, index=True),
+    Column('data', Text, nullable=False,
+           # E   sqlalchemy.exc.InternalError: (pymysql.err.InternalError) (1170, "BLOB/TEXT column 'data' used in key specification without a key length")
+           # index=True
+           ),
     Column('comment', Text, nullable=False),
     Column('entry_id', INTEGER(10), primary_key=True)
 )
@@ -1528,8 +1531,21 @@ arXiv_ownership_requests_audit = Table(
 arXiv_submission_mod_hold = Table(
     'arXiv_submission_mod_hold', metadata,
     Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), primary_key=True),
+    Column('user_id', ForeignKey('tapir_users.user_id', ondelete='CASCADE'), primary_key=True, nullable=False),
     Column('reason', VARCHAR(30)),
+    Column('type', VARCHAR(30)),
     Column('comment_id', ForeignKey('arXiv_admin_log.id'), nullable=False),
+)
+
+
+arXiv_submission_hold_reason = Table(
+    'arXiv_submission_hold_reason', metadata,
+    Column('reason_id', INTEGER, primary_key=True, nullable=False, autoincrement=True),
+    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'),nullable=False ),
+    Column('user_id', ForeignKey('tapir_users.user_id', ondelete='CASCADE'), primary_key=True, nullable=False),
+    Column('reason', VARCHAR(30)),
+    Column('type', VARCHAR(30)),
+    Column('comment_id', ForeignKey('arXiv_admin_log.id')),
 )
 
 
@@ -1560,3 +1576,48 @@ CREATE TABLE `arXiv_submission_mod_flag` (
   UNIQUE( submission_id, user_id )
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1
 """
+
+# Allow for null because some of the inactive cats don't need relations.
+alter_cat_def="""
+ALTER TABLE arXiv_category_def 
+  ADD COLUMN archive String(16),
+  ADD COLUMN subject_class String(16),
+  ADD CONSTRAINT FOREIGN KEY archive_subject_class_idx (archive, subject_class) REFERENCES arXiv_categories
+"""
+
+submission_mod_hold_reasons_create="""
+CREATE TABLE `arXiv_submission_hold_reason` (
+    reason_id INTEGER NOT NULL AUTO_INCREMENT,
+    submission_id INTEGER(11) NOT NULL,
+    `user_id` int(4) unsigned NOT NULL DEFAULT '0',
+    reason VARCHAR(30), 
+    type VARCHAR(30), 
+    comment_id INTEGER(11), 
+    PRIMARY KEY (reason_id),
+    FOREIGN KEY(submission_id) REFERENCES arXiv_submissions (submission_id) ON DELETE CASCADE, 
+    FOREIGN KEY (`user_id`) REFERENCES `tapir_users` (`user_id`) ON DELETE CASCADE,
+    FOREIGN KEY(comment_id) REFERENCES `arXiv_admin_log` (id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+"""
+
+'''
+a = await db.fetch_all( sql.select([
+    t.arXiv_submissions.c.submission_id,
+    t.arXiv_submissions.c.status,
+    t.arXiv_submission_category.c.category,
+    t.arXiv_submission_category.c.is_primary]
+).select_from( t.tapir_users.join(
+                            t.arXiv_moderators.join(
+                                t.arXiv_categories.join(
+                                    t.arXiv_category_def.join(
+                                        t.arXiv_submission_category.join( t.arXiv_submissions )
+                                    )
+                                )
+                            ),
+                            t.tapir_users.c.user_id == t.arXiv_moderators.c.user_id) )
+                        .where( sql.and_(
+                            t.tapir_users.c.user_id == 55594,
+                            t.arXiv_submissions.c.status in [2, 1]
+                        ))
+                    )
+'''

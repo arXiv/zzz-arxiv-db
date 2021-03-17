@@ -1,4 +1,4 @@
-from fastapi import HTTPException, APIRouter
+from fastapi import APIRouter, HTTPException
 from modapi.db import database
 from sqlalchemy.sql import text
 
