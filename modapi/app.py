@@ -21,8 +21,7 @@ app = socketio.ASGIApp(
 )
 
 
-
-if __name__ == "__main__":
+def run_app(reload, debug):
     import logging
     import sys
 
@@ -31,4 +30,8 @@ if __name__ == "__main__":
     import uvicorn
 
     # Don't run with reload for produciton
-    uvicorn.run("modapi.app:app", host="0.0.0.0", port=8000, reload=True, debug=False)
+    uvicorn.run("modapi.app:app", host="0.0.0.0", port=8000, reload=reload, debug=debug)
+    
+
+if __name__ == "__main__":
+    run_app(False, False)

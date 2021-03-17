@@ -31,6 +31,10 @@ def decode(token: str, secret: str):
     return data
 
 
+def encode(user: Auth, secret: str) -> str:
+    return jwt.encode(user.dict(), secret)
+
+
 async def ng_jwt_cookie(
     ARXIVNG_SESSION_ID: Optional[str] = Cookie(None),
 ) -> Optional[RawAuth]:
@@ -87,6 +91,7 @@ async def auth(rawauth:RawAuth = Depends(rawauth)) -> Auth:
         raise HTTPException(status_code=401, detail=f'Unauthorized, invalid token via {rawauth["via"]}') from ex
     return Auth(**data)
 
+
 async def auth_user(auth: Auth = Depends(auth)) -> User:
     """Check authentication and gets a User object. 
 
@@ -94,5 +99,13 @@ async def auth_user(auth: Auth = Depends(auth)) -> User:
     User object. If you do not need the User object, just use auth()
 
     """
-    return await userstore.getuser(auth.user_id)
+    try:
+        user = await userstore.getuser(auth.user_id)
+        if user and user.user_id and (user.is_admin or user.is_mod):
+            return user
+    except Exception as ex:
+        #raise HTTPException(status_code=401, detail="Unauthorized a_u_e") from ex
+        raise ex
+    raise HTTPException(status_code=401, detail="Unauthorized a_u")
+
     
