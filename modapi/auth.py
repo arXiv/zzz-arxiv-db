@@ -10,8 +10,10 @@ from pydantic import BaseModel
 
 User = userstore.User
 
+
 class Auth(BaseModel):
     """ See arxiv-auth users/arxiv/users/auth/sessions/store.py generate_cookie() """
+
     user_id: int
     session_id: str
     nonce: str
@@ -35,6 +37,17 @@ def encode(user: Auth, secret: str) -> str:
     return jwt.encode(user.dict(), secret)
 
 
+def user_jwt(user_id: int) -> str:
+    """For use in testing to make a jwt."""
+    return encode(
+        Auth(
+            user_id=user_id, session_id="fakesessionid",
+            nonce="peaceout", expires="0"
+        ),
+        config.jwt_secret,
+    )
+
+
 async def ng_jwt_cookie(
     ARXIVNG_SESSION_ID: Optional[str] = Cookie(None),
 ) -> Optional[RawAuth]:
@@ -50,12 +63,14 @@ async def ng_jwt_cookie(
         return None
 
 
-async def ng_jwt_header(Authorization: Optional[str] = Header(None)) -> Optional[RawAuth]:
+async def ng_jwt_header(
+    Authorization: Optional[str] = Header(None),
+) -> Optional[RawAuth]:
     """Gets the NG session undecoded JWT via HTTP header"""
     if Authorization:
         bearer = Authorization.startswith("Bearer ")
         if bearer:
-            Authorization = Authorization[len(bearer):]
+            Authorization = Authorization[len(bearer) :]
 
         return {
             "rawjwt": Authorization,
@@ -75,10 +90,10 @@ async def rawauth(
     if ng_jwt_cookie or ng_jwt_header:
         return ng_jwt_cookie or ng_jwt_header
     else:
-        raise HTTPException(status_code=401, detail='Unauthorized, no cookie or header')
+        raise HTTPException(status_code=401, detail="Unauthorized, no cookie or header")
 
-    
-async def auth(rawauth:RawAuth = Depends(rawauth)) -> Auth:
+
+async def auth(rawauth: RawAuth = Depends(rawauth)) -> Auth:
     """Gets the auth object from the unencoded JWT auth object. 
 
     Use this when you want the request to be authenticated and/or you
@@ -86,14 +101,16 @@ async def auth(rawauth:RawAuth = Depends(rawauth)) -> Auth:
 
     """
     try:
-        data = decode(rawauth['rawjwt'], config.jwt_secret)
+        data = decode(rawauth["rawjwt"], config.jwt_secret)
     except Exception as ex:
-        raise HTTPException(status_code=401, detail=f'Unauthorized, invalid token via {rawauth["via"]}') from ex
+        raise HTTPException(
+            status_code=401, detail=f'Unauthorized, invalid token via {rawauth["via"]}'
+        ) from ex
     return Auth(**data)
 
 
 async def auth_user(auth: Auth = Depends(auth)) -> User:
-    """Check authentication and gets a User object. 
+    """Check authentication, ensure mod or admin, and gets a User object. 
 
     Use this if you want the request authenticated and you also want a
     User object. If you do not need the User object, just use auth()
@@ -104,8 +121,6 @@ async def auth_user(auth: Auth = Depends(auth)) -> User:
         if user and user.user_id and (user.is_admin or user.is_mod):
             return user
     except Exception as ex:
-        #raise HTTPException(status_code=401, detail="Unauthorized a_u_e") from ex
+        # raise HTTPException(status_code=401, detail="Unauthorized a_u_e") from ex
         raise ex
     raise HTTPException(status_code=401, detail="Unauthorized a_u")
-
-    

@@ -9,9 +9,9 @@ INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
 
 
-INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','CB','0','0','0','0','0');
-INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','NC','0','0','0','0','0');
-INSERT INTO `arXiv_moderators` VALUES (246232,'q-bio', '','0','0','0','0','0');
+INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio','CB','0','0','0','0','0');
+INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio','NC','0','0','0','0','0');
+INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio', '','0','0','0','0','0');
 
 
 INSERT INTO `arXiv_submissions` 

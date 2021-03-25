@@ -1,8 +1,8 @@
 import requests
 import os
+from modapi.auth import user_jwt
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
-JWT_SECRET = os.environ.get("JWT_SECRET", "pogo")
 
 SUB_ID_1 = 1137914
 
@@ -87,6 +87,3 @@ def test_flags_from_multiple_mods():
     )
     assert res.status_code == 200     # delete the flag
 
-    
-def test_holds(): 
-    pass
