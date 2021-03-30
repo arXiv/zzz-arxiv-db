@@ -1,7 +1,7 @@
 import os
 import secrets
 
-db_url = os.environ.get('CLASSIC_DATABASE_URI', 'mysql://not-set-check-config.py/0000')  # arXiv legacy DB URL
+db_url = os.environ.get('CLASSIC_DATABASE_URI', 'mysql+aiomysql://not-set-check-config.py/0000')  # arXiv legacy DB URL, must use aiomysql driver
 
 
 allow_origins = [

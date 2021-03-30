@@ -1,9 +1,12 @@
-import databases
-import sqlalchemy
+
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import create_async_engine
 import modapi.config as config
 
 SQLALCHEMY_DATABASE_URL = config.db_url
-database = databases.Database(SQLALCHEMY_DATABASE_URL)
+
+#database = databases.Database(SQLALCHEMY_DATABASE_URL)
 """Databases for async execution of SQL statements.
 
 Note about Databases and SQLAlchemy setup:
@@ -24,7 +27,9 @@ https://github.com/encode/databases/blob/master/docs/database_queries.md
 
 """
 
-engine = sqlalchemy.create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 
-metadata = sqlalchemy.MetaData()
+Base = declarative_base()
+
+metadata = MetaData()
 """Avaiable to create Tables."""

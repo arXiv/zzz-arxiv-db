@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
-from modapi.db import database
+from modapi.db import engine
 from modapi.db.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
@@ -21,6 +21,7 @@ from modapi.db.arxiv_tables import (
 from pydantic import BaseModel, conlist
 from typing import Literal
 
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -77,7 +78,7 @@ async def hold(
     if user.is_mod and not hold.type == "mod":
         return JSONResponse(status_code=403, content={"msg": "Unauthorized hold type"})
 
-    async with database.transaction():
+    async with engine.connect() as conn:
         exists = await _hold_check(submission_id)
         if not exists:
             return JSONResponse(
@@ -106,7 +107,7 @@ async def hold(
             logtext=f'{hold.type} hold for "{hold.reason}"',
             submission_id=submission_id,
         )
-        comment_id = await database.execute(stmt)
+        comment_id = await conn.execute(stmt)
 
         stmt = arXiv_submission_hold_reason.insert().values(
             submission_id=submission_id,
@@ -115,7 +116,8 @@ async def hold(
             type=hold.type,
             comment_id=comment_id,
         )
-        await database.execute(stmt)
+        import pdb ; pdb.set_trace()
+        await conn.execute(stmt)
 
         # TODO figure out if we need to set any datetimes on the submission row        
         stmt = (
@@ -124,7 +126,7 @@ async def hold(
             .where(arXiv_submissions.c.submission_id == submission_id)
         )
 
-        await database.execute(stmt)
+        await conn.execute(stmt)
 
         return "success"
 
@@ -142,7 +144,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     - on hold
     """
 
-    async with database.transaction():
+    async with engine.begin() as conn:
         hold = await _hold_check(submission_id)
         
         if not hold:
@@ -172,13 +174,13 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
                 )
 
         if reason:
-            await database.execute(
+            await conn.execute(
                 arXiv_submission_hold_reason.delete().where(
                     arXiv_submission_hold_reason.c.submission_id == submission_id
                 )
             )
 
-        await database.execute(
+        await conn.execute(
             arXiv_submissions.update()
             .values(status=SUBMITTED)
             .where(arXiv_submissions.c.submission_id == submission_id)
@@ -198,7 +200,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             logtext=logtext,
             submission_id=submission_id,
         )
-        await database.execute(stmt)
+        await conn.execute(stmt)
 
         # TODO Handle sticky_status? Maybe not important? Is this is about
         # the user taking the sub to working and then resubmitting it.
@@ -224,33 +226,34 @@ async def holds(user: User = Depends(auth_user)):
     Type will be 'admin', 'mod' or 'legacy'.
 
     """
-    if user.is_admin:
-        query = """# All held submissions for admin
-SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2)
-"""
-        rows = await database.fetch_all(query)
-    else:
-        query = """
-# submissions on hold in mod's categories
-SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    JOIN arXiv_submission_category sc ON s.submission_id=sc.submission_id
-    JOIN arXiv_moderators m ON sc.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2) AND m.user_id=:userid
-UNION
-# unresolved proposal holds for mod's categories
-SELECT  s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    JOIN arXiv_submission_category_proposal scp ON s.submission_id=scp.submission_id
-    JOIN arXiv_moderators m ON scp.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2) AND m.user_id=:userid AND scp.proposal_status = 0
-"""
-        rows = await database.fetch_all(query, {"userid": user.user_id})
+    async with engine.begin() as conn:
+        if user.is_admin:
+            query = """# All held submissions for admin
+    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2)
+    """
+            rows = await conn.execute(text(query))
+        else:
+            query = """
+    # submissions on hold in mod's categories
+    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        JOIN arXiv_submission_category sc ON s.submission_id=sc.submission_id
+        JOIN arXiv_moderators m ON sc.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2) AND m.user_id=:userid
+    UNION
+    # unresolved proposal holds for mod's categories
+    SELECT  s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        JOIN arXiv_submission_category_proposal scp ON s.submission_id=scp.submission_id
+        JOIN arXiv_moderators m ON scp.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2) AND m.user_id=:userid AND scp.proposal_status = 0
+    """
+            rows = await conn.fetch_all(text(query), {"userid": user.user_id})
 
     out = []
     for row in rows:
@@ -281,17 +284,19 @@ async def _hold_check(submission_id: int):
     in the hold table. This is might be a legacy style hold.
 
     """
-    return await database.fetch_one(
-        # left join becasue we want to dstinguish between the
-        # submission doesn't exist and submission is already on
-        # mod-hold.
-        """
-        SELECT 
-        s.status, shr.reason, shr.user_id, shr.type
-        FROM
-        arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
-        ON s.submission_id = shr.submission_id
-        WHERE s.submission_id = :submission_id
-""",
-        {"submission_id": submission_id},
-    )
+    async with engine.begin() as conn:
+        res = await conn.execute(text(
+            # left join becasue we want to dstinguish between the
+            # submission doesn't exist and submission is already on
+            # mod-hold.
+            """
+            SELECT 
+            s.status, shr.reason, shr.user_id, shr.type
+            FROM
+            arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
+            ON s.submission_id = shr.submission_id
+            WHERE s.submission_id = :submission_id
+            """),
+            {"submission_id": submission_id},
+        )
+        return list(res)[0]

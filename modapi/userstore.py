@@ -1,7 +1,7 @@
 """Caching of arXiv mod and admin users"""
 from typing import Optional, Dict, List
 
-from sqlalchemy.sql import select
+from sqlalchemy import text
 
 import modapi.db as db
 
@@ -48,18 +48,18 @@ async def _getfromdb(user_id: int) -> Optional[User]:
     LEFT JOIN arXiv_moderators ON tapir_users.user_id = arXiv_moderators.user_id
     WHERE tapir_users.user_id = :userid"""
 
-    
-    rs = list(await db.database.fetch_all(query, {"userid": user_id}))
-    if not rs:
-        return None
+    async with db.engine.begin() as conn:
+        rs = list(await conn.execute(text(query), {"userid": user_id}))
+        if not rs:
+            return None
 
-    values = {
-        'user_id': user_id,
-        'username':rs[0]['nickname'],
-        'is_admin': rs[0]['flag_edit_users'],
-        'is_mod': any(('archive' in row or 'subject_class' in row for row in rs)),
-        'categories': [f"{row['archive']}.{row['subject_class']}" for row in rs if 'archive' in row and 'subject_class' in row and row['archive'] and row['subject_class']],
-        'archives':  [row['archive'] for row in rs if 'archive' in row and 'subject_class' not in row],
+        values = {
+            'user_id': user_id,
+            'username':rs[0]['nickname'],
+            'is_admin': rs[0]['flag_edit_users'],
+            'is_mod': any(('archive' in row or 'subject_class' in row for row in rs)),
+            'categories': [f"{row['archive']}.{row['subject_class']}" for row in rs if 'archive' in row and 'subject_class' in row and row['archive'] and row['subject_class']],
+            'archives':  [row['archive'] for row in rs if 'archive' in row and 'subject_class' not in row],
         }
 
-    return User(**values)
+        return User(**values)

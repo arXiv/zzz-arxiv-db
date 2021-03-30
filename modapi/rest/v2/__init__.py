@@ -14,9 +14,9 @@ Some expected changes:
 
 from fastapi import APIRouter, Depends
 
-from ..flags import router as flags_router
+#from ..flags import router as flags_router
 from .holds import router as holds_router
-from ..submissions import router as subs_router
+#from ..submissions import router as subs_router
 
 from modapi.auth import auth_user
 
@@ -26,15 +26,15 @@ router = APIRouter(prefix="/v2",
 router.include_router(holds_router,
                       dependencies=[Depends(auth_user)])
 
-# Right now flags_router is shared with v1 and v2
-# if changes are made to flags_router, preserve the existing
-# code for v1.
-router.include_router(flags_router,
-                      dependencies=[Depends(auth_user)])
+# # Right now flags_router is shared with v1 and v2
+# # if changes are made to flags_router, preserve the existing
+# # code for v1.
+# router.include_router(flags_router,
+#                       dependencies=[Depends(auth_user)])
 
-# Right now subs_router is shared with v1 and v2
-# if changes are made to subs_router, preserve the existing
-# code for v1.
-router.include_router(subs_router,
-                      dependencies=[Depends(auth_user)])
+# # Right now subs_router is shared with v1 and v2
+# # if changes are made to subs_router, preserve the existing
+# # code for v1.
+# router.include_router(subs_router,
+#                       dependencies=[Depends(auth_user)])
 
