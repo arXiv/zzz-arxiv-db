@@ -8,12 +8,12 @@ SUB_ID_1 = 1137914
    
 
 def test_holds(): 
-    res = requests.get(BASE_URL + "/v2/holds")
+    res = requests.get(BASE_URL + "/holds")
     assert res.status_code == 401  # Should be auth protected
 
     cookies = {'ARXIVNG_SESSION_ID': user_jwt(246231)} # Brandon, mod of q-bio.CB and q-bio.NC
     res = requests.get(
-        BASE_URL + "/v2/holds",
+        BASE_URL + "/holds",
         cookies = cookies
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
@@ -22,7 +22,7 @@ def test_holds():
     pre_add_count = len(res.json())
 
     # add hold
-    res = requests.post( BASE_URL + f"/v2/submission/{SUB_ID_1}/hold",
+    res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold",
                          json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
@@ -32,7 +32,7 @@ def test_holds():
 
 
     res = requests.get(
-        BASE_URL + "/v2/holds",
+        BASE_URL + "/holds",
         cookies = cookies
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
@@ -41,7 +41,7 @@ def test_holds():
 
     
     # try to add duplicate hold
-    res = requests.post( BASE_URL + f"/v2/submission/{SUB_ID_1}/hold",
+    res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold",
                          json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
@@ -49,7 +49,7 @@ def test_holds():
     assert res.status_code >= 300 or res.status_code < 200 # should not be success, it's a duplicate
     
     res = requests.get(
-        BASE_URL + "/v2/holds",
+        BASE_URL + "/holds",
         cookies = cookies
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
@@ -58,13 +58,13 @@ def test_holds():
 
 
     # release hold
-    res = requests.post( BASE_URL + f"/v2/submission/{SUB_ID_1}/hold/release" ,
+    res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold/release" ,
                          cookies = cookies )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code >= 200 and res.status_code < 300
 
     res = requests.get(
-        BASE_URL + "/v2/holds",
+        BASE_URL + "/holds",
         cookies = cookies
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server

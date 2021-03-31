@@ -20,7 +20,7 @@ export DOMAIN_KEY=api.beta.arxiv.org.key
 
 # This should not be set to latest so the instance template is
 # deterministic but there is probably a better way to do this.
-export IMAGE_URL=gcr.io/arxiv-development/modapi@sha256:088e1b699d6d71b0ac1cf1878fb303de187586ac242b788571d1b037687f404a
+export IMAGE_URL=gcr.io/arxiv-development/modapi@sha256:ebb11b4eed882a7b47799da1584073f813248f53592884ecf7bec85700f18fdf
 
 
 export VM_ENV_VALUES=beta_env_values.txt

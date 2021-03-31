@@ -29,8 +29,8 @@ Then open a browser to http://localhost:8000/docs
 # To run tests
 I had problems using the fast-api test client so test are run like this:
 
-    python bin/launch_test_server.py &  # start test db, load test db, start API server
-    pytest 
-    # At this point the db and API will still be running, end with:
+    JWT_SECRET=1234 python bin/launch_test_server.py &  # start test db, load test db, start API server
+    JWT_SECRET=1234 pytest 
+    # At the end of the tests DB and API will still be running, end with:
     fg
     CTRL-C

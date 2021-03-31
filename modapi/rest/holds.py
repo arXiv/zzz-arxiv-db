@@ -1,28 +1,44 @@
-"""Routes for holds on submissions"""
+"""Routes for holds on submissions.
+
+This works with the arXiv_submission_hold_reason table and is intended
+to work for both mod and admin holds.
+
+The paths in this module are intended to replace the /modhold paths.
+"""
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Optional, Union, List
 
 from fastapi import APIRouter, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
-from modapi.auth import Auth, User, auth, auth_user
-from modapi.db import database
-from modapi.db.arxiv_tables import (arXiv_admin_log, arXiv_submission_mod_flag,
-                                    arXiv_submission_mod_hold,
-                                    arXiv_submissions,
-                                    submission_mod_flag_create,
-                                    tapir_nicknames)
-from pydantic import BaseModel
-from sqlalchemy.sql import and_, select
+from modapi.auth import User, auth_user
+from modapi.db import engine
+from modapi.db.arxiv_tables import (
+    arXiv_admin_log,
+    arXiv_submissions,
+    arXiv_submission_hold_reason,
+)
+from pydantic import BaseModel, conlist
+from typing import Literal
 
-from . import schema
+from sqlalchemy import text
 
 router = APIRouter()
 
 
-class HoldReasons(str, Enum):
+class ModHoldReasons(str, Enum):
     discussion = "discussion"
     moretime = "moretime"
+
+
+class AdminHoldReasons(str, Enum):
+    """All the admin reasons except 'other'"""
+
+    scope = "scope"
+    softreject = "softreject"
+    hardreject = "hardreject"
+    nonresearch = "nonresearch"
+    salami = "salami"
 
 
 class HoldType(str, Enum):
@@ -33,78 +49,109 @@ class HoldType(str, Enum):
 class HoldOut(BaseModel):
     type: HoldType
     username: Optional[str]
-    reason: Optional[HoldReasons]
+    reason: Optional[Union[ModHoldReasons, AdminHoldReasons]]
 
 
-class HoldIn(BaseModel):
-    """Hold for input to hold()"""
+class AdminHoldIn(BaseModel):
+    type: Literal["admin"]
+    reason: AdminHoldReasons
 
-    type: HoldType
-    reason: HoldReasons
+
+class AdminOtherHoldIn(BaseModel):
+    type: Literal["admin"]
+    reason: Literal["other"]
+    comment: str
+
+
+class ModHoldIn(BaseModel):
+    type: Literal["mod"]
+    reason: ModHoldReasons
 
 
 @router.post("/submission/{submission_id}/hold")
-async def hold(submission_id: int, hold: HoldIn, user: User = Depends(auth_user)):
-    """Put a submission on moderator hold."""
-    async with database.transaction():
-        exists = await _hold_check(hold.submission_id)
+async def hold(
+    submission_id: int,
+    hold: Union[ModHoldIn, AdminHoldIn, AdminOtherHoldIn],
+    user: User = Depends(auth_user),
+):
+    """Put a submission on hold."""
+    if user.is_mod and not hold.type == "mod":
+        return JSONResponse(status_code=403, content={"msg": "Unauthorized hold type"})
+
+    async with engine.begin() as conn:
+        exists = await _hold_check(submission_id)
         if not exists:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
-                content={"msg": f"submission {hold.submission_id} not found"},
+                content={"msg": f"submission {submission_id} not found"},
             )
 
         if exists and (exists["status"] == ON_HOLD or exists["reason"]):
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
-                content={"msg": f"Hold on {hold.submission_id} already exists"},
+                content={"msg": f"Hold on {submission_id} already exists"},
+            )
+
+        if not (exists["status"] == 1 or exists["status"] == 4):
+            return JSONResponse(
+                status_code=httpstatus.HTTP_409_CONFLICT,
+                content={
+                    "msg": "Can only put submissions in status 'submitted' or 'next'  to 'on hold'"
+                },
             )
 
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
             program="modapi.rest",
-            command="modhold",
-            logtext=f'moderator hold for "{hold.reason}"',
-            submission_id=hold.submission_id,
+            command="hold",
+            logtext=f'{hold.type} hold for "{hold.reason}"',
+            submission_id=submission_id,
         )
-        comment_id = await database.execute(stmt)
+        res = await conn.execute(stmt)
+        comment_id = res.lastrowid
 
-        stmt = arXiv_submission_mod_hold.insert().values(
-            submission_id=hold.submission_id, reason=hold.reason, comment_id=comment_id
+        stmt = arXiv_submission_hold_reason.insert().values(
+            submission_id=submission_id,
+            reason=hold.reason,
+            user_id=user.user_id,
+            type=hold.type,
+            comment_id=comment_id,
         )
-        await database.execute(stmt)
 
+        # TODO figure out if we need to set any datetimes on the submission row        
         stmt = (
             arXiv_submissions.update()
             .values(status=ON_HOLD)
-            .where(arXiv_submissions.c.submission_id == hold.submission_id)
+            .where(arXiv_submissions.c.submission_id == submission_id)
         )
-        await database.execute(stmt)
+        await conn.execute(stmt)
 
-        return f"success"
+        return "success"
 
 
 @router.post("/submission/{submission_id}/hold/release", response_model=str)
-async def hold_release(submission_id: int):
+async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     """Releases a hold.
 
     If Moderator the submission must be:
     - on hold
-    - have a row in arXiv_submission_mod_hold
+    - have a row in arXiv_submission_hold_reason
     - have been created by this moderator
 
-If Admin the submission must be:
+    If Admin the submission must be:
     - on hold
     """
-    async with database.transaction():
+
+    async with engine.begin() as conn:
         hold = await _hold_check(submission_id)
+
         if not hold:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
                 content={"msg": f" submission {submission_id} not found"},
             )
 
-        [status, reason, hold_user_id] = hold
+        [status, reason, hold_user_id, hold_type] = hold
 
         if status != ON_HOLD:
             return JSONResponse(
@@ -112,7 +159,7 @@ If Admin the submission must be:
                 content={"msg": f"{submission_id} is not on hold"},
             )
 
-        if not user.is_admin:
+        if not user.is_admin and user.is_mod:
             if "reason" not in hold or hold["reason"] is None:
                 return JSONResponse(
                     status_code=httpstatus.HTTP_409_CONFLICT,
@@ -125,77 +172,96 @@ If Admin the submission must be:
                 )
 
         if reason:
-            mh_n = await database.execute(
-                arXiv_submission_mod_hold.delete().where(
-                    arXiv_submission_mod_hold.c.submission_id == submission_id
+            await conn.execute(
+                arXiv_submission_hold_reason.delete().where(
+                    arXiv_submission_hold_reason.c.submission_id == submission_id
                 )
             )
 
-        s_n = await database.execute(
+        await conn.execute(
             arXiv_submissions.update()
             .values(status=SUBMITTED)
             .where(arXiv_submissions.c.submission_id == submission_id)
         )
+
+        if hold_type == "mod":
+            logtext = f'release mod hold of reason "{reason}"'
+        elif hold_type == "admin":
+            logtext = f"release admin hold"
+        else:
+            logtext = f"release of hold type '{hold_type}'"
+
+        stmt = arXiv_admin_log.insert().values(
+            username=user.username,
+            program="modapi.rest",
+            command="hold",
+            logtext=logtext,
+            submission_id=submission_id,
+        )
+        await conn.execute(stmt)
+
         # TODO Handle sticky_status? Maybe not important? Is this is about
         # the user taking the sub to working and then resubmitting it.
 
         # TODO do correct release time. Super important for produciton
         # See arXiv::Schema::Result::Submission.propert_release_from_hold()
-        return f"{mh_n} {s_n}"
+        return
 
 
-@router.get("/holds", response_model=Dict[int, HoldOut])
+@router.get(
+    "/holds", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)]
+)
 async def holds(user: User = Depends(auth_user)):
-    """Gets all existing mod holds"""
+    """Gets all existing mod holds. 
+
+    If the user is a moderator this only gets the holds on submissions
+    of interest to the moderator.
+
+    Returns List of [ subid, user_id, type, reason ]
+
+    user_id, and reason may be an empty string.
+
+    Type will be 'admin', 'mod' or 'legacy'.
 
     """
-    input: user_id
-
-    
+    async with engine.begin() as conn:
+        if user.is_admin:
+            query = """# All held submissions for admin
+    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2)
     """
-    if user.is_admin:
-        import pdb; pdb.set_trace()
-        query = """# All held submissions for admin
-SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2)
-"""
-        rows = await database.fetch_all(query)
-    else:
-        query = """
-# submissions on hold in mod's categories
-SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    JOIN arXiv_submission_category sc ON s.submission_id=sc.submission_id
-    JOIN arXiv_moderators m ON sc.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2) AND m.user_id=:userid
-UNION
-# unresolved proposal holds for mod's categories
-SELECT  s.submission_id, smh.reason, smh.user_id, smh.type
-    FROM arXiv_submissions s
-    JOIN arXiv_submission_category_proposal scp ON s.submission_id=scp.submission_id
-    JOIN arXiv_moderators m ON scp.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-    LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-    WHERE s.status IN (2) AND m.user_id=:userid AND scp.proposal_status = 0
-"""
-        rows = await database.fetch_all(query, {"userid": user.user_id})
+            rows = await conn.execute(text(query))
+        else:
+            query = """
+    # submissions on hold in mod's categories
+    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        JOIN arXiv_submission_category sc ON s.submission_id=sc.submission_id
+        JOIN arXiv_moderators m ON sc.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2) AND m.user_id=:userid
+    UNION
+    # unresolved proposal holds for mod's categories
+    SELECT  s.submission_id, smh.reason, smh.user_id, smh.type
+        FROM arXiv_submissions s
+        JOIN arXiv_submission_category_proposal scp ON s.submission_id=scp.submission_id
+        JOIN arXiv_moderators m ON scp.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
+        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
+        WHERE s.status IN (2) AND m.user_id=:userid AND scp.proposal_status = 0
+    """
+            rows = await conn.execute(text(query), {"userid": user.user_id})
 
-    holds = {}
+    out = []
     for row in rows:
-        (id, reason, user_id, type) = row
-        if id in holds:
-            continue  # strange, we shoudn't have a multiple holds for a submisison
+        (sub_id, reason, user_id, hold_type) = row
+        out.append([int(sub_id),
+                    user_id if user_id else '',                    
+                    hold_type if hold_type else "legacy",
+                    reason if reason else ''])
 
-        legacy_hold = not type
-        holds[int(id)] = {
-            "reason": reason,
-            "user_id": user_id,
-            "type": type if not legacy_hold else "admin",
-        }
-
-    return holds
+    return out
 
 
 ON_HOLD = 2
@@ -210,22 +276,25 @@ async def _hold_check(submission_id: int):
 
     Returns None if no submission.
 
-    Returns {status: int, reason: str} if submission exists and hold exists.
+    Returns {status: int, user_id: int, reason: str} if submission exists and hold exists.
 
     Returns {status: int} if submission exists but hold doesn't exist
     in the hold table. This is might be a legacy style hold.
 
     """
-    return await database.fetch_one(
-        # outer join becasue we want to dstinguish between submission
-        # doesn't exist and submission is already on mod-hold.
-        select(
-            [
-                arXiv_submissions.c.status,
-                arXiv_submission_mod_hold.c.reason,
-                arXiv_submission_mod_hold.user_id,
-            ]
+    async with engine.begin() as conn:
+        res = await conn.execute(text(
+            # left join becasue we want to dstinguish between the
+            # submission doesn't exist and submission is already on
+            # mod-hold.
+            """
+            SELECT 
+            s.status, shr.reason, shr.user_id, shr.type
+            FROM
+            arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
+            ON s.submission_id = shr.submission_id
+            WHERE s.submission_id = :submission_id
+            """),
+            {"submission_id": submission_id},
         )
-        .select_from(arXiv_submissions.outerjoin(arXiv_submission_mod_hold))
-        .where(arXiv_submissions.c.submission_id == submission_id)
-    )
+        return list(res)[0]

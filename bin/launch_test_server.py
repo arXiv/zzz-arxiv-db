@@ -6,12 +6,11 @@ import os
 from multiprocessing import Process, Queue
 import time
 
-import databases
 
 # Allows databases to work with testing.mysqld
-databases.Database.SUPPORTED_BACKENDS[
-    "mysql+pymysql"
-] = databases.Database.SUPPORTED_BACKENDS["mysql"]
+# databases.Database.SUPPORTED_BACKENDS[
+#     "mysql+pymysql"
+# ] = databases.Database.SUPPORTED_BACKENDS["mysql"]
 
 
 test_data = os.environ.get("TEST_SQL_DATA", "./tests/testdata.sql")
@@ -78,9 +77,11 @@ def launch_mysql(test_data, db_uri: Queue):
 
 
 def launch_modapi(classic_db_uri: str):
-    os.environ["CLASSIC_DATABASE_URI"] = classic_db_uri.replace('+pymysql', '')
+    os.environ["CLASSIC_DATABASE_URI"] = classic_db_uri.replace('+pymysql', '+aiomysql')
     from modapi.app import run_app
-    run_app(False, False)
+    run_app(False, # Cannot use reload with process.daemon
+            False, # Cannot use uvicorn_debug with process.daemon
+            True)  # Turn logging to DEBUG for modapi
 
 
 if __name__ == "__main__":

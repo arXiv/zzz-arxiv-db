@@ -21,17 +21,30 @@ app = socketio.ASGIApp(
 )
 
 
-def run_app(reload, debug):
+def run_app(reload, uvicorn_debug, log_debug):
+    """Run the modAPI app.
+    
+    reload: If true, reload the app on any code changes saved to disk. Don't
+    use this in production. 
+
+    uvicorn_debug: output debugging messages from uvicorn. Avoid using
+    this in produciton.
+
+    log_debug: Set log level to debug and output SQLAlchemy debugging. Avoid using
+    this in produciton.
+
+    """
     import logging
     import sys
 
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    if log_debug:
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
     import uvicorn
 
     # Don't run with reload for produciton
-    uvicorn.run("modapi.app:app", host="0.0.0.0", port=8000, reload=reload, debug=debug)
+    uvicorn.run("modapi.app:app", host="0.0.0.0", port=8000, reload=reload, debug=uvicorn_debug)
     
 
 if __name__ == "__main__":
-    run_app(False, False)
+    run_app(config.reload, config.uvicorn_debug, config.debug_logging)

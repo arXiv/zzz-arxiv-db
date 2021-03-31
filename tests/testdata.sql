@@ -2,18 +2,20 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Tapir Users
 INSERT INTO `tapir_users` VALUES (246231,'Brandon','Barker','',1,1,'no-mail@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'cpe-24-59.res.rr.com.1372902602452690',0,0);
+
+
+INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','CB','0','0','0','0','0');
+INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','NC','0','0','0','0','0');
+INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio', '','0','0','0','0','0');
+
+
 INSERT INTO `tapir_users` VALUES (246232,'Lo','Jack','',1,1,'other-no-mail@example.com',8,0,2,1384185389,'net','',0,0,0,1,1,0,0,0,0,'cpe-24-59.com.1372902602452690',0,0);
 
 -- Tapir Nicknames
 INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
 
-
-INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio','CB','0','0','0','0','0');
-INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio','NC','0','0','0','0','0');
-INSERT INTO `arXiv_moderators` VALUES (246208,'q-bio', '','0','0','0','0','0');
-
-
+-- Submissions
 INSERT INTO `arXiv_submissions` 
 (`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`) 
 VALUES 

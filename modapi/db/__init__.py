@@ -27,9 +27,10 @@ https://github.com/encode/databases/blob/master/docs/database_queries.md
 
 """
 
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=config.debug_logging)
 
 Base = declarative_base()
 
 metadata = MetaData()
 """Avaiable to create Tables."""
+

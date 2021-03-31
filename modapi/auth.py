@@ -10,6 +10,9 @@ from pydantic import BaseModel
 
 User = userstore.User
 
+import logging
+log = logging.getLogger(__name__)
+
 
 class Auth(BaseModel):
     """ See arxiv-auth users/arxiv/users/auth/sessions/store.py generate_cookie() """
@@ -118,8 +121,16 @@ async def auth_user(auth: Auth = Depends(auth)) -> User:
     """
     try:
         user = await userstore.getuser(auth.user_id)
-        if user and user.user_id and (user.is_admin or user.is_mod):
-            return user
+        if user:
+            log.debug("User %d found in userstore", auth.user_id)
+            if user.user_id and (user.is_admin or user.is_mod):
+                return user
+            else:
+                log.debug("User %d is not mod or admin", auth.user_id)
+
+        else:
+            log.debug("User %d is not in userstore", auth.user_id)
+
     except Exception as ex:
         # raise HTTPException(status_code=401, detail="Unauthorized a_u_e") from ex
         raise ex
