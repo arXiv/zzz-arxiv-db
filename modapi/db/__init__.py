@@ -4,33 +4,25 @@ from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 import modapi.config as config
 
-SQLALCHEMY_DATABASE_URL = config.db_url
-
-#database = databases.Database(SQLALCHEMY_DATABASE_URL)
-"""Databases for async execution of SQL statements.
-
-Note about Databases and SQLAlchemy setup:
-
-We'd like to do async calls to the DB for performance.  Sqlalchemy
-does not directly support async so the patern of use here is to
-create the SQL with sqlalchemy and then execute it with the Databases
-async library.
-
-Using SQLAlchemy Core is documented at fast-api and Databases. Using
-SqlAlchemy ORM is not documented.
-
-For a description of SQLAlchemy see 
-https://docs.sqlalchemy.org/en/13/core/tutorial.html
-
-For using queryies with Databases see
-https://github.com/encode/databases/blob/master/docs/database_queries.md
-
-"""
-
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=config.debug_logging)
+engine = create_async_engine(config.db_url,
+                             echo=config.debug)
+"""An async engine for use by the modapi"""
 
 Base = declarative_base()
+"""Base for use in SQLAlchemy ORM class definitions"""
+
 
 metadata = MetaData()
 """Avaiable to create Tables."""
 
+
+def create_tables():
+    """Create any missing tables.
+
+    This is a synchronous call"""
+    from sqlalchemy import create_engine
+    import modapi.db.arxiv_tables
+    sync_url = config.db_url.replace('+aiomysql', '')
+    sync_eng = create_engine(sync_url,
+                             echo=config.debug)
+    metadata.create_all(bind=sync_eng)

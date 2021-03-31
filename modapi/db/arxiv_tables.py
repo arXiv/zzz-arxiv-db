@@ -625,7 +625,7 @@ tapir_save_post_variables = Table(
 
 tapir_users = Table(
     'tapir_users', metadata,
-    Column('user_id', INTEGER(4), primary_key=True),
+    Column('user_id', INTEGER(4, unsigned=True), primary_key=True),
     Column('first_name', String(50), index=True),
     Column('last_name', String(50), index=True),
     Column('suffix_name', String(50)),
@@ -1548,17 +1548,15 @@ arXiv_submission_hold_reason = Table(
     Column('comment_id', ForeignKey('arXiv_admin_log.id')),
 )
 
-
-arXiv_submission_mod_flag = Table(
-    'arXiv_submission_mod_flag', metadata,
-    Column('mod_flag_id', INTEGER, primary_key=True, nullable=False, autoincrement=True),
-    Column('username', String(20), nullable=False, server_default=text("'0'")),
-    
+ 
+arXiv_submission_flag = Table(
+    'arXiv_submission_flag', metadata,
+    Column('flag_id', INTEGER, primary_key=True, nullable=False, autoincrement=True),
+    Column('user_id', ForeignKey('tapir_users.user_id', ondelete='CASCADE'), nullable=False, server_default=text("'0'")),
+    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), nullable=False),
     Column('flag', TINYINT, nullable=False, server_default=text("'0'")),
     Column('updated', TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")),
-    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE'), nullable=False),
-    UniqueConstraint('submission_id', 'username', name='uniq_one_flag_per_mod')
-
+    UniqueConstraint('submission_id', 'user_id', name='uniq_one_flag_per_mod')
 )
 
 submission_mod_flag_create="""

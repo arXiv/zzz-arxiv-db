@@ -25,14 +25,10 @@ reload = bool(os.environ.get("RELOAD", False))
 uvicorn_debug = bool(os.environ.get("UVICORN_DEBUG", False))
 """Sets uvicorn debugging output, Avoid using in produciton."""
 
-debug_logging = bool(os.environ.get("DEBUG_LOGGING", False))
+debug = bool(os.environ.get("DEBUG", False))
 """Sets SQLAlchemy to echo debugging and sets log level to DEBUG for modapi"""
 
 jwt_secret = os.environ.get("JWT_SECRET", "not-set-" + secrets.token_urlsafe(16))
 """NG JWT_SECRET from arxiv-auth login service.
 
 Extra from urlsafe for when misconfigured."""
-
-
-if bool(os.environ.get("DEBUG")):
-    reload, uvicorn_debug, debug_logging = (True, True, True)

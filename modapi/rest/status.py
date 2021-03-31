@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from modapi.db import database
+from modapi.db import engine
 from sqlalchemy.sql import text
 
 router = APIRouter()
@@ -11,11 +11,12 @@ async def status():
 
     Tests connection to DB. Returns an empty body on success.
     """
-    try:
-        await database.fetch_one(text("SELECT 1"))
-    except Exception:
-        raise HTTPException(status_code=503, detail='DB is not avaiable')
-    return ''
+    async with engine.connect() as conn:
+        try:
+            await conn.execute(text("SELECT 1"))
+        except Exception:
+            raise HTTPException(status_code=503, detail='DB is not avaiable')
+        return ''
 
 
 _GVER = None
