@@ -23,6 +23,10 @@ from typing import Literal
 
 from sqlalchemy import text
 
+import logging
+log = logging.getLogger(__name__)
+
+
 router = APIRouter()
 
 
@@ -117,6 +121,7 @@ async def hold(
             type=hold.type,
             comment_id=comment_id,
         )
+        await conn.execute(stmt)
 
         # TODO figure out if we need to set any datetimes on the submission row        
         stmt = (
@@ -144,7 +149,6 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
 
     async with engine.begin() as conn:
         hold = await _hold_check(submission_id)
-
         if not hold:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
@@ -152,6 +156,8 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             )
 
         [status, reason, hold_user_id, hold_type] = hold
+        log.debug('hold_check was type: %s status: %s reason: %s',
+                  hold_type, status, reason)
 
         if status != ON_HOLD:
             return JSONResponse(
@@ -160,15 +166,10 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             )
 
         if not user.is_admin and user.is_mod:
-            if "reason" not in hold or hold["reason"] is None:
+            if (hold_type != "mod" or reason is None):
                 return JSONResponse(
                     status_code=httpstatus.HTTP_409_CONFLICT,
-                    content={"msg": f"{submission_id} is on ADMIN hold"},
-                )
-            if user.user_id != hold_user_id:
-                return JSONResponse(
-                    status_code=httpstatus.HTTP_409_CONFLICT,
-                    content={"msg": f"{submission_id} is not held by this mod."},
+                    content={"msg": f"{submission_id} is not a mod hold"}
                 )
 
         if reason:
@@ -183,14 +184,12 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             .values(status=SUBMITTED)
             .where(arXiv_submissions.c.submission_id == submission_id)
         )
-
-        if hold_type == "mod":
-            logtext = f'release mod hold of reason "{reason}"'
-        elif hold_type == "admin":
-            logtext = f"release admin hold"
+        
+        if hold_type is not None:
+            logtext = f'release {hold_type} hold of reason "{reason}"'
         else:
-            logtext = f"release of hold type '{hold_type}'"
-
+            logtext = "release legacy hold"
+            
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
             program="modapi.rest",
@@ -199,9 +198,9 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             submission_id=submission_id,
         )
         await conn.execute(stmt)
-
-        # TODO Handle sticky_status? Maybe not important? Is this is about
-        # the user taking the sub to working and then resubmitting it.
+        
+        # TODO Handle sticky_status? Is this is about the user taking
+        # the sub to working and then resubmitting it?
 
         # TODO do correct release time. Super important for produciton
         # See arXiv::Schema::Result::Submission.propert_release_from_hold()

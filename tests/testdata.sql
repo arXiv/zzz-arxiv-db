@@ -11,6 +11,8 @@ INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio', '','0','0','0','0','0');
 
 INSERT INTO `tapir_users` VALUES (246232,'Lo','Jack','',1,1,'other-no-mail@example.com',8,0,2,1384185389,'net','',0,0,0,1,1,0,0,0,0,'cpe-24-59.com.1372902602452690',0,0);
 
+INSERT INTO `arXiv_moderators` VALUES (246232,'q-bio','NC','0','0','0','0','0');
+
 -- Tapir Nicknames
 INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
