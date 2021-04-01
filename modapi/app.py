@@ -47,4 +47,4 @@ def run_app(reload, uvicorn_debug, log_debug):
     
 
 if __name__ == "__main__":
-    run_app(config.reload, config.uvicorn_debug, config.debug_logging)
+    run_app(config.reload, config.uvicorn_debug, config.debug)

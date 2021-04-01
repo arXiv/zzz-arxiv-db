@@ -26,7 +26,10 @@ uvicorn_debug = bool(os.environ.get("UVICORN_DEBUG", False))
 """Sets uvicorn debugging output, Avoid using in produciton."""
 
 debug = bool(os.environ.get("DEBUG", False))
-"""Sets SQLAlchemy to echo debugging and sets log level to DEBUG for modapi"""
+"""Sets log level to DEBUG for modapi"""
+
+echo_sql = bool(os.environ.get("ECHOSQL",False))
+"""Sets SQLAlchemy to echo debugging"""
 
 jwt_secret = os.environ.get("JWT_SECRET", "not-set-" + secrets.token_urlsafe(16))
 """NG JWT_SECRET from arxiv-auth login service.

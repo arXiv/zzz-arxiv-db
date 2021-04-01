@@ -122,7 +122,6 @@ async def auth_user(auth: Auth = Depends(auth)) -> User:
     try:
         user = await userstore.getuser(auth.user_id)
         if user:
-            log.debug("User %d found in userstore", auth.user_id)
             if user.user_id and (user.is_admin or user.is_mod):
                 return user
             else:

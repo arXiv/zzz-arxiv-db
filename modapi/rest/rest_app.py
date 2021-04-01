@@ -7,11 +7,8 @@ from ..db import create_tables
 
 from .flags import router as flags_router
 from .holds import router as hold_router
-# from .mod_routes import router as mod_router
 from .status import router as status_router
-# from .submissions import router as subs_router
-
-#from .v2 import router as v2_router
+from .submissions import router as subs_router
 
 create_tables()
 
@@ -25,9 +22,8 @@ fast_app.add_middleware(
     allow_headers=["*"],
 )
 
-# fast_app.include_router(mod_router, tags=['Mod Holds'])
 fast_app.include_router(flags_router, tags=['Flags'])
-# fast_app.include_router(subs_router, tags=['Submissions'])
+fast_app.include_router(subs_router, tags=['Submissions'])
 fast_app.include_router(status_router, tags=['Service Status'])
 fast_app.include_router(hold_router, tags=['Holds'])
 
