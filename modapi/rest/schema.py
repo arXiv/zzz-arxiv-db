@@ -5,7 +5,13 @@ from typing import List, Literal, Optional, Union
 from pydantic import BaseModel
 
 
-class User(BaseModel):
+class OrmBaseModel(BaseModel):
+
+    class Config:
+        orm_mode = True  #  Reads from non-dict
+
+        
+class User(OrmBaseModel):
     is_admin: bool
     is_moderator: bool
     name: str
@@ -17,12 +23,12 @@ class User(BaseModel):
         orm_mode = True  #  Reads from non-dict
 
 
-class PublishTimes(BaseModel):
+class PublishTimes(OrmBaseModel):
     submitted: datetime
     next: datetime
 
 
-class QueueOutline(BaseModel):
+class QueueOutline(OrmBaseModel):
     user: User
     current_time: datetime
     publish_times: PublishTimes
@@ -38,35 +44,75 @@ SubTypeLiterals = Literal["new", "rep", "jref", "cross", "wdr"]
 
 StatusLiteral = Literal[1, 2, 4]
 
+PropTypeLiterals = Literal["primary", "secondary"]
 
-class Submission(BaseModel):
+class ClassifierScore(OrmBaseModel):
+    score: float
+    category: str
+
+
+class SubmissionClassification(OrmBaseModel):
+    secondary: List[str]
+    primary: Optional[str]
+
+
+class Proposal(OrmBaseModel):
+    response_comment_id: Optional[int]
+    is_system_proposal: bool
+    proposal_comment_id: int
+    proposal_id: int
+    category: str
+    type: PropTypeLiterals
+    updated: datetime
+
+
+class Proposals(OrmBaseModel):
+    resolved: List[Proposal]
+    unresolved: List[Proposal]
+    
+
+class Categories(OrmBaseModel):
+    classifier_scores: List[ClassifierScore]
+    submission: SubmissionClassification
+    new_crosses: List[str]
+    proposals: Proposals
+
+    
+class Submitter(OrmBaseModel):
+    email: str
+    name: str
+    is_suspect: bool
+    
+    class Config:
+        orm_mode = True  #  Reads from non-dict
+
+    
+#TODO align Optional with database table definition 
+class Submission(OrmBaseModel):
+    """Submission model to transmit to client"""
     submission_id: int
-
     doc_paper_id: Optional[str]
 
-    is_author: Optional[bool]
-
-    submitter_name: Optional[str]
-    submitter_email: Optional[str]
     created: Optional[datetime]
     updated: Optional[datetime]
-    status: Optional[int]
-
     submit_time: Optional[datetime]
     release_time: Optional[datetime]
 
+    status: Optional[int]
+    version: Optional[int]
+    type: Optional[str]
+    
     title: Optional[str]
     authors: Optional[str]
     comments: Optional[str]
+    abstract: Optional[str]
+
     proxy: Optional[str]
     report_num: Optional[str]
     msc_class: Optional[str]
     acm_class: Optional[str]
     journal_ref: Optional[str]
     doi: Optional[str]
-    abstract: Optional[str]
-    version: Optional[int]
-    type: Optional[str]
 
     is_ok: Optional[bool]
     admin_ok: Optional[bool]
@@ -74,59 +120,11 @@ class Submission(BaseModel):
     auto_hold: Optional[bool]
     is_locked: Optional[bool]
 
+    categories: Categories
+    submitter: Submitter
+    
     class Config:
-        orm_mode = True  #  Reads from non-dict
-
-
-class SubmissionFull(BaseModel):
-    submission_id: int
-
-    doc_paper_id: Optional[str]
-
-    userinfo: Optional[int]
-    is_author: Optional[bool]
-    agree_policy: Optional[bool]
-    viewed: Optional[bool]
-    stage: Optional[int]
-    submitter_name: Optional[str]
-    submitter_email: Optional[str]
-    created: Optional[datetime]
-    updated: Optional[datetime]
-    status: Optional[int]
-    sticky_status: Optional[int]
-    must_process: Optional[bool]
-    submit_time: Optional[datetime]
-    release_time: Optional[datetime]
-    source_size: Optional[int]
-    source_format: Optional[str]
-    source_flags: Optional[str]
-    has_pilot_data: Optional[bool]
-    is_withdrawn: Optional[bool]
-    title: Optional[str]
-    authors: Optional[str]
-    comments: Optional[str]
-    proxy: Optional[str]
-    report_num: Optional[str]
-    msc_class: Optional[str]
-    acm_class: Optional[str]
-    journal_ref: Optional[str]
-    doi: Optional[str]
-    abstract: Optional[str]
-    version: Optional[int]
-    type: Optional[str]
-    is_ok: Optional[bool]
-    admin_ok: Optional[bool]
-    allow_tex_produced: Optional[bool]
-    is_oversize: Optional[bool]
-    remote_addr: Optional[str]
-    remote_host: Optional[str]
-    package: Optional[str]
-    rt_ticket_id: Optional[int]
-    auto_hold: Optional[bool]
-    is_locked: Optional[bool]
-
-    class Config:
-        orm_mode = True  #  Reads from non-dict
+        orm_mode = True  # Reads from non-dict like SQLAlchemy returns
 
 
 class ModHoldReasons(str, Enum):
@@ -134,7 +132,7 @@ class ModHoldReasons(str, Enum):
     moretime = "moretime"
 
 
-class ModHold(BaseModel):
+class ModHold(OrmBaseModel):
     submission_id: int
     reason: ModHoldReasons
 
@@ -144,11 +142,11 @@ ModFlagLiterals = Literal["checkmark"]
 modflag_to_int = {"checkmark": 1}
 
 
-class ModFlag(BaseModel):
+class ModFlag(OrmBaseModel):
     flag: ModFlagLiterals
 
 
-class ModFlagOut(BaseModel):
+class ModFlagOut(OrmBaseModel):
     username: str
     updated: datetime
     submission_id: int

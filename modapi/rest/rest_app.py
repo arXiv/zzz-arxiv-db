@@ -8,7 +8,7 @@ from ..db import create_tables
 from .flags import router as flags_router
 from .holds import router as hold_router
 from .status import router as status_router
-from .submissions import router as subs_router
+from .submissions.api import router as subs_router
 
 create_tables()
 
