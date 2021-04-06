@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source config.sh
+#source config.sh
 
 if [ ! $1 ]
 then
@@ -28,7 +28,7 @@ TEMPLATE="$TYPE-$PREFIX-template-$(date +%Y%m%d-%H%M%S)"
 gcloud compute instance-templates create-with-container $TEMPLATE \
        --machine-type e2-medium \
        --tags=allow-modapi-health-check \
-       --container-env-file=env_values.txt \
+       --container-env-file=$VM_ENV_VALUES \
        --container-image $NEW_IMAGE_URL
 
 # change the template of the instance group

@@ -5,17 +5,17 @@ import jwt
 import modapi.userstore as userstore
 import modapi.config as config
 
-from pydantic.dataclasses import dataclass
 from pydantic import BaseModel
-
-User = userstore.User
 
 import logging
 log = logging.getLogger(__name__)
 
+User = userstore.User
+
 
 class Auth(BaseModel):
-    """ See arxiv-auth users/arxiv/users/auth/sessions/store.py generate_cookie() """
+    """ See arxiv-auth users/arxiv/users/auth/sessions/store.py
+    generate_cookie() """
 
     user_id: int
     session_id: str
@@ -51,6 +51,15 @@ def user_jwt(user_id: int) -> str:
     )
 
 
+async def mod_header_user(mod_api_key: Optional[str] = Header(None)
+                          ) -> Optional[User]:
+    """Gets the mod_api_key header that is used for testing"""
+    if not mod_api_key or not mod_api_key.startswith('mod-'):
+        return None
+    else:
+        return await userstore.getuser_by_nick(mod_api_key.lstrip('mod-'))
+
+
 async def ng_jwt_cookie(
     ARXIVNG_SESSION_ID: Optional[str] = Cookie(None),
 ) -> Optional[RawAuth]:
@@ -73,7 +82,7 @@ async def ng_jwt_header(
     if Authorization:
         bearer = Authorization.startswith("Bearer ")
         if bearer:
-            Authorization = Authorization[len(bearer) :]
+            Authorization = Authorization[len(bearer):]
 
         return {
             "rawjwt": Authorization,
@@ -88,49 +97,58 @@ async def ng_jwt_header(
 async def rawauth(
     ng_jwt_cookie: Optional[RawAuth] = Depends(ng_jwt_cookie),
     ng_jwt_header: Optional[RawAuth] = Depends(ng_jwt_header),
-) -> RawAuth:
+) -> Optional[RawAuth]:
     """Gets the JWT from cookie or header"""
     if ng_jwt_cookie or ng_jwt_header:
         return ng_jwt_cookie or ng_jwt_header
     else:
-        raise HTTPException(status_code=401, detail="Unauthorized, no cookie or header")
+        return None
 
 
-async def auth(rawauth: RawAuth = Depends(rawauth)) -> Auth:
-    """Gets the auth object from the unencoded JWT auth object. 
+async def auth(rawauth: Optional[RawAuth] = Depends(rawauth)) -> Optional[Auth]:
+    """Gets the auth object from the unencoded JWT auth object.
 
     Use this when you want the request to be authenticated and/or you
     want just the user_id. If you want a User object, use auth_user.
 
     """
     try:
+        if not rawauth:
+            return None
         data = decode(rawauth["rawjwt"], config.jwt_secret)
+        return Auth(**data)
     except Exception as ex:
         raise HTTPException(
-            status_code=401, detail=f'Unauthorized, invalid token via {rawauth["via"]}'
+            status_code=401,
+            detail=f'Unauthorized, invalid token via {rawauth["via"]}'
         ) from ex
-    return Auth(**data)
 
 
-async def auth_user(auth: Auth = Depends(auth)) -> User:
-    """Check authentication, ensure mod or admin, and gets a User object. 
+async def auth_user(auth: Optional[Auth] = Depends(auth),
+                    mod: Optional[User] = Depends(mod_header_user)
+                    ) -> User:
+    """Check authentication, ensure mod or admin, and gets a User object.
 
     Use this if you want the request authenticated and you also want a
     User object. If you do not need the User object, just use auth()
 
     """
     try:
-        user = await userstore.getuser(auth.user_id)
-        if user:
-            if user.user_id and (user.is_admin or user.is_mod):
-                return user
+        if mod and (mod.is_admin or mod.is_mod):
+            return mod
+
+        if auth and auth.user_id:
+            user = await userstore.getuser(auth.user_id)
+            if user:
+                if user.user_id and (user.is_admin or user.is_mod):
+                    return user
+                else:
+                    log.debug("User %d is not mod or admin", auth.user_id)
+                    
             else:
-                log.debug("User %d is not mod or admin", auth.user_id)
-
-        else:
-            log.debug("User %d is not in userstore", auth.user_id)
-
+                log.debug("User %d is not in userstore", auth.user_id)
     except Exception as ex:
-        # raise HTTPException(status_code=401, detail="Unauthorized a_u_e") from ex
+        # raise HTTPException(status_code=401,
+        # detail="Unauthorized a_u_e") from ex
         raise ex
     raise HTTPException(status_code=401, detail="Unauthorized a_u")

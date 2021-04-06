@@ -28,7 +28,6 @@ class User(BaseModel):
 _users: Dict[int, User] = {}
 
 
-
 async def getuser(user_id: int) -> Optional[User]:
     """Gets a user by user_id"""    
     if user_id in _users:
@@ -40,6 +39,39 @@ async def getuser(user_id: int) -> Optional[User]:
         return user
     else:
         return None
+
+
+async def getuser_by_nick(nick: str) -> Optional[User]:
+    by_nick = [user for user in _users.items() if user.username == nick]
+    if len(by_nick) == 1:
+        return by_nick[0]
+
+    if len(by_nick) > 1:
+        log.error(f"{len(by_nick)} users with the same nickname {nick[:10]}")
+        return None
+
+    user = await _getfromdb_by_nick(nick)
+
+    if user:
+        _users[user.user_id] = user
+        return user
+    else:
+        return None
+
+
+async def _getfromdb_by_nick(nick: str) -> Optional[User]:
+    query = """
+    SELECT tapir_nicknames.user_id
+    FROM tapir_nicknames
+    WHERE tapir_nicknames.nickname = :nick"""
+
+    async with db.engine.begin() as conn:
+        rs = list(await conn.execute(text(query), {"nick": nick}))
+        if not rs:
+            log.debug("no user found in DB for nickname %s", nick[:10])
+            return None
+
+        return await _getfromdb(rs[0]['user_id'])
 
 
 async def _getfromdb(user_id: int) -> Optional[User]:

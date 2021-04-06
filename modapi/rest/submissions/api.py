@@ -52,7 +52,7 @@ query_options = [
 
 
 @router.get("/submissions", response_model=List[schema.Submission])
-async def submissions():
+async def submissions(user:User = Depends(auth_user) ):
     """Get all submissions for moderator or admin (WIP)"""
     async with Session() as session:
   
@@ -86,7 +86,7 @@ async def submissions():
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
-async def submission(submission_id: int):
+async def submission(submission_id: int, user:User = Depends(auth_user) ):
     """Gets a submission. (WIP)"""
     async with Session() as session:
         stmt = (
