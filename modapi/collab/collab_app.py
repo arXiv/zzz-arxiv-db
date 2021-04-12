@@ -12,6 +12,7 @@ To unlock:
 
 emit unlock {id: 1234}
 """
+from typing import Tuple, List, Any
 from asyncio import gather
 from typing import List
 
@@ -123,3 +124,10 @@ async def _send_unlocks(to_unlock: List[int]):
 async def _unlock(id: int):
     """Emit unlock a single paper id"""
     await sio.emit("unlock", {"id": id})
+
+
+async def send_changes(changes: List[Tuple[int, str]]) -> None:
+    """Sends changes to all connected clients"""
+    
+    for sub_id, area in set(changes):
+        await sio.emit("change", [sub_id, area])

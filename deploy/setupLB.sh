@@ -2,24 +2,27 @@
 
 set -evu
 
-# # Create a backend service
-# # This looks for a port named "http" on the instance group by default.
-# gcloud compute backend-services create $TYPE-$PREFIX-backend \
-#        --project=$PROJ \
-#        --health-checks=modapi-health-check \
-#        --global
+# Long time out on the LB to support socket.io
+# The default of 30s causes websockets to close
+# with an error code of 1006 on the server.
+$TIMEOUT=1h
 
-# # WARNING: This is a place where socket.io could get messed up.
-# # What could max-rate mean with a long lived TCP socket connection?
-# #
-# # Add backend as a link to instance group
-# gcloud compute backend-services add-backend $TYPE-$PREFIX-backend \
-#        --project=$PROJ \
-#        --instance-group=$MODAPI_MIG \
-#        --instance-group-zone=$ZONE \
-#        --balancing-mode=RATE \
-#        --max-rate=200 \
-#        --global
+# Create a backend service
+# This looks for a port named "http" on the instance group by default.
+gcloud compute backend-services create $TYPE-$PREFIX-backend \
+       --project=$PROJ \
+       --health-checks=modapi-health-check \
+       --timeout=$TIMEOUT \
+       --global
+
+# Add backend as a link to instance group
+gcloud compute backend-services add-backend $TYPE-$PREFIX-backend \
+       --project=$PROJ \
+       --instance-group=$MODAPI_MIG \
+       --instance-group-zone=$ZONE \
+       --balancing-mode=RATE \
+       --max-rate=200 \
+       --global
 
 
 

@@ -35,7 +35,7 @@ class ModHoldReasons(str, Enum):
     moretime = "moretime"
 
 
-class AdminHoldReasons(str, Enum):
+class SpecificRejectReasons(str, Enum):
     """All the admin reasons except 'other'"""
 
     scope = "scope"
@@ -45,7 +45,15 @@ class AdminHoldReasons(str, Enum):
     salami = "salami"
 
 
+RejectReasons = Union[SpecificRejectReasons, Literal["reject-other"]]
+
+
+HoldReasons = Union[RejectReasons, Literal["other"]]
+
+
 class HoldType(str, Enum):
+    """mod holds can be released by mods, 
+    admin hold can be released only by admins"""
     admin = "admin"
     mod = "mod"
 
@@ -53,26 +61,7 @@ class HoldType(str, Enum):
 class HoldOut(BaseModel):
     type: HoldType
     username: Optional[str]
-    reason: Optional[Union[ModHoldReasons, AdminHoldReasons]]
-
-
-class AdminHoldOther(BaseModel):
-    type: Literal["admin"]
-    reason: Literal["other"]
-    comment: str
-
-
-class AdminHoldIn(BaseModel):
-    type: Literal["admin"]
-    reason: AdminHoldReasons
-    sendback: bool
-
-
-class AdminOtherHoldIn(BaseModel):
-    type: Literal["admin"]
-    reason: Literal["other"]
-    comment: str
-    sendback: bool
+    reason: Optional[Union[ModHoldReasons, HoldReasons]]
 
 
 class ModHoldIn(BaseModel):
@@ -80,14 +69,38 @@ class ModHoldIn(BaseModel):
     reason: ModHoldReasons
 
 
+class RejectOther(BaseModel):
+    """Reject the submission for some other reason with a comment"""
+    type: Literal["admin"]
+    reason: Literal["reject-other"]
+    comment: str
+
+
+class Reject(BaseModel):
+    """Reject a submission with a reason from SpecificRejectReasons"""
+    type: Literal["admin"]
+    reason: SpecificRejectReasons
+
+
+class SendToAdminOther(BaseModel):
+    """"Put submission on hold with a comment"""
+    type: Literal["admin"]
+    reason: Literal["other"]
+    comment: str
+    sendback: bool
+
+
+SendToAdminHolds = Union[Reject, RejectOther, SendToAdminOther]
+
+    
 @router.post("/submission/{submission_id}/hold")
 async def hold(
-    submission_id: int,
-    hold: Union[ModHoldIn, AdminHoldIn, AdminOtherHoldIn],
-    user: User = Depends(auth_user),
+        submission_id: int,
+        hold: Union[ModHoldIn, SendToAdminHolds],
+        user: User = Depends(auth_user),
 ):
     """Put a submission on hold
-    
+
     This will prevent it from being announced until it is released from hold.
 
     The sendback feature is not yet implemented.
@@ -114,7 +127,6 @@ async def hold(
                 content={"msg": f"Hold on {submission_id} already exists"},
             )
 
-        # TODO admins might need to be able to put any submission on hold?
         if not (exists["status"] == 1 or exists["status"] == 4):
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
@@ -123,8 +135,10 @@ async def hold(
                 },
             )
 
-        if hasattr(hold, 'comment'):
-            logtext = f'send to admin for other reason: {hold.comment}'
+        if hold.reason == "reject-other":
+            logtext = f'Reject for other reason: {hold.comment}'
+        elif hold.reason == "other":
+            logtext = f'Hold and send to admins: {hold.comment}'
         else:
             logtext = f'{hold.type} hold for "{hold.reason}"'
 

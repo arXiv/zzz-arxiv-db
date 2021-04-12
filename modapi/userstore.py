@@ -42,7 +42,7 @@ async def getuser(user_id: int) -> Optional[User]:
 
 
 async def getuser_by_nick(nick: str) -> Optional[User]:
-    by_nick = [user for user in _users.items() if user.username == nick]
+    by_nick = [user for user in _users.values() if user.username == nick]
     if len(by_nick) == 1:
         return by_nick[0]
 
