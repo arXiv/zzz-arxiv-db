@@ -79,9 +79,6 @@ async def hold(
     user: User = Depends(auth_user),
 ):
     """Put a submission on hold."""
-    if user.is_mod and not hold.type == "mod":
-        return JSONResponse(status_code=403, content={"msg": "Unauthorized hold type"})
-
     async with engine.begin() as conn:
         exists = await _hold_check(submission_id)
         if not exists:
