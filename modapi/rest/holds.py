@@ -56,15 +56,23 @@ class HoldOut(BaseModel):
     reason: Optional[Union[ModHoldReasons, AdminHoldReasons]]
 
 
+class AdminHoldOther(BaseModel):
+    type: Literal["admin"]
+    reason: Literal["other"]
+    comment: str
+
+
 class AdminHoldIn(BaseModel):
     type: Literal["admin"]
     reason: AdminHoldReasons
+    sendback: bool
 
 
 class AdminOtherHoldIn(BaseModel):
     type: Literal["admin"]
     reason: Literal["other"]
     comment: str
+    sendback: bool
 
 
 class ModHoldIn(BaseModel):
@@ -78,7 +86,12 @@ async def hold(
     hold: Union[ModHoldIn, AdminHoldIn, AdminOtherHoldIn],
     user: User = Depends(auth_user),
 ):
-    """Put a submission on hold."""
+    """Put a submission on hold
+    
+    This will prevent it from being announced until it is released from hold.
+
+    The sendback feature is not yet implemented.
+    """
     async with engine.begin() as conn:
         exists = await _hold_check(submission_id)
         if not exists:
@@ -88,11 +101,20 @@ async def hold(
             )
 
         if exists and (exists["status"] == ON_HOLD or exists["reason"]):
+            # It is critical that mods (or admins ) cannot put a mod
+            # hold on a submission that is already on hold. This is to
+            # avoid a mod from changing a legacy hold to a mod-hold or
+            # admin-hold and then that mod releaseing the hold This
+            # could be bad because it could allow a submission that is
+            # on hold for serious non-moderatorion reasons to
+            # accidently get published.  Reasons such as copyright or
+            # failed TeX.
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
                 content={"msg": f"Hold on {submission_id} already exists"},
             )
 
+        # TODO admins might need to be able to put any submission on hold?
         if not (exists["status"] == 1 or exists["status"] == 4):
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
@@ -101,11 +123,16 @@ async def hold(
                 },
             )
 
+        if hasattr(hold, 'comment'):
+            logtext = f'send to admin for other reason: {hold.comment}'
+        else:
+            logtext = f'{hold.type} hold for "{hold.reason}"'
+
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
             program="modapi.rest",
             command="hold",
-            logtext=f'{hold.type} hold for "{hold.reason}"',
+            logtext=logtext,
             submission_id=submission_id,
         )
         res = await conn.execute(stmt)
@@ -135,13 +162,22 @@ async def hold(
 async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     """Releases a hold.
 
+    To release a hold means to set the submission status so that it is
+    avaialbe to be published.
+
     If Moderator the submission must be:
     - on hold
     - have a row in arXiv_submission_hold_reason
-    - have been created by this moderator
+
+    Moderators can release any hold that has a reason in the
+    arXiv_submission_hold_reason table.
 
     If Admin the submission must be:
     - on hold
+
+    Admins can release holds referenced in the
+    arXiv_submission_hold_reason or legacy style holds.
+
     """
 
     async with engine.begin() as conn:
