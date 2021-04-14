@@ -16,6 +16,10 @@ import time
 test_data = os.environ.get("TEST_SQL_DATA", "./tests/testdata.sql")
 
 
+def escape_bind(stmt):
+    return stmt.replace(':0', '\:0')
+
+
 def launch_mysql(test_data, db_uri: Queue):
     print("Starting mysql...")
     with testing.mysqld.Mysqld() as mysqld:
@@ -38,7 +42,7 @@ def launch_mysql(test_data, db_uri: Queue):
             with open(test_data) as sql:
                 cmd = ""
 
-                for ln, line in enumerate(sql):
+                for ln, line in enumerate(map(escape_bind, sql)):
                     if line.startswith("--"):
                         continue
                     elif line and line.rstrip().endswith(";"):

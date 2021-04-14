@@ -28,6 +28,16 @@ INSERT INTO `arXiv_submission_category`
 VALUES (1137914,'q-bio.CB',1,0);
 
 
+INSERT INTO `arXiv_submission_abs_classifier_data`
+( `submission_id`, `json`, `last_update`, `status`, `message`,
+`is_oversize`, `suggested_primary`, `suggested_reason`,
+`autoproposal_primary`, `autoproposal_reason`,
+`classifier_service_version`, `classifier_model_version`)
+VALUES(
+1137914,
+'{"classifier":[{"category":"hep-ph","probability":0.97},{"category":"hep-ex","probability":0.65},{"category":"hep-th","probability":0.02},{"category":"nucl-ex","probability":0.01},{"category":"nucl-th","probability":0.01}],"service":"fb-abs"}',
+'2021-04-13 12:49:38', 'success', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+
 
 INSERT INTO `arXiv_submissions`
 (`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)

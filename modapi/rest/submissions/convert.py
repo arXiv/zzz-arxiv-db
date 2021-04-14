@@ -56,17 +56,20 @@ def make_categories(sub: arxiv_models.Submissions):
 
 def make_classifier(sub: arxiv_models.Submissions):
     """Make the classifier data for the submission"""
-    try:
-        abs_clz = sub.abs_classifier_data
-        if not abs_clz or not hasattr(abs_clz, "json"):
-            return []
-        data = json.loads(abs_clz.json)
-        return [
-            {"category": row["category"], "score": row["probability"]}
-            for row in data["classifier"]
-        ]
-    except Exception:
+    abs_clz = sub.abs_classifier_data
+    if not abs_clz:
         return []
+
+    abs_clz = abs_clz[0]
+    if not abs_clz or not hasattr(abs_clz, "json"):
+        return []
+    
+    data = json.loads(abs_clz.json)
+    return [
+        {"category": row["category"], "score": row["probability"]}
+        for row in data["classifier"]
+    ]
+
 
 
 def make_proposals(sub: arxiv_models.Submissions):
