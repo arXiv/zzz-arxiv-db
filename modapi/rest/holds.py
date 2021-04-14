@@ -110,7 +110,7 @@ async def hold(
         if not exists:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
-                content={"msg": f"submission {submission_id} not found"},
+                content={"msg": "submission not found"},
             )
 
         if exists and (exists["status"] == ON_HOLD or exists["reason"]):
@@ -124,7 +124,7 @@ async def hold(
             # failed TeX.
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
-                content={"msg": f"Hold on {submission_id} already exists"},
+                content={"msg": "Hold on submission already exists"},
             )
 
         if not (exists["status"] == 1 or exists["status"] == 4):

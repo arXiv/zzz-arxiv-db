@@ -98,7 +98,7 @@ class Submission(OrmBaseModel):
     submit_time: Optional[datetime]
     release_time: Optional[datetime]
 
-    status: Optional[int]
+    status: str
     version: Optional[int]
     type: Optional[str]
     

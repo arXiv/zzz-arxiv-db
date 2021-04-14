@@ -96,5 +96,12 @@ async def submission(submission_id: int, user:User = Depends(auth_user) ):
         )
         res = await session.execute(stmt)
 
-        val = to_submission(res.unique().fetchone()[0])
-        return val
+        row = res.unique().fetchone()
+        if row:
+            return to_submission(row[0])
+        else:
+            return JSONResponse(
+                status_code=404,
+                content={"msg": "submission not found"}
+            )
+
