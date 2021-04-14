@@ -51,13 +51,13 @@ def user_jwt(user_id: int) -> str:
     )
 
 
-async def mod_header_user(mod_api_key: Optional[str] = Header(None)
+async def mod_header_user(modkey: Optional[str] = Header(None)
                           ) -> Optional[User]:
-    """Gets the mod_api_key header that is used for testing"""
-    if not mod_api_key or not mod_api_key.startswith('mod-'):
+    """Gets the modkey header that is used for testing"""
+    if not modkey or not modkey.startswith('mod-'):
         return None
     else:
-        return await userstore.getuser_by_nick(mod_api_key.lstrip('mod-'))
+        return await userstore.getuser_by_nick(modkey.lstrip('mod-'))
 
 
 async def ng_jwt_cookie(
