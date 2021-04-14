@@ -75,8 +75,9 @@ async def _getfromdb_by_nick(nick: str) -> Optional[User]:
         return await _getfromdb(rs[0]['user_id'])
 
 
-def _to_name(first_name, last_name):
-    return f"{first_name} {last_name}"
+def to_name(first_name, last_name):
+    """Display name from first_name and last_name"""
+    return f"{first_name} {last_name}".strip()
 
 
 async def _getfromdb(user_id: int) -> Optional[User]:
@@ -105,7 +106,7 @@ async def _getfromdb(user_id: int) -> Optional[User]:
 
         values = {
             'user_id': user_id,
-            'name': _to_name(rs[0]['first_name'],rs[0]['last_name']),
+            'name': to_name(rs[0]['first_name'],rs[0]['last_name']),
             'username': rs[0]['nickname'],
             'is_admin': bool(rs[0]['flag_edit_users']),
             'is_moderator': bool(cats or archives),

@@ -20,27 +20,29 @@ def test_subs():
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
     res = requests.get(BASE_URL + f"/submissions", cookies=cookies)
-    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
-    assert res.status_code == 200
-    assert res.json() is not None
-    sub = res.json()
-    assert type(sub) == list
-    
-
-def test_sub():
-    cookies = {
-        "ARXIVNG_SESSION_ID": user_jwt(246231)
-    }  # Brandon, mod of q-bio.CB and q-bio.NC
-    res = requests.get(BASE_URL + f"/submission/{SUB_ID_1}", cookies=cookies)
     assert (
         res.status_code != 401
     )  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert res.json() is not None
     sub = res.json()
-    
-    assert 'status' in sub
-    assert type(sub['status']) ==  str
+    assert type(sub) == list
+
+
+def test_sub():
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = requests.get(BASE_URL + f"/submission/{SUB_ID_1}", cookies=cookies)
+    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
+    assert res.status_code == 200
+    assert res.json() is not None
+    sub = res.json()
+
+    assert "status" in sub
+    assert type(sub["status"]) == str
+
+    assert sub["submitter"]["name"] == "Brandon Barker"
 
 
 def test_not_found():
@@ -48,7 +50,8 @@ def test_not_found():
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
 
-    res = requests.get(BASE_URL + f"/submission/0", cookies=cookies)
-    assert res.status_code != 200  # look for a missing SUB id in the test data (FYI, this exists in the real data)
-    assert res.status_code != 500  
-    
+    res = requests.get(BASE_URL + "/submission/0", cookies=cookies)
+    assert (
+        res.status_code != 200
+    )  # look for a missing SUB id in the test data (FYI, this exists in the real data)
+    assert res.status_code != 500

@@ -8,6 +8,7 @@ from sqlalchemy.orm.attributes import instance_dict
 from modapi.db import arxiv_models
 from modapi.rest import schema
 
+from modapi.userstore import to_name
 
 def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
@@ -19,7 +20,7 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     # these have to be done before instance_dict
     # because that somehow messes up SQLALCHEMY ORM
     cats = make_categories(sub)
-    name = sub.submitter.username.nickname
+    name = to_name(sub.submitter.first_name, sub.submitter.last_name)
     suspect = _suspect(sub)
 
     out["submitter"] = instance_dict(sub.submitter)
