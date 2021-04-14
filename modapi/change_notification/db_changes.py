@@ -70,7 +70,6 @@ async def periodic_check(Session: sessionmaker,
     latest = 0
     while True:
         try:
-            log.debug("doing periodic_check")
             await asyncio.sleep(CHECK_PERIOD_SECONDS)
             latest, changes = await _check_for_changes(Session, latest)
             await callback(latest, changes)

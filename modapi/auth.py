@@ -134,13 +134,13 @@ async def auth_user(auth: Optional[Auth] = Depends(auth),
 
     """
     try:
-        if mod and (mod.is_admin or mod.is_mod):
+        if mod and (mod.is_admin or mod.is_moderator):
             return mod
 
         if auth and auth.user_id:
             user = await userstore.getuser(auth.user_id)
             if user:
-                if user.user_id and (user.is_admin or user.is_mod):
+                if user.user_id and (user.is_admin or user.is_moderator):
                     return user
                 else:
                     log.debug("User %d is not mod or admin", auth.user_id)

@@ -212,7 +212,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
                 content={"msg": f"{submission_id} is not on hold"},
             )
 
-        if not user.is_admin and user.is_mod:
+        if not user.is_admin and user.is_moderator:
             if (hold_type != "mod" or reason is None):
                 return JSONResponse(
                     status_code=httpstatus.HTTP_409_CONFLICT,

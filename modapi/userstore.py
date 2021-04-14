@@ -18,11 +18,12 @@ log = logging.getLogger(__name__)
 class User(BaseModel):
     """Represents an arXiv admin or mod user"""
     user_id: int
+    name: str
     username: str
-    is_mod: bool = False
+    is_moderator: bool = False
     is_admin: bool = False
-    categories: List[str] = [] # pydantic handles default list correctly
-    archives: List[str] = []
+    moderated_categories: List[str] = [] # pydantic handles default list correctly
+    moderated_archives: List[str] = []
 
 
 _users: Dict[int, User] = {}
@@ -74,8 +75,15 @@ async def _getfromdb_by_nick(nick: str) -> Optional[User]:
         return await _getfromdb(rs[0]['user_id'])
 
 
+def _to_name(first_name, last_name):
+    return f"{first_name} {last_name}"
+
+
 async def _getfromdb(user_id: int) -> Optional[User]:
-    query = """SELECT tapir_nicknames.nickname, tapir_users.flag_edit_users, arXiv_moderators.archive, arXiv_moderators.subject_class 
+    query = """
+    SELECT tapir_users.first_name, tapir_users.last_name, 
+    tapir_nicknames.nickname, tapir_users.flag_edit_users, 
+    arXiv_moderators.archive, arXiv_moderators.subject_class 
     FROM tapir_users
     JOIN tapir_nicknames ON tapir_users.user_id = tapir_nicknames.user_id
     LEFT JOIN arXiv_moderators ON tapir_users.user_id = arXiv_moderators.user_id
@@ -89,17 +97,20 @@ async def _getfromdb(user_id: int) -> Optional[User]:
         if log.isEnabledFor(logging.DEBUG):
             log.debug("userstore result: %s", pformat(rs))
 
-        cats = [f"{row[2]}.{row[3]}"
-                for row in rs if row[2] and row[3]]
-        archives = [row[2] for row in rs if row[2] and not row[3]]
+        arch=4
+        cat=5
+        cats = [f"{row[arch]}.{row[cat]}"
+                for row in rs if row[arch] and row[cat]]
+        archives = [row[arch] for row in rs if row[arch] and not row[cat]]
 
         values = {
             'user_id': user_id,
+            'name': _to_name(rs[0]['first_name'],rs[0]['last_name']),
             'username': rs[0]['nickname'],
             'is_admin': bool(rs[0]['flag_edit_users']),
-            'is_mod': bool(cats or archives),
-            'categories': cats,
-            'archives':  archives
+            'is_moderator': bool(cats or archives),
+            'moderated_categories': cats,
+            'moderated_archives':  archives
         }
 
         return User(**values)
