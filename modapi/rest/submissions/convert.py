@@ -29,6 +29,7 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     out["submission_category"] = instance_dict(sub.submission_category)
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
+    out["submitter_comments"] = sub.comments
     return out
 
 
