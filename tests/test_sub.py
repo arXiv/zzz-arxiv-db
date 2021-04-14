@@ -44,6 +44,8 @@ def test_sub():
 
     assert sub["submitter"]["name"] == "Brandon Barker"
 
+    assert "classifier_scores" in sub["categories"]
+    assert sub["categories"]["classifier_scores"]
 
 def test_not_found():
     cookies = {
