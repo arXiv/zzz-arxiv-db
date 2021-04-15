@@ -266,7 +266,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     "/holds", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)]
 )
 async def holds(user: User = Depends(auth_user)):
-    """Gets all existing mod holds.
+    """Gets all existing holds.
 
     If the user is a moderator this only gets the holds on submissions
     of interest to the moderator.
@@ -276,7 +276,6 @@ async def holds(user: User = Depends(auth_user)):
     user_id, and reason may be an empty string.
 
     Type will be 'admin', 'mod' or 'legacy'.
-
     """
     async with Session() as session:
         query_options = [
@@ -288,7 +287,7 @@ async def holds(user: User = Depends(auth_user)):
                 .outerjoin(Submissions.proposals)
                 .outerjoin(Submissions.hold_reasons)
                 .options(*query_options)
-                .filter(Submissions.status.in_([1, 2, 4]))
+                .filter(Submissions.status == ON_HOLD)
                 )
         if user.is_moderator and not user.is_admin:
             cats = user.moderated_categories
