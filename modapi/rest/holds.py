@@ -282,6 +282,7 @@ async def holds(user: User = Depends(auth_user)):
             # Could deferre all of submission?
             joinedload(Submissions.hold_reasons),
         ]
+        # TODO the admin query doesn't need any joins
         stmt = (select(Submissions)
                 .join(Submissions.submission_category)
                 .outerjoin(Submissions.proposals)

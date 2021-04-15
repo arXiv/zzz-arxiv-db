@@ -17,6 +17,7 @@ from .holds import router as hold_router
 from .status import router as status_router
 from .submissions.api import router as subs_router
 from .user import router as user_router
+from .audit import router as audit_router
 
 import logging
 
@@ -39,7 +40,7 @@ fast_app.include_router(subs_router, tags=['Submissions'])
 fast_app.include_router(status_router, tags=['Service Status'])
 fast_app.include_router(hold_router, tags=['Holds'])
 fast_app.include_router(user_router, tags=['User'])
-
+fast_app.include_router(audit_router, tags=['Audit'])
 db_check_task = None
 
 

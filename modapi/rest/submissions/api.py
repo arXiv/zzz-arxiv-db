@@ -59,7 +59,7 @@ async def submissions(user: User = Depends(auth_user)):
             select(Submissions)
             .join(Submissions.submission_category)
             .join(SubmissionCategory.arXiv_category_def)
-            .join(Submissions.proposals)
+            .outerjoin(Submissions.proposals)
             .options(*query_options)
             .filter(Submissions.status.in_([1, 2, 4]))
             )

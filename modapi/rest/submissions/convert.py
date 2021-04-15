@@ -49,8 +49,8 @@ def make_categories(sub: arxiv_models.Submissions):
         new_crosses=[],  # TODO
         proposals=make_proposals(sub),
         submission=dict(
-            primary=sub.primary_classification, secondary=sub.secondary_categories
-        ),
+            primary=sub.primary_classification,
+            secondary=sub.secondary_categories)
     )
 
 
