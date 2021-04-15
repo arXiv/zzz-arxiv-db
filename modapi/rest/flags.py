@@ -1,6 +1,5 @@
 from typing import List
 
-# from modapi.collab.collab_app import sio
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from modapi.db import engine
@@ -14,19 +13,11 @@ from . import schema
 
 router = APIRouter()
 
-import logging
-log = logging.getLogger(__name__)
-
-
 
 @router.put("/submission/{submission_id}/flag")
 async def put_flag(submission_id: int,
                    flag: schema.ModFlag,
                    user: User = Depends(auth_user)):
-    # TODO validate user
-    log.debug("here in put_flag")
-    log.info("here in put_flag 2")
-    
     async with engine.begin() as conn:
         try:
             stmt = arXiv_submission_flag.insert().values(
@@ -43,9 +34,7 @@ async def put_flag(submission_id: int,
 @router.post("/submission/{submission_id}/flag/delete")
 async def del_flag(submission_id: int,
                    user: User = Depends(auth_user)):
-    # validate user
-
-    # TODO check that user owns the flag or maybe for 0 rows deleted
+    # TODO check that the row actually gets deleted
     async with engine.begin() as conn:
         await conn.execute(
             arXiv_submission_flag.delete().where(
@@ -60,7 +49,6 @@ async def del_flag(submission_id: int,
 @router.get("/flags", response_model=List[schema.ModFlagOut])
 async def flags(user: User = Depends(auth_user)):
     """Gets list of submissions with checkmarks"""
-    # TODO check the user
 
     # TODO filter to just the checkmarks for the submisions
     # in the moderator's queues.
