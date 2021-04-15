@@ -284,7 +284,7 @@ async def holds(user: User = Depends(auth_user)):
         ]
         # TODO the admin query doesn't need any joins
         stmt = (select(Submissions)
-                .join(Submissions.submission_category)
+                .outerjoin(Submissions.submission_category)
                 .outerjoin(Submissions.proposals)
                 .outerjoin(Submissions.hold_reasons)
                 .options(*query_options)
@@ -300,10 +300,12 @@ async def holds(user: User = Depends(auth_user)):
             for archive in user.moderated_archives:
                 mod_ors.append(
                     SubmissionCategory.category.startswith(archive))
-                mod_ors.append(
-                    and_(SubmissionCategoryProposal.category.startswith(archive),
-                         SubmissionCategoryProposal.proposal_status == 0))
+                # modui2 excluded subs with proposals in mod's archive
+                # mod_ors.append(
+                #     and_(SubmissionCategoryProposal.category.startswith(archive),
+                #          SubmissionCategoryProposal.proposal_status == 0))
 
+            stmt = stmt.filter(Submissions.type.in_(['new','rep','cross']))
             stmt = stmt.filter(or_(*mod_ors))
 
         res = await session.execute(stmt)

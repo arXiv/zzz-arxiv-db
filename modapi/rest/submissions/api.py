@@ -57,8 +57,8 @@ async def submissions(user: User = Depends(auth_user)):
     async with Session() as session:
         stmt = (
             select(Submissions)
-            .join(Submissions.submission_category)
-            .join(SubmissionCategory.arXiv_category_def)
+            .outerjoin(Submissions.submission_category)
+            .outerjoin(SubmissionCategory.arXiv_category_def)
             .outerjoin(Submissions.proposals)
             .options(*query_options)
             .filter(Submissions.status.in_([1, 2, 4]))
@@ -76,12 +76,13 @@ async def submissions(user: User = Depends(auth_user)):
             for archive in user.moderated_archives:
                 category_ors.append(
                     SubmissionCategory.category.startswith(archive))
-                category_ors.append(
-                    and_(
-                        SubmissionCategoryProposal.category.startswith(archive),
-                        SubmissionCategoryProposal.proposal_status == 0)
-                    )
-
+                # modui2 excluded subs with proposals in mod's archive
+                # category_ors.append(
+                #     and_(
+                #         SubmissionCategoryProposal.category.startswith(archive),
+                #         SubmissionCategoryProposal.proposal_status == 0)
+                #     )
+            stmt = stmt.filter(Submissions.type.in_(['new','rep','cross']))
             stmt = stmt.filter(or_(*category_ors))
 
         res = await session.execute(stmt)
