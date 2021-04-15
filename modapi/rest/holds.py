@@ -12,16 +12,24 @@ from fastapi import APIRouter, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
-from modapi.db import engine
+from modapi.db import engine, Session
 from modapi.db.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
     arXiv_submission_hold_reason,
 )
+
+from modapi.db.arxiv_models import (
+    Submissions,
+    SubmissionCategory,
+    SubmissionCategoryProposal,
+)
+
 from pydantic import BaseModel, conlist
 from typing import Literal
 
-from sqlalchemy import text
+from sqlalchemy import select, or_, and_, text
+from sqlalchemy.orm import joinedload
 
 import logging
 log = logging.getLogger(__name__)
@@ -52,7 +60,7 @@ HoldReasons = Union[RejectReasons, Literal["other"]]
 
 
 class HoldType(str, Enum):
-    """mod holds can be released by mods, 
+    """mod holds can be released by mods,
     admin hold can be released only by admins"""
     admin = "admin"
     mod = "mod"
@@ -92,7 +100,7 @@ class SendToAdminOther(BaseModel):
 
 SendToAdminHolds = Union[Reject, RejectOther, SendToAdminOther]
 
-    
+
 @router.post("/submission/{submission_id}/hold")
 async def hold(
         submission_id: int,
@@ -161,7 +169,7 @@ async def hold(
         )
         await conn.execute(stmt)
 
-        # TODO figure out if we need to set any datetimes on the submission row        
+        # TODO figure out if we need to set any datetimes on the submission row
         stmt = (
             arXiv_submissions.update()
             .values(status=ON_HOLD)
@@ -231,12 +239,12 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             .values(status=SUBMITTED)
             .where(arXiv_submissions.c.submission_id == submission_id)
         )
-        
+
         if hold_type is not None:
             logtext = f'release {hold_type} hold of reason "{reason}"'
         else:
             logtext = "release legacy hold"
-            
+
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
             program="modapi.rest",
@@ -245,7 +253,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             submission_id=submission_id,
         )
         await conn.execute(stmt)
-        
+
         # TODO Handle sticky_status? Is this is about the user taking
         # the sub to working and then resubmitting it?
 
@@ -258,7 +266,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     "/holds", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)]
 )
 async def holds(user: User = Depends(auth_user)):
-    """Gets all existing mod holds. 
+    """Gets all existing mod holds.
 
     If the user is a moderator this only gets the holds on submissions
     of interest to the moderator.
@@ -270,44 +278,48 @@ async def holds(user: User = Depends(auth_user)):
     Type will be 'admin', 'mod' or 'legacy'.
 
     """
-    async with engine.begin() as conn:
-        if user.is_admin:
-            query = """# All held submissions for admin
-    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-        FROM arXiv_submissions s
-        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-        WHERE s.status IN (2)
-    """
-            rows = await conn.execute(text(query))
-        else:
-            query = """
-    # submissions on hold in mod's categories
-    SELECT s.submission_id, smh.reason, smh.user_id, smh.type
-        FROM arXiv_submissions s
-        JOIN arXiv_submission_category sc ON s.submission_id=sc.submission_id
-        JOIN arXiv_moderators m ON sc.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-        WHERE s.status IN (2) AND m.user_id=:userid
-    UNION
-    # unresolved proposal holds for mod's categories
-    SELECT  s.submission_id, smh.reason, smh.user_id, smh.type
-        FROM arXiv_submissions s
-        JOIN arXiv_submission_category_proposal scp ON s.submission_id=scp.submission_id
-        JOIN arXiv_moderators m ON scp.category=concat_ws(".", m.archive, NULLIF(m.subject_class, ""))
-        LEFT JOIN arXiv_submission_hold_reason smh ON smh.submission_id = s.submission_id
-        WHERE s.status IN (2) AND m.user_id=:userid AND scp.proposal_status = 0
-    """
-            rows = await conn.execute(text(query), {"userid": user.user_id})
+    async with Session() as session:
+        query_options = [
+            # Could deferre all of submission?
+            joinedload(Submissions.hold_reasons),
+        ]
+        stmt = (select(Submissions)
+                .join(Submissions.submission_category)
+                .outerjoin(Submissions.proposals)
+                .outerjoin(Submissions.hold_reasons)
+                .options(*query_options)
+                .filter(Submissions.status.in_([1, 2, 4]))
+                )
+        if user.is_moderator and not user.is_admin:
+            cats = user.moderated_categories
+            mod_ors = [
+                SubmissionCategory.category.in_(cats),
+                and_(SubmissionCategoryProposal.category.in_(cats),
+                     SubmissionCategoryProposal.proposal_status == 0)
+                ]
+            for archive in user.moderated_archives:
+                mod_ors.append(
+                    SubmissionCategory.category.startswith(archive))
+                mod_ors.append(
+                    and_(SubmissionCategoryProposal.category.startswith(archive),
+                         SubmissionCategoryProposal.proposal_status == 0))
 
-    out = []
-    for row in rows:
-        (sub_id, reason, user_id, hold_type) = row
-        out.append([int(sub_id),
-                    user_id if user_id else '',                    
-                    hold_type if hold_type else "legacy",
-                    reason if reason else ''])
+            stmt = stmt.filter(or_(*mod_ors))
 
-    return out
+        res = await session.execute(stmt)
+        out = []
+        for row in res.unique():
+            sub = row[0]
+            if sub.hold_reasons:
+                out.append([int(sub.submission_id),
+                            sub.hold_reasons[0].user_id,
+                            sub.hold_reasons[0].type,
+                            sub.hold_reasons[0].reason])
+            else:
+                out.append([int(sub.submission_id),
+                            '', 'legacy', ''])
+
+        return out
 
 
 ON_HOLD = 2
@@ -334,7 +346,7 @@ async def _hold_check(submission_id: int):
             # submission doesn't exist and submission is already on
             # mod-hold.
             """
-            SELECT 
+            SELECT
             s.status, shr.reason, shr.user_id, shr.type
             FROM
             arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
