@@ -74,16 +74,10 @@ def make_classifier(sub: arxiv_models.Submissions):
 
 def make_proposals(sub: arxiv_models.Submissions):
     # need to handle type and is_system_proposal
-    resolved = [
-        convert_prop(prop)
-        for prop in sub.proposals
-        if prop.response_comment_id and prop.response_comment_id != "null"
-    ]
-    unresolved = [
-        convert_prop(prop)
-        for prop in sub.proposals
-        if not prop.response_comment_id or prop.response_comment_id == "null"
-    ]
+    resolved = [convert_prop(prop) for prop in sub.proposals
+                if prop.proposal_status != 0]
+    unresolved = [convert_prop(prop) for prop in sub.proposals
+                  if prop.proposal_status == 0]
     return dict(resolved=resolved, unresolved=unresolved)
 
 
