@@ -82,7 +82,7 @@ async def submissions(user: User = Depends(auth_user)):
                 #         SubmissionCategoryProposal.category.startswith(archive),
                 #         SubmissionCategoryProposal.proposal_status == 0)
                 #     )
-            stmt = stmt.filter(Submissions.type.in_(['new','rep','cross']))
+            stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
             stmt = stmt.filter(or_(*category_ors))
 
         res = await session.execute(stmt)
