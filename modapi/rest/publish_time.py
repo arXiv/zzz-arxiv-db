@@ -36,7 +36,7 @@ cache = Times(arxiv_tz="", next=datetime.now(), freeze=datetime.now())
 # Not worying about deadlock, all chagnes are idempotent
 
 
-@router.post("/times", response_model=Times)
+@router.get("/times", response_model=Times)
 async def hold(response: Response, user: User = Depends(auth_user)):
     """Gets times related operation of the submission system."""
 
