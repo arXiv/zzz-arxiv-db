@@ -1,5 +1,9 @@
 # Config vars for deploying to gcp
-gcloud config set project arxiv-development
+
+# Expected project is arxiv-development but
+# this line doesn't work with github actions
+#gcloud config set project arxiv-development
+
 export TYPE=dev
 
 export PREFIX=modapi
@@ -23,6 +27,6 @@ export DOMAIN_KEY=services_dev_arxiv_org.key
 # Could we get the hash URL of :latest?
 export IMAGE_URL=gcr.io/arxiv-development/modapi@sha256:088e1b699d6d71b0ac1cf1878fb303de187586ac242b788571d1b037687f404a
 
-export VM_ENV_VALUES=dev_env_values.txt
+export VM_ENV_VALUES=deploy/dev_env_values.txt
 
 

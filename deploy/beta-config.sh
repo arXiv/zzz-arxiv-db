@@ -1,5 +1,5 @@
 # Config vars for deploying to gcp
-gcloud config set project arxiv-development
+
 export TYPE=beta
 
 export PREFIX=modapi
@@ -23,4 +23,4 @@ export DOMAIN_KEY=api.beta.arxiv.org.key
 export IMAGE_URL=gcr.io/arxiv-development/modapi@sha256:ebb11b4eed882a7b47799da1584073f813248f53592884ecf7bec85700f18fdf
 
 
-export VM_ENV_VALUES=beta_env_values.txt
+export VM_ENV_VALUES=deploy/beta_env_values.txt

@@ -5,7 +5,7 @@ from wsgiref.handlers import format_date_time
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 
 from pydantic import BaseModel
@@ -32,7 +32,9 @@ FREEZE_REGEX = re.compile(r"until the next deadline.*that is (.*UTC)")
 NEXT_REGEX = re.compile(r"will be announced in the mailing.*that is (.*UTC)")
 
 
-cache = Times(arxiv_tz="", next=datetime.now(), freeze=datetime.now())
+cache = Times(arxiv_tz="",
+              next=datetime.now(timezone.utc),
+              freeze=datetime.now(timezone.utc))
 # Not worying about deadlock, all chagnes are idempotent
 
 
@@ -40,8 +42,8 @@ cache = Times(arxiv_tz="", next=datetime.now(), freeze=datetime.now())
 async def hold(response: Response, user: User = Depends(auth_user)):
     """Gets times related operation of the submission system."""
 
-    now = datetime.now()
-    if now >= cache.freeze or now >= cache.next or cache.arxiv_tz is "":
+    now = datetime.now(timezone.utc).astimezone()
+    if now >= cache.freeze or now >= cache.next or cache.arxiv_tz == "":
         resp = requests.request(
             method="GET", url="https://arxiv.org/localtime", stream=True
         )
@@ -75,8 +77,11 @@ async def hold(response: Response, user: User = Depends(auth_user)):
 
         fmt_1123 = "%a, %d %b %Y %H:%M %Z"
 
-        cache.freeze = datetime.strptime(freeze, fmt_1123)
-        cache.next = datetime.strptime(nxt, fmt_1123)
+        # Time from localtime HTML was in UTC
+        cache.freeze = datetime.strptime(freeze, fmt_1123)\
+                               .replace(tzinfo=timezone.utc)
+        cache.next = datetime.strptime(nxt, fmt_1123)\
+                             .replace(tzinfo=timezone.utc)
         cache.arxiv_tz = tz
 
     response.headers["Expires"] = format_date_time(
