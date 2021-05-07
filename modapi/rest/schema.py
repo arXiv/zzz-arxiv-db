@@ -122,6 +122,8 @@ class Submission(OrmBaseModel):
 
     categories: Categories
     submitter: Submitter
+
+    comment_count: Optional[int]
     
     class Config:
         orm_mode = True  # Reads from non-dict like SQLAlchemy returns

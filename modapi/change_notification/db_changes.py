@@ -6,7 +6,7 @@ from sqlalchemy import select
 import asyncio
 from datetime import timedelta, datetime
 
-from modapi.db.arxiv_models import AdminLog
+from modapi.tables.arxiv_models import AdminLog
 
 import logging
 

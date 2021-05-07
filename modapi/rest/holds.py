@@ -12,14 +12,14 @@ from fastapi import APIRouter, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
-from modapi.db import engine, Session
-from modapi.db.arxiv_tables import (
+from modapi.db import Session
+from modapi.tables.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
     arXiv_submission_hold_reason,
 )
 
-from modapi.db.arxiv_models import (
+from modapi.tables.arxiv_models import (
     Submissions,
     SubmissionCategory,
     SubmissionCategoryProposal,
@@ -113,8 +113,8 @@ async def hold(
 
     The sendback feature is not yet implemented.
     """
-    async with engine.begin() as conn:
-        exists = await _hold_check(submission_id)
+    async with Session() as session:
+        exists = await _hold_check(session, submission_id)
         if not exists:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
@@ -157,7 +157,7 @@ async def hold(
             logtext=logtext,
             submission_id=submission_id,
         )
-        res = await conn.execute(stmt)
+        res = await session.execute(stmt)
         comment_id = res.lastrowid
 
         stmt = arXiv_submission_hold_reason.insert().values(
@@ -167,7 +167,7 @@ async def hold(
             type=hold.type,
             comment_id=comment_id,
         )
-        await conn.execute(stmt)
+        await session.execute(stmt)
 
         # TODO figure out if we need to set any datetimes on the submission row
         stmt = (
@@ -175,8 +175,8 @@ async def hold(
             .values(status=ON_HOLD)
             .where(arXiv_submissions.c.submission_id == submission_id)
         )
-        await conn.execute(stmt)
-
+        await session.execute(stmt)
+        await session.commit()
         return "success"
 
 
@@ -202,8 +202,8 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
 
     """
 
-    async with engine.begin() as conn:
-        hold = await _hold_check(submission_id)
+    async with Session() as session:
+        hold = await _hold_check(session, submission_id)
         if not hold:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
@@ -228,13 +228,13 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
                 )
 
         if reason:
-            await conn.execute(
+            await session.execute(
                 arXiv_submission_hold_reason.delete().where(
                     arXiv_submission_hold_reason.c.submission_id == submission_id
                 )
             )
 
-        await conn.execute(
+        await session.execute(
             arXiv_submissions.update()
             .values(status=SUBMITTED)
             .where(arXiv_submissions.c.submission_id == submission_id)
@@ -252,8 +252,8 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             logtext=logtext,
             submission_id=submission_id,
         )
-        await conn.execute(stmt)
-
+        await session.execute(stmt)
+        await session.commit()
         # TODO Handle sticky_status? Is this is about the user taking
         # the sub to working and then resubmitting it?
 
@@ -331,7 +331,7 @@ SUBMITTED = 1
 """Submission table status for submitted and not on hold"""
 
 
-async def _hold_check(submission_id: int):
+async def _hold_check(session, submission_id: int):
     """Check for a hold.
 
     Returns None if no submission.
@@ -342,19 +342,18 @@ async def _hold_check(submission_id: int):
     in the hold table. This is might be a legacy style hold.
 
     """
-    async with engine.begin() as conn:
-        res = await conn.execute(text(
-            # left join becasue we want to dstinguish between the
-            # submission doesn't exist and submission is already on
-            # mod-hold.
-            """
-            SELECT
-            s.status, shr.reason, shr.user_id, shr.type
-            FROM
-            arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
-            ON s.submission_id = shr.submission_id
-            WHERE s.submission_id = :submission_id
-            """),
-            {"submission_id": submission_id},
-        )
-        return list(res)[0]
+    res = await session.execute(text(
+        # left join becasue we want to dstinguish between the
+        # submission doesn't exist and submission is already on
+        # mod-hold.
+        """
+        SELECT
+        s.status, shr.reason, shr.user_id, shr.type
+        FROM
+        arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
+        ON s.submission_id = shr.submission_id
+        WHERE s.submission_id = :submission_id
+        """),
+        {"submission_id": submission_id},
+    )
+    return list(res)[0]

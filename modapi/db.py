@@ -40,5 +40,4 @@ def create_tables():
     sync_url = config.db_url.replace('+aiomysql', '')
     sync_eng = create_engine(sync_url,
                              echo=config.echo_sql)
-    metadata = MetaData()
     metadata.create_all(bind=sync_eng)

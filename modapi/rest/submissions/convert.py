@@ -5,12 +5,13 @@ from contextlib import suppress
 
 from sqlalchemy.orm.attributes import instance_dict
 
-from modapi.db import arxiv_models
+from modapi.tables import arxiv_models
 from modapi.rest import schema
 
 from modapi.userstore import to_name
 
-def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
+
+def to_submission(sub: arxiv_models.Submissions, count) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
     out = instance_dict(sub)
     # for key in list(out.keys()):
@@ -30,6 +31,7 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
     out["submitter_comments"] = sub.comments
+    out["comment_count"] = count
     return out
 
 
@@ -63,13 +65,12 @@ def make_classifier(sub: arxiv_models.Submissions):
     abs_clz = abs_clz[0]
     if not abs_clz or not hasattr(abs_clz, "json"):
         return []
-    
+
     data = json.loads(abs_clz.json)
     return [
         {"category": row["category"], "score": row["probability"]}
         for row in data["classifier"]
     ]
-
 
 
 def make_proposals(sub: arxiv_models.Submissions):
@@ -86,6 +87,14 @@ def convert_prop(prop: arxiv_models.SubmissionCategoryProposal):
     out["is_system_proposal"] = False  # TODO
     out["type"] = "primary" if prop.is_primary else "secondary"
     return out
+
+
+def make_comment(comment: arxiv_models.AdminLog):
+    ...
+
+
+def commenter(nick: arxiv_models.TapirNicknames):
+    ...
 
 
 status_by_number = {

@@ -24,7 +24,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
 
-from modapi.db import arxiv_models
+from modapi.tables import arxiv_models
 
 import logging
 

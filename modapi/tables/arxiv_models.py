@@ -4,8 +4,10 @@ from sqlalchemy import BINARY, CHAR, Column, Date, DateTime, Enum, ForeignKey, F
 from sqlalchemy.dialects.mysql import BIGINT, CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import types as types
 
-Base = declarative_base()
+from modapi.db import Base
+
 metadata = Base.metadata
 
 

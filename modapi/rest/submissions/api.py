@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, func
 from sqlalchemy.orm import joinedload
 
 from modapi.auth import auth_user, User
@@ -13,13 +13,14 @@ from modapi.rest import schema
 
 # from .models import SubmissionsOut
 
-from modapi.db.arxiv_models import (
+from modapi.tables.arxiv_models import (
     Submissions,
     TapirUsers,
     Demographics,
     CategoryDef,
     SubmissionCategory,
     SubmissionCategoryProposal,
+    AdminLog,
 )
 
 from .convert import to_submission
@@ -51,43 +52,46 @@ query_options = [
 ]
 
 
+def sub_query(user: User):
+    stmt = (
+        select(Submissions,
+               func.count(AdminLog.id).label('comment_count'))
+        .outerjoin(AdminLog,
+                   AdminLog.submission_id == Submissions.submission_id)
+        .options(*query_options)
+        .filter(Submissions.status.in_([1, 2, 4]))
+        .filter(AdminLog.command == 'admin comment')
+        .group_by(AdminLog.submission_id)
+    )
+
+    if user.is_moderator and not user.is_admin:
+        stmt = stmt.outerjoin(Submissions.submission_category)
+        stmt = stmt.outerjoin(SubmissionCategory.arXiv_category_def)
+        stmt = stmt.outerjoin(Submissions.proposals)
+        mods_categories = user.moderated_categories
+        category_ors = [
+            SubmissionCategory.category.in_(mods_categories),
+            and_(
+                SubmissionCategoryProposal.category.in_(mods_categories),
+                SubmissionCategoryProposal.proposal_status == 0,
+            ),
+        ]
+        for archive in user.moderated_archives:
+            category_ors.append(
+                SubmissionCategory.category.startswith(archive))
+        stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
+        stmt = stmt.filter(or_(*category_ors))
+
+    return stmt
+
+
 @router.get("/submissions", response_model=List[schema.Submission])
 async def submissions(user: User = Depends(auth_user)):
     """Get all submissions for moderator or admin"""
     async with Session() as session:
-        stmt = (
-            select(Submissions)
-            .outerjoin(Submissions.submission_category)
-            .outerjoin(SubmissionCategory.arXiv_category_def)
-            .outerjoin(Submissions.proposals)
-            .options(*query_options)
-            .filter(Submissions.status.in_([1, 2, 4]))
-            )
-
-        if user.is_moderator and not user.is_admin:
-            mods_categories = user.moderated_categories
-            category_ors = [
-                SubmissionCategory.category.in_(mods_categories),
-                and_(
-                    SubmissionCategoryProposal.category.in_(mods_categories),
-                    SubmissionCategoryProposal.proposal_status == 0,
-                ),
-            ]
-            for archive in user.moderated_archives:
-                category_ors.append(
-                    SubmissionCategory.category.startswith(archive))
-                # modui2 excluded subs with proposals in mod's archive
-                # category_ors.append(
-                #     and_(
-                #         SubmissionCategoryProposal.category.startswith(archive),
-                #         SubmissionCategoryProposal.proposal_status == 0)
-                #     )
-            stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
-            stmt = stmt.filter(or_(*category_ors))
-
-        res = await session.execute(stmt)
+        res = await session.execute(sub_query(user))
         rows = res.unique().all()
-        return [to_submission(row[0]) for row in rows]
+        return [to_submission(row[0], row[1]) for row in rows]
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
@@ -95,15 +99,18 @@ async def submission(submission_id: int, user: User = Depends(auth_user)):
     """Gets a submission"""
     async with Session() as session:
         stmt = (
-            select(Submissions)
+            select(Submissions, func.count(AdminLog.id).label('comment_count'))
             .options(*query_options)
+            .outerjoin(AdminLog,
+                       AdminLog.submission_id == Submissions.submission_id)
             .where(Submissions.submission_id == submission_id)
+            .group_by(AdminLog.submission_id)
         )
         res = await session.execute(stmt)
 
         row = res.unique().fetchone()
         if row:
-            return to_submission(row[0])
+            return to_submission(row[0], row[1])
         else:
             return JSONResponse(
                 status_code=404,

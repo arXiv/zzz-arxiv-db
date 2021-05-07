@@ -19,7 +19,7 @@ def test_subs():
     cookies = {
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
-    res = requests.get(BASE_URL + f"/submissions", cookies=cookies)
+    res = requests.get(BASE_URL + "/submissions", cookies=cookies)
     assert (
         res.status_code != 401
     )  # Tests must run with env var JWT_SECRET same as server
@@ -46,6 +46,8 @@ def test_sub():
 
     assert "classifier_scores" in sub["categories"]
     assert sub["categories"]["classifier_scores"]
+    assert sub["comment_count"] 
+
 
 def test_not_found():
     cookies = {

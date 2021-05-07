@@ -16,7 +16,6 @@ User = userstore.User
 class Auth(BaseModel):
     """ See arxiv-auth users/arxiv/users/auth/sessions/store.py
     generate_cookie() """
-
     user_id: int
     session_id: str
     nonce: str
@@ -105,11 +104,15 @@ async def rawauth(
         return None
 
 
-async def auth(rawauth: Optional[RawAuth] = Depends(rawauth)) -> Optional[Auth]:
+async def auth(rawauth: Optional[RawAuth]
+               = Depends(rawauth)) -> Optional[Auth]:
     """Gets the auth object from the unencoded JWT auth object.
 
     Use this when you want the request to be authenticated and/or you
     want just the user_id. If you want a User object, use auth_user.
+
+    This does not ensure that the user is a mod or admin. Use
+    auth_user for that.
 
     """
     try:
@@ -129,9 +132,8 @@ async def auth_user(auth: Optional[Auth] = Depends(auth),
                     ) -> User:
     """Check authentication, ensure mod or admin, and gets a User object.
 
-    Use this if you want the request authenticated and you also want a
-    User object. If you do not need the User object, just use auth()
-
+    Use this if you want the request authenticated and you want to
+    ensure a mod or admin and you also want a User object.
     """
     try:
         if mod and (mod.is_admin or mod.is_moderator):
@@ -144,7 +146,7 @@ async def auth_user(auth: Optional[Auth] = Depends(auth),
                     return user
                 else:
                     log.debug("User %d is not mod or admin", auth.user_id)
-                    
+
             else:
                 log.debug("User %d is not in userstore", auth.user_id)
     except Exception as ex:

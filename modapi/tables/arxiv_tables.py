@@ -1,7 +1,10 @@
-from sqlalchemy import BINARY, CHAR, Column, Date, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, MetaData, String, TIMESTAMP, Table, Text, text, UniqueConstraint
+from sqlalchemy import BINARY, CHAR, Column, Date, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, MetaData, String, TIMESTAMP, Table, Text, text, UniqueConstraint, MetaData
 from sqlalchemy.dialects.mysql import BIGINT, CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 
-from modapi.db import metadata
+
+metadata = MetaData()
+
+#from modapi.db import metadata
 
 
 Subscription_UniversalInstitution = Table(

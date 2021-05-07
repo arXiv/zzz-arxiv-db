@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 import modapi.db as db
 
-from modapi.db.arxiv_tables import tapir_nicknames, tapir_users, arXiv_moderators
+from modapi.tables.arxiv_tables import tapir_nicknames, tapir_users, arXiv_moderators
 
 from pydantic import BaseModel
 
@@ -66,8 +66,8 @@ async def _getfromdb_by_nick(nick: str) -> Optional[User]:
     FROM tapir_nicknames
     WHERE tapir_nicknames.nickname = :nick"""
 
-    async with db.engine.begin() as conn:
-        rs = list(await conn.execute(text(query), {"nick": nick}))
+    async with db.Session() as session:
+        rs = list(await session.execute(text(query), {"nick": nick}))
         if not rs:
             log.debug("no user found in DB for nickname %s", nick[:10])
             return None
@@ -82,7 +82,9 @@ def to_name(first_name, last_name):
 
 async def _getfromdb(user_id: int) -> Optional[User]:
     query = """
-    SELECT tapir_users.first_name, tapir_users.last_name, 
+    SELECT 
+    hex(tapir_users.first_name) as first_name,
+    hex(tapir_users.last_name) as last_name,
     tapir_nicknames.nickname, tapir_users.flag_edit_users, 
     arXiv_moderators.archive, arXiv_moderators.subject_class 
     FROM tapir_users
@@ -90,8 +92,8 @@ async def _getfromdb(user_id: int) -> Optional[User]:
     LEFT JOIN arXiv_moderators ON tapir_users.user_id = arXiv_moderators.user_id
     WHERE tapir_users.user_id = :userid"""
 
-    async with db.engine.begin() as conn:
-        rs = list(await conn.execute(text(query), {"userid": user_id}))
+    async with db.Session() as session:
+        rs = list(await session.execute(text(query), {"userid": user_id}))
         if not rs:
             return None
 
@@ -106,7 +108,10 @@ async def _getfromdb(user_id: int) -> Optional[User]:
 
         values = {
             'user_id': user_id,
-            'name': to_name(rs[0]['first_name'],rs[0]['last_name']),
+            'name': to_name(
+                bytes.fromhex(rs[0]['first_name']).decode('utf-8'),
+                bytes.fromhex(rs[0]['last_name']).decode('utf-8')
+            ),
             'username': rs[0]['nickname'],
             'is_admin': bool(rs[0]['flag_edit_users']),
             'is_moderator': bool(cats or archives),

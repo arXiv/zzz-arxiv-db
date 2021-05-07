@@ -5,7 +5,7 @@ from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from modapi.auth import Auth, User, auth, auth_user
 from modapi.db import database
-from modapi.db.arxiv_tables import (arXiv_admin_log, arXiv_submission_mod_flag,
+from modapi.tables.arxiv_tables import (arXiv_admin_log, arXiv_submission_mod_flag,
                                     arXiv_submission_mod_hold,
                                     arXiv_submissions,
                                     submission_mod_flag_create,

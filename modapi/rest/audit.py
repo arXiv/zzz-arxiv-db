@@ -6,14 +6,14 @@ from typing import Optional, Union, List
 
 from fastapi import APIRouter, Depends
 from modapi.auth import User, auth_user
-from modapi.db import engine, Session
-from modapi.db.arxiv_tables import (
+from modapi.db import Session
+from modapi.tables.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
     arXiv_submission_hold_reason,
 )
 
-from modapi.db.arxiv_models import (
+from modapi.tables.arxiv_models import (
     Submissions,
     SubmissionCategory,
     SubmissionCategoryProposal,

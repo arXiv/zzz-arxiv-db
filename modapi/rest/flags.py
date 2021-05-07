@@ -2,8 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from modapi.db import engine
-from modapi.db.arxiv_tables import arXiv_submission_flag, tapir_nicknames
+from modapi.db import Session
+from modapi.tables.arxiv_tables import arXiv_submission_flag, tapir_nicknames
 from sqlalchemy.sql import and_, select
 from sqlalchemy import exc
 
@@ -18,14 +18,15 @@ router = APIRouter()
 async def put_flag(submission_id: int,
                    flag: schema.ModFlag,
                    user: User = Depends(auth_user)):
-    async with engine.begin() as conn:
+    async with Session() as session:
         try:
             stmt = arXiv_submission_flag.insert().values(
                 user_id=user.user_id,
                 flag=schema.modflag_to_int[flag.flag],
                 submission_id=submission_id,
             )
-            await conn.execute(stmt)
+            await session.execute(stmt)
+            await session.commit()
         except exc.IntegrityError:
             return JSONResponse(status_code=409,
                                 content={"msg": "Flag already exists"})
@@ -35,8 +36,8 @@ async def put_flag(submission_id: int,
 async def del_flag(submission_id: int,
                    user: User = Depends(auth_user)):
     # TODO check that the row actually gets deleted
-    async with engine.begin() as conn:
-        await conn.execute(
+    async with Session() as session:
+        await session.execute(
             arXiv_submission_flag.delete().where(
                 and_(
                     arXiv_submission_flag.c.submission_id == submission_id,
@@ -44,7 +45,7 @@ async def del_flag(submission_id: int,
                 )
             )
         )
-
+        await session.commit()
 
 @router.get("/flags", response_model=List[schema.ModFlagOut])
 async def flags(user: User = Depends(auth_user)):
@@ -62,8 +63,8 @@ async def flags(user: User = Depends(auth_user)):
         tapir_nicknames,
         arXiv_submission_flag.c.user_id == tapir_nicknames.c.user_id
     )
-    async with engine.connect() as conn:
-        res = await conn.execute(query)
+    async with Session() as session:
+        res = await session.execute(query)
         return [{'submission_id': row[0],
                  'updated': row[1],
                  'username': row[2]} for row in res]

@@ -9,8 +9,9 @@ SUB_ID_1 = 1137914
 def test_auth():
     res = requests.get(BASE_URL + "/holds")
     assert res.status_code == 401  # Should be auth protected
+
     
-def test_holds():
+def test_make():
     cookies = {'ARXIVNG_SESSION_ID': user_jwt(246231)} # Brandon, mod of q-bio.CB and q-bio.NC
     res = requests.get(
         BASE_URL + "/holds",
@@ -18,17 +19,16 @@ def test_holds():
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
-    assert res.json() is not None    
+    assert res.json() is not None
     pre_add_count = len(res.json())
 
     # add hold
-    res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold",
-                         json={'type': 'mod', 'reason':'discussion'},
+    res = requests.post(BASE_URL + f"/submission/{SUB_ID_1}/hold",
+                        json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
-
 
     res = requests.get(
         BASE_URL + "/holds",
@@ -36,12 +36,13 @@ def test_holds():
         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
-    assert len(res.json()) == pre_add_count +1
-
+    assert len(res.json()) == pre_add_count + 1
+    holds = res.json()
+    assert [str(SUB_ID_1), '246231', 'mod', 'discussion'] in holds
     
     # try to add duplicate hold
-    res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold",
-                         json={'type': 'mod', 'reason':'discussion'},
+    res = requests.post(BASE_URL + f"/submission/{SUB_ID_1}/hold",
+                        json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
@@ -70,8 +71,6 @@ def test_holds():
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count
-
-
 
 
 def test_multi_mod(): 
