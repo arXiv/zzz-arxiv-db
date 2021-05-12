@@ -24,7 +24,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-create_tables()
+#create_tables()
 
 fast_app = FastAPI()
 

@@ -36,8 +36,8 @@ def create_tables():
 
     This is a synchronous call"""
     from sqlalchemy import create_engine
-    import modapi.tables.arxiv_tables
+    import modapi.tables.arxiv_tables as arxiv_tables
     sync_url = config.db_url.replace('+aiomysql', '')
     sync_eng = create_engine(sync_url,
                              echo=config.echo_sql)
-    metadata.create_all(bind=sync_eng)
+    arxiv_tables.metadata.create_all(bind=sync_eng)

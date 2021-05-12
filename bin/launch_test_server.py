@@ -30,11 +30,10 @@ def launch_mysql(test_data, db_uri: Queue):
         import modapi.db as db
 
         db.engine = engine
-        db.metadata = metadata
 
-        import modapi.db.arxiv_tables  # this import must be after db and metadata created
-
-        metadata.create_all(engine)
+        import modapi.tables.arxiv_tables as arxiv_tables 
+        
+        arxiv_tables.metadata.create_all(engine)
         print("tables created")
 
         print("loading test data from file '{test_data}'...")

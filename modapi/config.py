@@ -33,6 +33,7 @@ echo_sql = bool(os.environ.get("ECHOSQL",False))
 """Sets SQLAlchemy to echo debugging"""
 
 jwt_secret = os.environ.get("JWT_SECRET", "not-set-" + secrets.token_urlsafe(16))
-"""NG JWT_SECRET from arxiv-auth login service.
+"""NG JWT_SECRET from arxiv-auth login service"""
 
-Extra from urlsafe for when misconfigured."""
+time_url = os.environ.get("TIMEURL", "https://arxiv.org/localtime")
+"""URL to use as source of publish times"""
