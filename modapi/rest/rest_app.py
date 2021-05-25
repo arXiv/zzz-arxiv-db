@@ -19,6 +19,7 @@ from .submissions.api import router as subs_router
 from .user import router as user_router
 from .audit import router as audit_router
 from .publish_time import router as time_router
+from .islocked import router as locked_router
 
 import logging
 
@@ -38,6 +39,7 @@ fast_app.add_middleware(
 
 fast_app.include_router(flags_router, tags=['Flags'])
 fast_app.include_router(subs_router, tags=['Submissions'])
+fast_app.include_router(locked_router, tags=['Submissions'])
 fast_app.include_router(status_router, tags=['Service Status'])
 fast_app.include_router(hold_router, tags=['Holds'])
 fast_app.include_router(user_router, tags=['User'])

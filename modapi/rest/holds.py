@@ -201,7 +201,9 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     arXiv_submission_hold_reason or legacy style holds.
 
     """
-
+    # Seems like we shouldn't do the call to mod2 in the db transaction
+    # TODO get the earliest_announce time for the submission
+    
     async with Session() as session:
         hold = await _hold_check(session, submission_id)
         if not hold:

@@ -35,5 +35,11 @@ echo_sql = bool(os.environ.get("ECHOSQL",False))
 jwt_secret = os.environ.get("JWT_SECRET", "not-set-" + secrets.token_urlsafe(16))
 """NG JWT_SECRET from arxiv-auth login service"""
 
-time_url = os.environ.get("TIMEURL", "https://arxiv.org/localtime")
+legacy_url_prefix = os.environ.get("LEGACY_URL_PREFIX", "https://arxiv.org")
+"""URL Prefix to use for calls to legacy system"""
+
+time_url = os.environ.get("TIMEURL", f"{legacy_url_prefix}/localtime")
 """URL to use as source of publish times"""
+
+earliest_announce_url = os.environ.get("EARLIEST_ANNOUNCE_URL", f"{legacy_url_prefix}/modapi/earliest_announce")
+"""URL to use for legacy earliest announcement service"""

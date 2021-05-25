@@ -1,7 +1,7 @@
 """Storage of soft locks on submissions
 """
 from asyncio import Semaphore
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Optional
 
 
 class Lock(NamedTuple):
@@ -65,3 +65,11 @@ async def unlock_for_sid(sid):
 async def current_locks():
     async with _semaphore:
         return _locks.copy()
+
+
+async def is_locked(sid) -> Optional[Lock]:
+    async with _semaphore:
+        if sid in _locks:
+            return _locks[sid].copy()
+        else:
+            return None

@@ -73,7 +73,6 @@ async def lock(sid, data):
 
 @sio.event
 async def unlock(sid, data):
-    sio.logger.error(data)
     err = _validate_id(data)
     if err:
         emsg = ", ".join(err)
@@ -95,24 +94,20 @@ async def unlock(sid, data):
 async def refresh(sid, data):
     """Useful for a client to request current locks"""
     current_locks = await lockstore.current_locks()
-
-    sio.logger.error(current_locks)
     for id, lck in current_locks.items():
         await sio.emit("lock", {"id": id, "username": lck.username}, to=sid)
 
 
-@sio.event
-async def connect(sid, env):
-    sio.logger.error(f"{__file__} CONNECTED {sid}")
-    # sio.logger.error(f"{__file__} ENV IS: {env}")
+# @sio.event
+# async def connect(sid, env):
+#     sio.logger.error(f"{__file__} CONNECTED {sid}")
+#     # sio.logger.error(f"{__file__} ENV IS: {env}")
 
 
 @sio.event
 async def disconnect(sid):
     to_unlock = await lockstore.unlock_for_sid(sid)
     await _send_unlocks(to_unlock)
-
-    sio.logger.error(f"disconnect {sid} and unlocked {len(to_unlock)}")
 
 
 async def _send_unlocks(to_unlock: List[int]):
