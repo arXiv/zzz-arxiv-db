@@ -143,6 +143,16 @@ async def hold(
                 },
             )
 
+        oldstat = status_by_number.get(exists["status"], exists["status"])
+        stmt = arXiv_admin_log.insert().values(
+            username=user.username,
+            program="modapi.rest",
+            command="Hold",
+            logtext=f"Status changed from '{oldstat}' to 'on hold', reason: {hold.reason}",
+            submission_id=submission_id,
+        )
+        res = await session.execute(stmt)
+
         if hold.reason == "reject-other":
             logtext = f'Reject for other reason: {hold.comment}'
         elif hold.reason == "other":
@@ -152,8 +162,8 @@ async def hold(
 
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
-            program="modapi.rest",
-            command="hold",
+            program="Admin::Queue",
+            command="admin comment",
             logtext=logtext,
             submission_id=submission_id,
         )
@@ -203,7 +213,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     """
     # Seems like we shouldn't do the call to mod2 in the db transaction
     # TODO get the earliest_announce time for the submission
-    
+
     async with Session() as session:
         hold = await _hold_check(session, submission_id)
         if not hold:
@@ -243,25 +253,32 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
         )
 
         if hold_type is not None:
-            logtext = f'release {hold_type} hold of reason "{reason}"'
+            logtext = f'Release: {hold_type} {reason} hold'
         else:
-            logtext = "release legacy hold"
+            logtext = "Release: legacy hold"
 
         stmt = arXiv_admin_log.insert().values(
             username=user.username,
             program="modapi.rest",
-            command="hold",
+            command="hold_release",
             logtext=logtext,
             submission_id=submission_id,
         )
         await session.execute(stmt)
-        await session.commit()
-        # TODO Handle sticky_status? Is this is about the user taking
-        # the sub to working and then resubmitting it?
+
+        stmt = arXiv_admin_log.insert().values(
+            username=user.username,
+            program="Admin::Queue",
+            command="admin comment",
+            logtext=logtext,
+            submission_id=submission_id,
+        )
+        await session.execute(stmt)
 
         # TODO do correct release time. Super important for produciton
         # See arXiv::Schema::Result::Submission.propert_release_from_hold()
-        return
+
+        await session.commit()
 
 
 @router.get(
@@ -298,7 +315,7 @@ async def holds(user: User = Depends(auth_user)):
                 SubmissionCategory.category.in_(cats),
                 and_(SubmissionCategoryProposal.category.in_(cats),
                      SubmissionCategoryProposal.proposal_status == 0)
-                ]
+            ]
             for archive in user.moderated_archives:
                 mod_ors.append(
                     SubmissionCategory.category.startswith(archive))
@@ -307,7 +324,7 @@ async def holds(user: User = Depends(auth_user)):
                 #     and_(SubmissionCategoryProposal.category.startswith(archive),
                 #          SubmissionCategoryProposal.proposal_status == 0))
 
-            stmt = stmt.filter(Submissions.type.in_(['new','rep','cross']))
+            stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
             stmt = stmt.filter(or_(*mod_ors))
 
         res = await session.execute(stmt)
@@ -359,3 +376,29 @@ async def _hold_check(session, submission_id: int):
         {"submission_id": submission_id},
     )
     return list(res)[0]
+
+
+status_by_number = {
+    # --- 'is_current' method statuses ( 0 - 4 )
+    0: "working",  # incomplete; not submitted
+    1: "submitted",
+    2: "on hold",
+    3: "unused",
+    4: "next",  # for tomorrow
+    # --- 'is_processing' method statuses (5 - 8)
+    5: "processing",
+    6: "needs_email",
+    7: "published",
+    8: "processing(submitting)",  # text extraction , etc
+    #--- removed or error
+    9: "removed",
+    10: "user deleted",
+    19: "error state",
+    # --- expired (files removed) status are the above +20, usual ones are:
+    20: 'deleted(working)',  # was working but expired
+    22: 'deleted(on hold)',
+    25: 'deleted(processing)',
+    27: 'deleted(published)',  # published and files expired
+    29: "deleted(removed)",
+    30: 'deleted(user deleted)'  # user deleted and files expired
+}
