@@ -5,6 +5,7 @@ db_url = os.environ.get('CLASSIC_DATABASE_URI', 'mysql+aiomysql://not-set-check-
 
 
 allow_origins = [
+    "https://mod.arxiv.org",
     "https://dev.arxiv.org",
     "http://dev.arxiv.org:8001",
     "https://services.dev.arxiv.org",
