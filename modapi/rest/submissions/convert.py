@@ -10,6 +10,9 @@ from modapi.rest import schema
 
 from modapi.userstore import to_name
 
+import logging
+log = logging.getLogger(__name__)
+
 
 def to_submission(sub: arxiv_models.Submissions, count) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
@@ -63,14 +66,19 @@ def make_classifier(sub: arxiv_models.Submissions):
         return []
 
     abs_clz = abs_clz[0]
-    if not abs_clz or not hasattr(abs_clz, "json"):
+    if not abs_clz or not hasattr(abs_clz, "json") or not abs_clz.json:
         return []
 
-    data = json.loads(abs_clz.json)
-    return [
-        {"category": row["category"], "score": row["probability"]}
-        for row in data["classifier"]
-    ]
+    try:
+        data = json.loads(abs_clz.json)
+        return [
+            {"category": row["category"], "score": row["probability"]}
+            for row in data["classifier"]
+        ]
+    except Exception as err:
+        log.error("could not decode classifier json for submission %s: %s",
+                  sub.submission_id, err)
+        return [{'error':'could not parse classifier json'}]
 
 
 def make_proposals(sub: arxiv_models.Submissions):
