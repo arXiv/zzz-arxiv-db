@@ -31,7 +31,7 @@ def to_submission(sub: arxiv_models.Submissions, count) -> schema.Submission:
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
     out["submitter_comments"] = sub.comments
-    out["comment_count"] = count
+    #out["comment_count"] = count
     return out
 
 
