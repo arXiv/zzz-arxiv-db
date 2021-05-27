@@ -41,7 +41,7 @@ def get_timepage():
         return JSONResponse(
             status_code=502,
             content={
-                "msg": f"failed to get arxiv.org localtime {resp.status_code}"
+                "msg": f"failed to get {time_url} status: {resp.status_code}"
             },
         )
     return resp

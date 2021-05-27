@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from sqlalchemy import select, or_, and_, func
+from sqlalchemy import select, or_, and_, func, literal
 from sqlalchemy.orm import joinedload
 
 from modapi.auth import auth_user, User
@@ -43,8 +43,7 @@ query_options = [
     joinedload(Submissions.submission_category),
     joinedload(Submissions.submitter).joinedload(TapirUsers.username),
     joinedload(Submissions.submitter)
-    .joinedload(TapirUsers.demographics)
-    .load_only("flag_suspect"),
+    .joinedload(TapirUsers.demographics).load_only("flag_suspect"),
     joinedload(Submissions.abs_classifier_data).load_only("json"),
     joinedload(Submissions.proposals),
     joinedload(Submissions.hold_reasons),
@@ -55,13 +54,9 @@ query_options = [
 def sub_query(user: User):
     stmt = (
         select(Submissions,
-               func.count(AdminLog.id).label('comment_count'))
-        .outerjoin(AdminLog,
-                   AdminLog.submission_id == Submissions.submission_id)
+               literal(0).label('comment_count'))
         .options(*query_options)
         .filter(Submissions.status.in_([1, 2, 4]))
-        .filter(AdminLog.command == 'admin comment')
-        .group_by(AdminLog.submission_id)
     )
 
     if user.is_moderator and not user.is_admin:
@@ -99,15 +94,13 @@ async def submission(submission_id: int, user: User = Depends(auth_user)):
     """Gets a submission"""
     async with Session() as session:
         stmt = (
-            select(Submissions, func.count(AdminLog.id).label('comment_count'))
+            select(Submissions,
+                   literal(0).label('comment_count'))
             .options(*query_options)
-            .outerjoin(AdminLog,
-                       AdminLog.submission_id == Submissions.submission_id)
-            .where(Submissions.submission_id == submission_id)
-            .group_by(AdminLog.submission_id)
+            .where(Submissions.submission_id == submission_id)            
         )
         res = await session.execute(stmt)
-
+        
         row = res.unique().fetchone()
         if row:
             return to_submission(row[0], row[1])
