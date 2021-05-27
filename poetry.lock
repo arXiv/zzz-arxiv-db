@@ -463,7 +463,7 @@ dev = ["pre-commit", "tox", "pytest-asyncio"]
 
 [[package]]
 name = "python-engineio"
-version = "4.0.1"
+version = "4.2.0"
 description = "Engine.IO server"
 category = "main"
 optional = false
@@ -475,7 +475,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.1.0"
+version = "5.3.0"
 description = "Socket.IO server"
 category = "main"
 optional = false
@@ -483,13 +483,21 @@ python-versions = "*"
 
 [package.dependencies]
 bidict = ">=0.21.0"
-python-engineio = ">=4"
+python-engineio = ">=4.1.0"
 requests = {version = ">=2.21.0", optional = true, markers = "extra == \"client\""}
 websocket-client = {version = ">=0.54.0", optional = true, markers = "extra == \"client\""}
 
 [package.extras]
 asyncio_client = ["aiohttp (>=3.4)", "websockets (>=7.0)"]
 client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
+
+[[package]]
+name = "pytz"
+version = "2021.1"
+description = "World timezone definitions, modern and historical"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "requests"
@@ -687,7 +695,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9d7bc911863fa6b433089e3f4276623fb9c8f1ccb66d6faf04dc78b7aac85de3"
+content-hash = "d8140245eb6e6109a67db288ea3826bb4930f2e2e88cae8a38c2907c01869c5e"
 
 [metadata.files]
 aiohttp = [
@@ -1027,12 +1035,16 @@ pytest-mock = [
     {file = "pytest_mock-3.5.1-py3-none-any.whl", hash = "sha256:379b391cfad22422ea2e252bdfc008edd08509029bcde3c25b2c0bd741e0424e"},
 ]
 python-engineio = [
-    {file = "python-engineio-4.0.1.tar.gz", hash = "sha256:bb575c1a3512b4b5d4706f3071d5cc36e592459e99a47d9a4b7faabeba941377"},
-    {file = "python_engineio-4.0.1-py2.py3-none-any.whl", hash = "sha256:759ec99d91b3d36b29596124c77ba7c063c7ab97685d318fb23a166d9a4b9187"},
+    {file = "python-engineio-4.2.0.tar.gz", hash = "sha256:4e97c1189c23923858f5bb6dc47cfcd915005383c3c039ff01c89f2c00d62077"},
+    {file = "python_engineio-4.2.0-py2.py3-none-any.whl", hash = "sha256:c6c119c2039fcb6f64d260211ca92c0c61b2b888a28678732a961f2aaebcc848"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.1.0.tar.gz", hash = "sha256:338cc29abb6f3ca14c88f1f8d05ed27c690df4648f62062b299f92625bbf7093"},
-    {file = "python_socketio-5.1.0-py2.py3-none-any.whl", hash = "sha256:8a7ed43bfdbbb266eb8a661a0c9648dc94bcd9689566ae3ee08bf98eca8987af"},
+    {file = "python-socketio-5.3.0.tar.gz", hash = "sha256:3dcc9785aaeef3a9eeb36c3818095662342744bdcdabd050fe697cdb826a1c2b"},
+    {file = "python_socketio-5.3.0-py2.py3-none-any.whl", hash = "sha256:d74314fd4241342c8a55c4f66d5cfea8f1a8fffd157af216c67e1c3a649a2444"},
+]
+pytz = [
+    {file = "pytz-2021.1-py2.py3-none-any.whl", hash = "sha256:eb10ce3e7736052ed3623d49975ce333bcd712c7bb19a58b9e2089d4057d0798"},
+    {file = "pytz-2021.1.tar.gz", hash = "sha256:83a4a90894bf38e243cf052c8b58f381bfe9a7a483f6a9cab140bc7f702ac4da"},
 ]
 requests = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},

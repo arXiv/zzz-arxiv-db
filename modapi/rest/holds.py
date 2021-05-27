@@ -7,12 +7,16 @@ The paths in this module are intended to replace the /modhold paths.
 """
 from enum import Enum
 from typing import Optional, Union, List
+from datetime import datetime
+import pytz
 
 from fastapi import APIRouter, Depends
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
 from modapi.db import Session
+from modapi.rest.earliest_announce import earliest_announce
+
 from modapi.tables.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
@@ -28,7 +32,7 @@ from modapi.tables.arxiv_models import (
 from pydantic import BaseModel, conlist
 from typing import Literal
 
-from sqlalchemy import select, or_, and_, text
+from sqlalchemy import select, or_, and_, text, null
 from sqlalchemy.orm import joinedload
 
 import logging
@@ -116,12 +120,14 @@ async def hold(
     async with Session() as session:
         exists = await _hold_check(session, submission_id)
         if not exists:
-            return JSONResponse(
-                status_code=httpstatus.HTTP_404_NOT_FOUND,
-                content={"msg": "submission not found"},
-            )
+            return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
+                                content={"msg": "submission not found"})
 
-        if exists and (exists["status"] == ON_HOLD or exists["reason"]):
+        if exists["is_locked"]:
+            return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
+                                content={"msg": f"{submission_id} is locked"})
+
+        if exists["status"] == ON_HOLD or exists["reason"]:
             # It is critical that mods (or admins ) cannot put a mod
             # hold on a submission that is already on hold. This is to
             # avoid a mod from changing a legacy hold to a mod-hold or
@@ -136,12 +142,8 @@ async def hold(
             )
 
         if not (exists["status"] == 1 or exists["status"] == 4):
-            return JSONResponse(
-                status_code=httpstatus.HTTP_409_CONFLICT,
-                content={
-                    "msg": "Can only put submissions in status 'submitted' or 'next'  to 'on hold'"
-                },
-            )
+            return JSONResponse(status_code=httpstatus.HTTP_409_CONFLICT,
+                                content={"msg": "Can only hold submissions in status 'submitted' or 'next'"})
 
         oldstat = status_by_number.get(exists["status"], exists["status"])
         stmt = arXiv_admin_log.insert().values(
@@ -179,7 +181,6 @@ async def hold(
         )
         await session.execute(stmt)
 
-        # TODO figure out if we need to set any datetimes on the submission row
         stmt = (
             arXiv_submissions.update()
             .values(status=ON_HOLD)
@@ -213,29 +214,25 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     """
     # Seems like we shouldn't do the call to mod2 in the db transaction
     # TODO get the earliest_announce time for the submission
+    anno_time = await earliest_announce(submission_id)
 
     async with Session() as session:
         hold = await _hold_check(session, submission_id)
         if not hold:
             return JSONResponse(
                 status_code=httpstatus.HTTP_404_NOT_FOUND,
-                content={"msg": f" submission {submission_id} not found"},
-            )
+                content={"msg": "submission not found"})
 
-        [status, reason, hold_user_id, hold_type] = hold
-        log.debug('hold_check was type: %s status: %s reason: %s',
-                  hold_type, status, reason)
+        [status, reason, hold_user_id, hold_type, submit_time, sticky_status, is_locked] = hold
 
-        if status != ON_HOLD:
-            return JSONResponse(
-                status_code=httpstatus.HTTP_409_CONFLICT,
-                content={"msg": f"{submission_id} is not on hold"},
-            )
-
+        if is_locked:
+            return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
+                                content={"msg": f"{submission_id} is locked"})
+        
         if not user.is_admin and user.is_moderator:
             if (hold_type != "mod" or reason is None):
                 return JSONResponse(
-                    status_code=httpstatus.HTTP_409_CONFLICT,
+                    status_code=httpstatus.HTTP_403_CONFLICT,
                     content={"msg": f"{submission_id} is not a mod hold"}
                 )
 
@@ -246,11 +243,35 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
                 )
             )
 
+        # Do correct release time and stick_status
+        # See arXiv::Schema::Result::Submission.propert_release_from_hold()
+
         await session.execute(
-            arXiv_submissions.update()
-            .values(status=SUBMITTED)
-            .where(arXiv_submissions.c.submission_id == submission_id)
-        )
+                arXiv_submissions.update()
+                .values(sticky_status=null())
+                .where(arXiv_submissions.c.submission_id == submission_id)
+            )
+
+        if submit_time:
+            await session.execute(
+                arXiv_submissions.update()
+                .values(status=SUBMITTED)
+                .where(arXiv_submissions.c.submission_id == submission_id)
+            )
+            now = datetime.now(tz=pytz.timezone('US/Eastern'))
+            if now > anno_time:
+                await session.execute(
+                    arXiv_submissions.update()
+                    .values(release_time=now)
+                    .where(arXiv_submissions.c.submission_id == submission_id)
+                )
+
+        else:
+            await session.execute(
+                arXiv_submissions.update()
+                .values(status=WORKING)
+                .where(arXiv_submissions.c.submission_id == submission_id)
+            )
 
         if hold_type is not None:
             logtext = f'Release: {hold_type} {reason} hold'
@@ -274,12 +295,8 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
             submission_id=submission_id,
         )
         await session.execute(stmt)
-
-        # TODO do correct release time. Super important for produciton
-        # See arXiv::Schema::Result::Submission.propert_release_from_hold()
-
         await session.commit()
-
+        return "success"
 
 @router.get(
     "/holds", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)]
@@ -349,6 +366,9 @@ ON_HOLD = 2
 SUBMITTED = 1
 """Submission table status for submitted and not on hold"""
 
+WORKING = 0
+"""Submission table status for not yet submitted"""
+
 
 async def _hold_check(session, submission_id: int):
     """Check for a hold.
@@ -361,13 +381,14 @@ async def _hold_check(session, submission_id: int):
     in the hold table. This is might be a legacy style hold.
 
     """
+
     res = await session.execute(text(
         # left join becasue we want to dstinguish between the
         # submission doesn't exist and submission is already on
         # mod-hold.
         """
         SELECT
-        s.status, shr.reason, shr.user_id, shr.type
+        s.status, shr.reason, shr.user_id, shr.type, s.submit_time, s.sticky_status, s.is_locked
         FROM
         arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
         ON s.submission_id = shr.submission_id
@@ -375,22 +396,26 @@ async def _hold_check(session, submission_id: int):
         """),
         {"submission_id": submission_id},
     )
-    return list(res)[0]
+    sub = res.first()
+    if sub:
+        [status, reason, hold_user_id, hold_type, submit_time, sticky_status, is_locked] = sub
+        log.debug('For sub %d hold_check was type: %s status: %s reason: %s sticky_status: %s is_locked: %s submit_time %s',
+                  submission_id, hold_type, status, reason, sticky_status, is_locked, submit_time)
+        return sub
+    else:
+        return None
 
 
 status_by_number = {
-    # --- 'is_current' method statuses ( 0 - 4 )
     0: "working",  # incomplete; not submitted
     1: "submitted",
     2: "on hold",
     3: "unused",
     4: "next",  # for tomorrow
-    # --- 'is_processing' method statuses (5 - 8)
     5: "processing",
     6: "needs_email",
     7: "published",
     8: "processing(submitting)",  # text extraction , etc
-    #--- removed or error
     9: "removed",
     10: "user deleted",
     19: "error state",

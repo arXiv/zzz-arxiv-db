@@ -45,8 +45,9 @@ async def earliest_announce(sub_id: int) -> Union[datetime, int]:
 
     Returns datetime if successful or an HTTP status if unsuccessful.
     """
-    with _session().get('{config.earliest_announce_url}/{sub_id}') as resp:
+    url = f'{config.earliest_announce_url}/{sub_id}'
+    with _session().get(url) as resp:
         if resp.status_code == 200:
-            return resp.json()[0]
+            return datetime.fromisoformat(resp.json()[0])
         else:
             return resp.status_code

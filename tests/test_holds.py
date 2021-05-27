@@ -17,6 +17,7 @@ def test_make():
         BASE_URL + "/holds",
         cookies = cookies
         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert res.json() is not None
@@ -27,6 +28,7 @@ def test_make():
                         json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
 
@@ -34,6 +36,7 @@ def test_make():
         BASE_URL + "/holds",
         cookies = cookies
         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count + 1
@@ -45,6 +48,7 @@ def test_make():
                         json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies
                         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code >= 300 or res.status_code < 200 # should not be success, it's a duplicate
     
@@ -52,6 +56,7 @@ def test_make():
         BASE_URL + "/holds",
         cookies = cookies
         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count + 1
@@ -60,7 +65,7 @@ def test_make():
     # release hold
     res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold/release" ,
                          cookies = cookies )
-    body = res.content
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code >= 200 and res.status_code < 300
 
@@ -68,6 +73,8 @@ def test_make():
         BASE_URL + "/holds",
         cookies = cookies
         )
+
+    print(res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count
@@ -79,6 +86,7 @@ def test_multi_mod():
         BASE_URL + "/holds",
         cookies = cookies_mod_a
         )
+    print(res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert res.json() is not None    
@@ -89,6 +97,8 @@ def test_multi_mod():
                          json={'type': 'mod', 'reason':'discussion'},
                         cookies = cookies_mod_a
                         )
+    print( res.json())
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
 
@@ -97,6 +107,7 @@ def test_multi_mod():
         BASE_URL + "/holds",
         cookies = cookies_mod_a
         )
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count +1  # Hold should have been added
@@ -105,6 +116,7 @@ def test_multi_mod():
     cookies_mod_b = {'ARXIVNG_SESSION_ID': user_jwt(246232)} 
     res = requests.post( BASE_URL + f"/submission/{SUB_ID_1}/hold/release" ,
                          cookies = cookies_mod_b )
+    print(res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code >= 200 and res.status_code < 300
 
@@ -112,6 +124,28 @@ def test_multi_mod():
         BASE_URL + "/holds",
         cookies = cookies_mod_a
         )
+
+    print( res.json())
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count
+
+def test_locked():
+    cookies_mod_a = {'ARXIVNG_SESSION_ID': user_jwt(246231)} # Brandon
+    
+    # add hold
+    sub_locked=100430
+    res = requests.post( BASE_URL + f"/submission/{sub_locked}/hold",
+                         json={'type': 'mod', 'reason':'discussion'},
+                        cookies = cookies_mod_a
+                        )
+    print( res.json())
+    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
+    assert res.status_code == 403 #locked is forbidden
+
+    res = requests.post( BASE_URL + f"/submission/{sub_locked}/hold/release",
+                        cookies = cookies_mod_a
+                        )
+    print( res.json())
+    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
+    assert res.status_code == 403 #locked is forbidden
