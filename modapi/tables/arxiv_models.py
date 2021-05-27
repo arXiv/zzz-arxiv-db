@@ -1367,7 +1367,11 @@ class Submissions(Base):
     proposals = relationship('SubmissionCategoryProposal')
     hold_reasons = relationship('SubmissionHoldReason')
     flags = relationship('SubmissionFlag')
-    
+    admin_log = relationship('AdminLog',
+                             primaryjoin='AdminLog.submission_id == Submissions.submission_id',
+                             foreign_keys='AdminLog.submission_id',
+                             collection_class=list)
+
     @property
     def primary_classification(self) -> Optional[str]:
         """Get the primary classification for this submission."""

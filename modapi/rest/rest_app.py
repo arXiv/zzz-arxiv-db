@@ -15,7 +15,7 @@ from ..db import create_tables, Session
 from .flags import router as flags_router
 from .holds import router as hold_router
 from .status import router as status_router
-from .submissions.api import router as subs_router
+from .submissions.routes import router as subs_router
 from .user import router as user_router
 from .audit import router as audit_router
 from .publish_time import router as time_router

@@ -14,19 +14,12 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def to_submission(sub: arxiv_models.Submissions, count) -> schema.Submission:
+def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
     out = instance_dict(sub)
-    # for key in list(out.keys()):
-    #     if key.startswith('_'):
-    #         del out[key]
-
-    # these have to be done before instance_dict
-    # because that somehow messes up SQLALCHEMY ORM
     cats = make_categories(sub)
     name = to_name(sub.submitter.first_name, sub.submitter.last_name)
     suspect = _suspect(sub)
-
     out["submitter"] = instance_dict(sub.submitter)
     out["submitter"]["is_suspect"] = suspect
     out["submitter"]["name"] = name
@@ -34,7 +27,7 @@ def to_submission(sub: arxiv_models.Submissions, count) -> schema.Submission:
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
     out["submitter_comments"] = sub.comments
-    #out["comment_count"] = count
+    out["comment_count"] = len([lg for lg in sub.admin_log if lg.command == 'admin comment'])
     return out
 
 

@@ -47,18 +47,17 @@ query_options = [
     joinedload(Submissions.abs_classifier_data).load_only("json"),
     joinedload(Submissions.proposals),
     joinedload(Submissions.hold_reasons),
+    joinedload(Submissions.admin_log).load_only(AdminLog.id, AdminLog.command),
     joinedload(Submissions.flags),
 ]
 
 
-def sub_query(user: User):
+def _query(user: User):
     stmt = (
-        select(Submissions,
-               literal(0).label('comment_count'))
+        select(Submissions)
         .options(*query_options)
         .filter(Submissions.status.in_([1, 2, 4]))
     )
-
     if user.is_moderator and not user.is_admin:
         stmt = stmt.outerjoin(Submissions.submission_category)
         stmt = stmt.outerjoin(SubmissionCategory.arXiv_category_def)
@@ -84,26 +83,23 @@ def sub_query(user: User):
 async def submissions(user: User = Depends(auth_user)):
     """Get all submissions for moderator or admin"""
     async with Session() as session:
-        res = await session.execute(sub_query(user))
+        res = await session.execute(_query(user))
         rows = res.unique().all()
-        return [to_submission(row[0], row[1]) for row in rows]
+        return [to_submission(row[0]) for row in rows]
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
 async def submission(submission_id: int, user: User = Depends(auth_user)):
     """Gets a submission"""
     async with Session() as session:
-        stmt = (
-            select(Submissions,
-                   literal(0).label('comment_count'))
+        res = await session.execute(
+            select(Submissions)
             .options(*query_options)
-            .where(Submissions.submission_id == submission_id)            
+            .where(Submissions.submission_id == submission_id)
         )
-        res = await session.execute(stmt)
-        
         row = res.unique().fetchone()
         if row:
-            return to_submission(row[0], row[1])
+            return to_submission(row[0])
         else:
             return JSONResponse(
                 status_code=404,
