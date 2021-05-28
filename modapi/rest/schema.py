@@ -144,11 +144,11 @@ ModFlagLiterals = Literal["checkmark"]
 modflag_to_int = {"checkmark": 1}
 
 
-class ModFlag(OrmBaseModel):
+class Flag(OrmBaseModel):
     flag: ModFlagLiterals
 
 
-class ModFlagOut(OrmBaseModel):
+class FlagOut(OrmBaseModel):
     username: str
     updated: datetime
     submission_id: int
