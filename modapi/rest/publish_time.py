@@ -5,7 +5,7 @@ from wsgiref.handlers import format_date_time
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 from modapi.auth import User, auth_user
-from modapi.config import time_url
+from modapi.config import config
 from datetime import datetime, timezone
 import requests
 
@@ -34,7 +34,7 @@ cache = Times(arxiv_tz="",
 
 def get_timepage():
     resp = requests.request(
-        method="GET", url=time_url,
+        method="GET", url=config.time_url,
         headers={'Accept': 'application/json'}
     )
     if resp.status_code != 200:

@@ -3,7 +3,8 @@ from fastapi import Cookie, Depends, Header, HTTPException
 import jwt
 
 import modapi.userstore as userstore
-import modapi.config as config
+from modapi.config import config
+
 
 from pydantic import BaseModel
 

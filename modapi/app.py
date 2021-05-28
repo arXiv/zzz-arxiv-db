@@ -2,7 +2,7 @@ import socketio
 
 from .rest.rest_app import fast_app
 from .collab.collab_app import sio
-import modapi.config as config
+from modapi.config import config
 
 # Avoid taking over the fast_app root by setting the socketio_path
 # socket.io client path will need to be set in the JS

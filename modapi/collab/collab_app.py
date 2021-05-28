@@ -19,14 +19,14 @@ from typing import List
 import socketio
 
 import modapi.collab.lockstore as lockstore
-from modapi.config import allow_origins, debug
+from modapi.config import config
 
 
 sio = socketio.AsyncServer(
     async_mode="asgi",
-    cors_allowed_origins=allow_origins,
-    logger=debug,
-    engineio_logger=debug,
+    cors_allowed_origins=config.allow_origins,
+    logger=config.collab_debug,
+    engineio_logger=config.collab_debug
 )
 
 

@@ -4,7 +4,7 @@ from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import modapi.config as config
+from modapi.config import config
 
 import logging
 log = logging.getLogger(__name__)
@@ -13,8 +13,7 @@ Base = declarative_base()
 """Global declarative base for use in SQLAlchemy ORM class
 definitions"""
 
-engine = create_async_engine(config.db_url,
-                             echo=config.echo_sql)                            
+engine = create_async_engine(config.classic_db_uri, echo=config.echo_sql)
 """An async engine for use by the modapi"""
 
 
@@ -37,7 +36,7 @@ def create_tables():
     This is a synchronous call"""
     from sqlalchemy import create_engine
     import modapi.tables.arxiv_tables as arxiv_tables
-    sync_url = config.db_url.replace('+aiomysql', '')
+    sync_url = config.classic_db_uri.replace('+aiomysql', '')
     sync_eng = create_engine(sync_url,
                              echo=config.echo_sql)
     arxiv_tables.metadata.create_all(bind=sync_eng)

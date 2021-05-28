@@ -14,7 +14,7 @@ Why not just do have the info need for this in python?
 Answer: We don't want two sources of data for holidays."""
 
 from typing import Union
-import modapi.config as config
+from modapi.config import config
 from datetime import datetime
 
 import requests
