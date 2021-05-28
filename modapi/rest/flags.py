@@ -2,9 +2,12 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+
 from modapi.db import Session
 from modapi.tables.arxiv_tables import arXiv_submission_flag, tapir_nicknames
-from modapi.tables.arxiv_models import SubmissionFlag, TapirNicknames, TapirUsers
+from modapi.tables.arxiv_models import SubmissionFlag, TapirNicknames, TapirUsers, Submissions
+from modapi.rest.submission_filters import with_queue_filters
+
 from sqlalchemy.sql import and_, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.attributes import instance_dict
@@ -17,13 +20,17 @@ from . import schema
 router = APIRouter()
 
 query_options = [
-    joinedload(SubmissionFlag.user).joinedload(TapirUsers.username).load_only("nickname")
+    joinedload(SubmissionFlag.user)
+    .joinedload(TapirUsers.username)
+    .load_only("nickname")
 ]
+
 
 @router.put("/submission/{submission_id}/flag")
 async def put_flag(submission_id: int,
                    flag: schema.Flag,
                    user: User = Depends(auth_user)):
+    """Puts a new flag on a submission"""
     async with Session() as session:
         try:
             stmt = arXiv_submission_flag.insert().values(
@@ -55,35 +62,33 @@ async def del_flag(submission_id: int,
         await session.commit()
         return 1
 
+
 @router.get("/flags", response_model=List[schema.FlagOut])
 async def flags(user: User = Depends(auth_user)):
-    """Gets list of submissions with checkmarks"""
+    """Gets list of submissions with flags.
 
-    # TODO filter to just the checkmarks for the submisions
-    # in the moderator's queues.
-    query = select(
-        [
-            arXiv_submission_flag.c.submission_id,
-            arXiv_submission_flag.c.updated,
-            tapir_nicknames.c.nickname,
-        ]
-    ).select_from(arXiv_submission_flag).join(
-        tapir_nicknames,
-        arXiv_submission_flag.c.user_id == tapir_nicknames.c.user_id
-    )
+    This is filtered to just flags on submissions a that mod or admin would
+    have in thier queue.    
+    """
     async with Session() as session:
-        res = await session.execute(query)
-        return [{'submission_id': row[0],
-                 'updated': row[1],
-                 'username': row[2]} for row in res]
+        query = with_queue_filters(user, select(SubmissionFlag)
+                                   .options(*query_options)
+                                   .join(Submissions))
+        res = (await session.execute(query)).scalars().all()
+        return list(map(_convert, res))
 
 
-@router.get("/submission/{submission_id}/flag",  response_model=List[schema.FlagOut])
+@router.get("/submission/{submission_id}/flag", response_model=List[schema.FlagOut])
 async def get_flag(submission_id: int, user: User = Depends(auth_user)):
     """Get the flags for a single submission.
 
     Returns an empty list if there are no flags on the submission or
     the submission does not exist.
+
+    This will return the flags regardless of the state of the
+    submission.  It will return flags to moderators for papers
+    outside their queue to support single submission view in the case
+    the categories on the submision changed.
     """
     async with Session() as session:
         query = (
