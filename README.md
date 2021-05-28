@@ -10,9 +10,11 @@ An API for use by moderation and administration tools
     source ./modapi-venv/bin/activate
     pip install poetry
     poetry install
-    DEBUG=True CLASSIC_DATABASE_URI='mysql://user:pw@host/arXiv' JWT_SECRET=yackyack python -m modapi.app
+    DEBUG=True CLASSIC_DB_URI='mysql://user:pw@host/arXiv' JWT_SECRET=yackyack python -m modapi.app
     chrome http://localhost:8000/docs
     
+Config values will be read from environment variables or from the file env.
+
 # To run tests
 I had problems using the fast-api test client so test are run like this:
 

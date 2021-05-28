@@ -50,15 +50,17 @@ def user_jwt(user_id: int) -> str:
         config.jwt_secret,
     )
 
-
-async def mod_header_user(modkey: Optional[str] = Header(None)
-                          ) -> Optional[User]:
-    """Gets the modkey header that is used for testing"""
-    if not modkey or not modkey.startswith('mod-'):
+if config.enable_modkey:
+    async def mod_header_user(modkey: Optional[str] = Header(None)
+                              ) -> Optional[User]:
+        """Gets the modkey header that is used for testing"""
+        if not config.enable_modkey or not modkey or not modkey.startswith('mod-'):
+            return None
+        else:
+            return await userstore.getuser_by_nick(modkey.lstrip('mod-'))
+else:
+    async def mod_header_user() -> Optional[User]:
         return None
-    else:
-        return await userstore.getuser_by_nick(modkey.lstrip('mod-'))
-
 
 async def ng_jwt_cookie(
     ARXIVNG_SESSION_ID: Optional[str] = Cookie(None),

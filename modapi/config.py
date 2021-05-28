@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     earliest_announce_url: str = f"{legacy_url_prefix}/modapi/earliest_announce"
     """URL to use for legacy earliest announcement service"""
 
+    enable_modkey: bool = False
+    """Enable access via modkey. Do not run in production"""
+
+    collab_updates: bool = True
+    """Allows disabling of change updates sent via socketio"""
+
     allow_origins = [
         "https://mod.arxiv.org",
         "https://dev.arxiv.org",
@@ -58,6 +64,8 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = "env"
+        """File to read environment from"""
+
         case_sensitive = False
                 
 
