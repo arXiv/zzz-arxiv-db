@@ -47,7 +47,7 @@ def user_jwt(user_id: int) -> str:
             user_id=user_id, session_id="fakesessionid",
             nonce="peaceout", expires="0"
         ),
-        config.jwt_secret,
+        config.jwt_secret.get_secret_value(),
     )
 
 if config.enable_modkey:
@@ -121,7 +121,7 @@ async def auth(rawauth: Optional[RawAuth]
     try:
         if not rawauth:
             return None
-        data = decode(rawauth["rawjwt"], config.jwt_secret)
+        data = decode(rawauth["rawjwt"], config.jwt_secret.get_secret_value())
         return Auth(**data)
     except Exception as ex:
         raise HTTPException(
