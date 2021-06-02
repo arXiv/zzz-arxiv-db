@@ -18,11 +18,10 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
     out = instance_dict(sub)
     cats = make_categories(sub)
-    name = to_name(sub.submitter.first_name, sub.submitter.last_name)
     suspect = _suspect(sub)
     out["submitter"] = instance_dict(sub.submitter)
     out["submitter"]["is_suspect"] = suspect
-    out["submitter"]["name"] = name
+    out["submitter"]["name"] = sub.submitter_name
     out["submission_category"] = instance_dict(sub.submission_category)
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
