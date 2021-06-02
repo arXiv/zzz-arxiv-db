@@ -41,17 +41,16 @@ Then open a browser to http://localhost:8000/docs
 # Deploy to arxiv-develop in GCP
 Make sure the values in deploy/dev_env_values.txt are resonable. 
 Setup gcloud and then run:
-  
+
+    source ./deploy/dev-config.sh
     ./deploy/build-and-push.sh
 
     # Lots of output
     # last line:
     # latest: digest: sha256:1908...latest.hash...eece size: 3677
-    # copy the latest hash
+    # script puts has in TAG.txt
     
-    cd deploy
-    . dev-config.sh
-    ./update-instance-group.sh gcr.io/arxiv-development/modapi@sha256:1908...lastest.hash...eece
+    .deploy/update-instance-group.sh $(cat TAG.txt)
     
 # Testing with data from GCP
 Testing modAPI on your develoopment laptop with data from GCP and the arxiv-check UI is tricky.

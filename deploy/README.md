@@ -12,3 +12,10 @@ To deploy to dev:
 
 5. Figure out which docker image you want to deploy, go to GCP container registry and get it's hash URL
 ./update-instance-group.sh gcr.io/arxiv-development/modapi@sha256:088eTHE-INSTANCE-HASHf404a
+
+# On future deploys
+
+    source ./deploy/dev-config.sh
+    ./deploy/build-and-push.sh
+    ./deploy/update-instance-group.sh $(cat TAG.txt)
+    
