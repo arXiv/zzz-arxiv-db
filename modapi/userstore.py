@@ -1,16 +1,10 @@
 """Caching of arXiv mod and admin users"""
-from pprint import pformat
-
 from typing import Optional, Dict, List
-
 from sqlalchemy import text
+from pydantic import BaseModel
 
 import modapi.db as db
 from modapi.config import config
-
-from modapi.tables.arxiv_tables import tapir_nicknames, tapir_users, arXiv_moderators
-
-from pydantic import BaseModel
 
 import logging
 log = logging.getLogger(__name__)
@@ -31,6 +25,15 @@ class User(BaseModel):
 
 
 _users: Dict[int, User] = {}
+
+
+def invalidate_user(user_id: int) -> bool:
+    """Remove user id from cache. Returns bool if id was in cache"""
+    if user_id in _users:
+        del _users[user_id]
+        return True
+    else:
+        return False
 
 
 async def getuser(user_id: int) -> Optional[User]:
@@ -56,7 +59,6 @@ async def getuser_by_nick(nick: str) -> Optional[User]:
         return None
 
     user = await _getfromdb_by_nick(nick)
-
     if user:
         _users[user.user_id] = user
         return user
@@ -114,10 +116,8 @@ async def _getfromdb(user_id: int) -> Optional[User]:
         # archive like categories like hep-ph
         cats.extend([row['arch'] for row in mod_rs
                      if row['arch'] and not row['cat'] and row['definitive']])
-
         archives = [row['arch'] for row in mod_rs
                     if row['arch'] and not row['cat'] and not row['definitive']]
-
         ur = User(user_id=user_id,
                   name=to_name(
                       bytes.fromhex(rs[0]['first_name']).decode('utf-8'),

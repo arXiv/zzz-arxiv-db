@@ -33,7 +33,7 @@ def test_holds():
     assert 'name' in user and user['name'] == "Brandon Barker"
     assert 'is_moderator' in user and user['is_moderator']
     assert 'is_admin' in user
-    assert 'moderated_archives' in user
-    assert 'moderated_categories' in user
+    assert user['moderated_archives'] == ['q-bio']
+    assert user['moderated_categories'] == ['q-bio.CB', 'q-bio.NC']
     
 

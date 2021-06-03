@@ -62,7 +62,6 @@ def test_cross():
     assert res.status_code == 200
     assert res.json() is not None
     sub = res.json()
-    __import__("pdb").set_trace()
     assert sub["type"] == 'cross'
     new_cross = 'hep-ph'
     assert sub["categories"]["new_crosses"] == [new_cross]
