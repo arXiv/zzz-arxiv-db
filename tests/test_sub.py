@@ -46,7 +46,28 @@ def test_sub():
 
     assert "classifier_scores" in sub["categories"]
     assert sub["categories"]["classifier_scores"]
-    assert sub["comment_count"] 
+    assert sub["comment_count"]
+
+    assert sub["categories"]["new_crosses"] == []
+    assert sub["categories"]["submission"]["secondary"] == []
+    assert sub["categories"]["submission"]["primary"] == 'q-bio.CB'
+
+
+def test_cross():
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = requests.get(BASE_URL + f"/submission/3400", cookies=cookies)
+    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
+    assert res.status_code == 200
+    assert res.json() is not None
+    sub = res.json()
+    __import__("pdb").set_trace()
+    assert sub["type"] == 'cross'
+    new_cross = 'hep-ph'
+    assert sub["categories"]["new_crosses"] == [new_cross]
+    assert new_cross not in sub["categories"]["submission"]["secondary"]
+    assert sub["categories"]["submission"]["secondary"] == ['cs.DD']
 
 
 def test_not_found():

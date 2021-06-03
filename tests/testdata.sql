@@ -38,6 +38,10 @@ VALUES(
 '{"classifier":[{"category":"hep-ph","probability":0.97},{"category":"hep-ex","probability":0.65},{"category":"hep-th","probability":0.02},{"category":"nucl-ex","probability":0.01},{"category":"nucl-th","probability":0.01}],"service":"fb-abs"}',
 '2021-04-13 12:49:38', 'success', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
 
+INSERT INTO arXiv_admin_log
+(submission_id, username, program, command, logtext)
+VALUES
+(1137914, 'bbarker', 'Admin::Queue', 'admin comment', 'test comment')
 
 INSERT INTO `arXiv_submissions`
 (`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
@@ -99,6 +103,21 @@ VALUES (1137934,'cs.LG',1,0);
 INSERT INTO arXiv_submission_category_proposal
 ( proposal_id, submission_id, category, is_primary, proposal_status, user_id, updated            , proposal_comment_id, response_comment_id)
 values(      212475,       1137934, 'hep-ph' ,          0,               0,   20584, '2021-06-02 13:27:49',            21317484,                NULL);
+
+-- a cross submission
+-- it's a little fake because it doens't have a paper with it
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
+(3400,NULL,NULL,NULL,1,1,1,1,5,246231,'Brandon Barker','beb82@cornell.edu','2015-11-16 19:58:40','2015-11-17 14:15:41', 1, NULL,0,NULL,NULL,1502662,'pdftex','',0,0,'Second timeout test case','Brandon barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Second timeout test case','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'cross',0,0,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/extraction_timeout1_1137932.tar.gz',NULL,0,NULL);
+
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
+VALUES
+(3400,'cs.LG',1,1),
+(3400,'cs.DD',0,1),
+(3400,'hep-ph',0,0);
+
 
 LOCK TABLES `arXiv_categories` WRITE;
 

@@ -39,11 +39,9 @@ def _suspect(sub: arxiv_models.Submissions) -> bool:
 
 def make_categories(sub: arxiv_models.Submissions):
     """Makes a schema.Categories object"""
-    # ex {score: 1.2, category: 'q-fin.GN' }
-    # acd = [{'score': ]
     return dict(
         classifier_scores=make_classifier(sub),
-        new_crosses=[],  # TODO
+        new_crosses=sub.new_crosses,
         proposals=make_proposals(sub),
         submission=dict(
             primary=sub.primary_classification,
@@ -87,14 +85,6 @@ def convert_prop(prop: arxiv_models.SubmissionCategoryProposal):
     out["is_system_proposal"] = False  # TODO
     out["type"] = "primary" if prop.is_primary else "secondary"
     return out
-
-
-def make_comment(comment: arxiv_models.AdminLog):
-    ...
-
-
-def commenter(nick: arxiv_models.TapirNicknames):
-    ...
 
 
 status_by_number = {
