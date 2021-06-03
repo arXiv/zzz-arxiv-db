@@ -6,6 +6,7 @@ from typing import Optional, Dict, List
 from sqlalchemy import text
 
 import modapi.db as db
+from modapi.config import config
 
 from modapi.tables.arxiv_tables import tapir_nicknames, tapir_users, arXiv_moderators
 
@@ -13,6 +14,8 @@ from pydantic import BaseModel
 
 import logging
 log = logging.getLogger(__name__)
+if config.debug:
+    log.setLevel(logging.DEBUG)
 
 
 class User(BaseModel):
@@ -22,7 +25,8 @@ class User(BaseModel):
     username: str
     is_moderator: bool = False
     is_admin: bool = False
-    moderated_categories: List[str] = [] # pydantic handles default list correctly
+    # pydantic handles default list correctly
+    moderated_categories: List[str] = []
     moderated_archives: List[str] = []
 
 
@@ -30,10 +34,10 @@ _users: Dict[int, User] = {}
 
 
 async def getuser(user_id: int) -> Optional[User]:
-    """Gets a user by user_id"""    
+    """Gets a user by user_id"""
     if user_id in _users:
         return _users[user_id]
-    
+
     user = await _getfromdb(user_id)
     if user:
         _users[user_id] = user
@@ -81,42 +85,47 @@ def to_name(first_name, last_name):
 
 
 async def _getfromdb(user_id: int) -> Optional[User]:
-    query = """
+    user_query = """
     SELECT 
     hex(tapir_users.first_name) as first_name,
     hex(tapir_users.last_name) as last_name,
-    tapir_nicknames.nickname, tapir_users.flag_edit_users, 
-    arXiv_moderators.archive, arXiv_moderators.subject_class 
+    tapir_nicknames.nickname, tapir_users.flag_edit_users
     FROM tapir_users
     JOIN tapir_nicknames ON tapir_users.user_id = tapir_nicknames.user_id
-    LEFT JOIN arXiv_moderators ON tapir_users.user_id = arXiv_moderators.user_id
     WHERE tapir_users.user_id = :userid"""
 
+    # Using definitive to distinguish categories from archives
+    cat_mod_query = """
+    SELECT
+    m.archive as 'arch', m.subject_class as 'cat', c.definitive as 'definitive'
+    FROM arXiv_moderators AS m
+    JOIN arXiv_categories AS c ON  m.archive = c.archive AND m.subject_class = c.subject_class
+    WHERE user_id = :userid"""
+
     async with db.Session() as session:
-        rs = list(await session.execute(text(query), {"userid": user_id}))
+        rs = list(await session.execute(text(user_query), {"userid": user_id}))
         if not rs:
             return None
 
-        if log.isEnabledFor(logging.DEBUG):
-            log.debug("userstore result: %s", pformat(rs))
+        mod_rs = list(await session.execute(text(cat_mod_query), {"userid": user_id}))
+        # normal categories like cs.LG
+        cats = [f"{row['arch']}.{row['cat']}"
+                for row in mod_rs if row['arch'] and row['cat']]
+        # archive like categories like hep-ph
+        cats.extend([row['arch'] for row in mod_rs
+                     if row['arch'] and not row['cat'] and row['definitive']])
 
-        arch=4
-        cat=5
-        cats = [f"{row[arch]}.{row[cat]}"
-                for row in rs if row[arch] and row[cat]]
-        archives = [row[arch] for row in rs if row[arch] and not row[cat]]
+        archives = [row['arch'] for row in mod_rs
+                    if row['arch'] and not row['cat'] and not row['definitive']]
 
-        values = {
-            'user_id': user_id,
-            'name': to_name(
-                bytes.fromhex(rs[0]['first_name']).decode('utf-8'),
-                bytes.fromhex(rs[0]['last_name']).decode('utf-8')
-            ),
-            'username': rs[0]['nickname'],
-            'is_admin': bool(rs[0]['flag_edit_users']),
-            'is_moderator': bool(cats or archives),
-            'moderated_categories': cats,
-            'moderated_archives':  archives
-        }
-
-        return User(**values)
+        ur = User(user_id=user_id,
+                  name=to_name(
+                      bytes.fromhex(rs[0]['first_name']).decode('utf-8'),
+                      bytes.fromhex(rs[0]['last_name']).decode('utf-8')),
+                  username=rs[0]['nickname'],
+                  is_admin=bool(rs[0]['flag_edit_users']),
+                  is_moderator=bool(cats or archives),
+                  moderated_categories=cats,
+                  moderated_archives=archives)
+        log.debug("User: %s", ur)
+        return ur

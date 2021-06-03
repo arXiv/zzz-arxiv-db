@@ -11,6 +11,9 @@ from pydantic import BaseModel
 import logging
 log = logging.getLogger(__name__)
 
+if config.debug:
+    log.setLevel(logging.DEBUG)
+
 User = userstore.User
 
 
@@ -153,7 +156,10 @@ async def auth_user(auth: Optional[Auth] = Depends(auth),
             else:
                 log.debug("User %d is not in userstore", auth.user_id)
     except Exception as ex:
-        # raise HTTPException(status_code=401,
-        # detail="Unauthorized a_u_e") from ex
-        raise ex
-    raise HTTPException(status_code=401, detail="Unauthorized a_u")
+        if config.debug:
+            raise ex
+        else:
+            raise HTTPException(status_code=401,
+                                detail="Unauthorized a_u_e") from ex
+    else:
+        raise HTTPException(status_code=401, detail="Unauthorized a_u")

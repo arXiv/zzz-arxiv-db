@@ -8,6 +8,8 @@ from modapi.config import config
 # socket.io client path will need to be set in the JS
 socketio_path = "/ws"
 
+import logging
+logging.basicConfig()
 
 app = socketio.ASGIApp(
     sio,

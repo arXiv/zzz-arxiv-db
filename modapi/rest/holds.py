@@ -266,9 +266,12 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user)):
     arXiv_submission_hold_reason or legacy style holds.
 
     """
-    # Seems like we shouldn't do the call to mod2 in the db transaction
-    # TODO get the earliest_announce time for the submission
+    # TODO Is a 502 the rirght thing to do here?
+    # It would be unfortunate to prevent mod work due to arxiv.org/localtime being down
     anno_time = await earliest_announce(submission_id)
+    if not isinstance(anno_time, datetime):
+        return JSONResponse(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
+                            content={"msg":"upstream server resp HTTP {anno_time} for earliest_announce time"})
 
     async with Session() as session:
         hold = await _hold_check(session, submission_id)
