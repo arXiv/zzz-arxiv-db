@@ -1,10 +1,11 @@
 from typing import Optional, Literal
 from fastapi import Cookie, Depends, Header, HTTPException
 import jwt
+from sqlalchemy.orm import Session
 
 import modapi.userstore as userstore
 from modapi.config import config
-
+from modapi.db import get_db
 
 from pydantic import BaseModel
 
@@ -54,16 +55,18 @@ def user_jwt(user_id: int) -> str:
     )
 
 if config.enable_modkey:
-    async def mod_header_user(modkey: Optional[str] = Header(None)
+    async def mod_header_user(modkey: Optional[str] = Header(None),
+                              db: Session = Depends(get_db)
                               ) -> Optional[User]:
         """Gets the modkey header that is used for testing"""
         if not config.enable_modkey or not modkey or not modkey.startswith('mod-'):
             return None
         else:
-            return await userstore.getuser_by_nick(modkey.lstrip('mod-'))
+            return await userstore.getuser_by_nick(modkey.lstrip('mod-'), db)
 else:
     async def mod_header_user() -> Optional[User]:
         return None
+
 
 async def ng_jwt_cookie(
     ARXIVNG_SESSION_ID: Optional[str] = Cookie(None),
@@ -134,7 +137,8 @@ async def auth(rawauth: Optional[RawAuth]
 
 
 async def auth_user(auth: Optional[Auth] = Depends(auth),
-                    mod: Optional[User] = Depends(mod_header_user)
+                    mod: Optional[User] = Depends(mod_header_user),
+                    db: Session = Depends(get_db)
                     ) -> User:
     """Check authentication, ensure mod or admin, and gets a User object.
 
@@ -146,7 +150,7 @@ async def auth_user(auth: Optional[Auth] = Depends(auth),
             return mod
 
         if auth and auth.user_id:
-            user = await userstore.getuser(auth.user_id)
+            user = await userstore.getuser(auth.user_id, db)
             if user:
                 if user.user_id and (user.is_admin or user.is_moderator):
                     return user

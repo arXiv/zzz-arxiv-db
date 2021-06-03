@@ -9,15 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from modapi.config import config
 from modapi.change_notification.db_changes import periodic_check, Changes
 from modapi.collab.collab_app import send_changes
-
-from ..db import Session
+from modapi.db import get_db
 
 from .flags import router as flags_router
 from .holds import router as hold_router
 from .status import router as status_router
 from .submissions.routes import router as subs_router
 from .user import router as user_router
-from .audit import router as audit_router
 from .publish_time import router as time_router
 from .islocked import router as locked_router
 
@@ -41,8 +39,8 @@ fast_app.include_router(locked_router, tags=['Submissions'])
 fast_app.include_router(status_router, tags=['Service Status'])
 fast_app.include_router(hold_router, tags=['Holds'])
 fast_app.include_router(user_router, tags=['User'])
-fast_app.include_router(audit_router, tags=['Audit'])
 fast_app.include_router(time_router, tags=['Times'])
+
 db_check_task = None
 
 if config.collab_debug:
@@ -51,7 +49,7 @@ if config.collab_debug:
         async def broadcast(_, changes: Changes):
             await send_changes(changes)
 
-        ppcf = functools.partial(periodic_check, Session, broadcast)
+        ppcf = functools.partial(periodic_check, get_db, broadcast)
         global db_check_task
         db_check_task = asyncio.create_task(ppcf())
 

@@ -28,10 +28,8 @@ def with_queue_filters(user: User, stmt):
 def with_mod_filters(user: User, stmt):
     """Returns the stmt limited to a moderators view of the queue"""
     stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
-    
     stmt = stmt.outerjoin(Submissions.submission_category)
     stmt = stmt.outerjoin(Submissions.proposals)
-    
     mods_categories = user.moderated_categories
     category_ors = [
         SubmissionCategory.category.in_(mods_categories),

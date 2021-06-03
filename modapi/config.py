@@ -8,8 +8,10 @@ from pydantic import (
 
 
 class Settings(BaseSettings):
-    classic_db_uri: str = 'mysql+aiomysql://not-set-check-config/0000'
-    """arXiv legacy DB URL, must use aiomysql driver"""
+    classic_db_uri: str = 'mysql://not-set-check-config/0000'
+    """arXiv legacy DB URL.
+
+     As of 2021-06-03 no longer using aiomysql driver"""
 
     reload: bool = False
     """Sets uvicorn reloading on code changes, Do not use in produciton."""

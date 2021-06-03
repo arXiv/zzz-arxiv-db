@@ -5,13 +5,12 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import select, or_, and_, func, literal
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, Session
 
 from modapi.auth import auth_user, User
-from modapi.db import Session
+from modapi.db import get_db
 from modapi.rest import schema
-
-# from .models import SubmissionsOut
+from modapi.rest.submission_filters import with_queue_filters
 
 from modapi.tables.arxiv_models import (
     Submissions,
@@ -52,68 +51,34 @@ query_options = [
 ]
 
 
-def _with_filters(user: User, stmt):
-    stmt = stmt.filter(Submissions.status.in_([1, 2, 4]))
-    if user.is_moderator and not user.is_admin:
-        stmt = _with_mod_filters(user, stmt)
-
-    return stmt
-
-
-def _with_mod_filters(user: User, stmt):
-    stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
-    stmt = stmt.outerjoin(Submissions.submission_category)
-    stmt = stmt.outerjoin(SubmissionCategory.arXiv_category_def)
-    stmt = stmt.outerjoin(Submissions.proposals)
-    mods_categories = user.moderated_categories
-    category_ors = [
-        SubmissionCategory.category.in_(mods_categories),
-        and_(
-            SubmissionCategoryProposal.category.in_(mods_categories),
-            SubmissionCategoryProposal.proposal_status == 0,
-        ),
-    ]
-    for archive in user.moderated_archives:
-        category_ors.append(
-            SubmissionCategory.category.startswith(archive))
-        
-    stmt = stmt.filter(or_(*category_ors))
-    return stmt
-
-
 def _query(user: User):
     """Builds a query to select submissons"""
     stmt = select(Submissions).options(*query_options)
-    return _with_filters(user, stmt)
+    return with_queue_filters(user, stmt)
 
 
 @router.get("/submissions", response_model=List[schema.Submission])
-async def submissions(user: User = Depends(auth_user)):
+async def submissions(user: User = Depends(auth_user),
+                      db: Session = Depends(get_db)):
     """Get all submissions for moderator or admin
 
     Moderators will be limited to just submissions in thier categories
     or archives queues.
     """
-    async with Session() as session:
-        res = await session.execute(_query(user))
-        rows = res.unique().all()
-        return [to_submission(row[0]) for row in rows]
+    rows = db.execute(_query(user)).unique().all()
+    return [to_submission(row[0]) for row in rows]
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
-async def submission(submission_id: int, user: User = Depends(auth_user)):
+async def submission(submission_id: int, user: User = Depends(auth_user),
+                     db: Session = Depends(get_db)):
     """Gets a single submission."""
-    async with Session() as session:
-        res = await session.execute(
-            select(Submissions)
-            .options(*query_options)
-            .where(Submissions.submission_id == submission_id)
-        )
-        row = res.unique().fetchone()
-        if row:
-            return to_submission(row[0])
-        else:
-            return JSONResponse(
-                status_code=404,
-                content={"msg": "submission not found"}
-            )
+    res = db.execute(select(Submissions)
+                     .options(*query_options)
+                     .where(Submissions.submission_id == submission_id))
+    row = res.unique().fetchone()
+    if row:
+        return to_submission(row[0])
+    else:
+        return JSONResponse(status_code=404,
+                            content={"msg": "submission not found"})

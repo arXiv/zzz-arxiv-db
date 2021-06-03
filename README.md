@@ -10,7 +10,7 @@ An API for use by moderation and administration tools
     source ./modapi-venv/bin/activate
     pip install poetry
     poetry install
-    DEBUG=True CLASSIC_DB_URI='mysql+aiomysql://user:pw@host/arXiv' JWT_SECRET=yackyack python -m modapi.app
+    DEBUG=True CLASSIC_DB_URI='mysql://user:pw@host/arXiv' JWT_SECRET=yackyack python -m modapi.app
     chrome http://localhost:8000/docs
 
 Config values will be read from environment variables or from the file env.
@@ -58,7 +58,7 @@ Testing modAPI on your develoopment laptop with data from GCP and the arxiv-chec
 2. ./cloud_sql_proxy -instances=arxiv-development:us-east4:arxiv-db-dev=tcp:0.0.0.0:1234
 3. Run the mod API
 
-   CLASSIC_DATABASE_URI=mysql+aiomysql://root:CLOUD_PW_1234abcd@127.0.0.1:1234/arXiv  \
+   CLASSIC_DATABASE_URI=mysql://root:CLOUD_PW_1234abcd@127.0.0.1:1234/arXiv  \
    JWT_SECRET=fake_jwt_secret \
    python -m modapi.app
 

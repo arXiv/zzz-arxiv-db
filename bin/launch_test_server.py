@@ -80,10 +80,8 @@ def launch_mysql(test_data, db_uri: Queue):
 
 
 def launch_modapi(classic_db_uri: str):
-    db = classic_db_uri.replace('+pymysql', '+aiomysql')
-    os.environ["CLASSIC_DB_URI"] = db
     from modapi.config import config
-    config.classic_db_uri = db
+    config.classic_db_uri = classic_db_uri
     from modapi.app import run_app
     run_app(False, # Cannot use reload with process.daemon
             False, # Cannot use uvicorn_debug with process.daemon
