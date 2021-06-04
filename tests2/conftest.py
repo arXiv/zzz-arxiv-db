@@ -64,33 +64,42 @@ def create_and_load_db_tables(engine):
 def test_load_db_file(engine, test_data: str):
     with engine.connect() as db:
         cmd_count = 0
+        badcmd = False
         print(f"Loading test data from file '{test_data}'...")
         with open(test_data) as sql:
             cmd = ""
             for ln, line in enumerate(map(escape_bind, sql)):
-                if line.startswith("--"):
-                    continue
-                elif line and line.rstrip().endswith(";"):
-                    cmd = cmd + line
-                    if cmd:
-                        print(f"About to run '{cmd}'")
+                try:
+                    if line.startswith("--"):
+                        continue
+                    elif line and line.rstrip().endswith(";"):
+                        cmd = cmd + line
+                        if cmd:
+                            #print(f"About to run '{cmd}'")
+                            db.execute(text(cmd))
+                            cmd_count = cmd_count + 1
+                            cmd = ""
+                        else:
+                            #print("empty command")
+                            cmd = ""
+                    elif not line and cmd:
+                        #print(f"About to run '{cmd}'")
                         db.execute(text(cmd))
                         cmd_count = cmd_count + 1
                         cmd = ""
+                    elif not line:
+                        continue
                     else:
-                        print("empty command")
-                        cmd = ""
-                elif not line and cmd:
-                    print(f"About to run '{cmd}'")
-                    db.execute(text(cmd))
-                    cmd_count = cmd_count + 1
-                    cmd = ""
-                elif not line:
-                    continue
-                else:
-                    cmd = cmd + line
+                        cmd = cmd + line
+                except Exception as err:
+                    badcmd = f"At line {ln} Running command #{cmd_count}. {err}"
+                    break
 
-        print(f"Done loading test data: {cmd_count}")
+        if badcmd:
+            # moved this out of the except to avoid pytest printing huge stack traces
+            raise Exception(badcmd)
+        else:
+            print(f"Done loading test data. Ran {cmd_count} commands.")
 
 
 @pytest.fixture(scope='session')
@@ -123,3 +132,4 @@ def client(get_test_db):
         fastapi_app.dependency_overrides[dep_target] = override
 
     client.add_override = add_override
+    return client
