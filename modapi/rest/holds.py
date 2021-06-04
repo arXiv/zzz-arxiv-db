@@ -174,8 +174,8 @@ def _hold_biz_logic(hold: HoldTypes, exists, submission_id: int, user: User) -> 
         elif exists["status"] == ON_HOLD and exists["reason"]:  # on mod hold
             rv.delete_hold_reason = True
             rv.create_hold_reason = True
-            rv.visible_comments.insert("Clear modhold, about to admin hold")
-            rv.modapi_comments.insert("Clear modhold")
+            rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
+            rv.modapi_comments.insert(0, "Clear modhold")
         else:
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
