@@ -15,6 +15,7 @@ means that the fixture will be re-run for each test function.
 
 """
 import pytest
+import importlib
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -121,15 +122,41 @@ def get_test_db(create_and_load_db_tables):
 @pytest.fixture
 def client(get_test_db):
     """Returns fast-api app. This does not include the websocket collab app."""
-    from modapi.rest.rest_app import fast_app as fastapi_app
+    fastapi_app = super_fresh_app()
     from modapi.db import get_db
     fastapi_app.dependency_overrides[get_db] = get_test_db
     client = TestClient(fastapi_app)
 
     def add_override(dep_target, override):
         """Allows app dep overrides to be defined on test client.
-        See https://fastapi.tiangolo.com/advanced/testing-database"""
+        See  https://fastapi.tiangolo.com/advanced/testing-database"""
         fastapi_app.dependency_overrides[dep_target] = override
 
     client.add_override = add_override
     return client
+
+
+@pytest.fixture
+def no_db_client():
+    from modapi.rest.rest_app import fast_app as fastapi_app
+    client = TestClient(fastapi_app)
+
+    def add_override(dep_target, override):
+        """Allows app dep overrides to be defined on test client.
+        See https://fastapi.tiangolo.com/advanced/testing-dependencies"""
+        fastapi_app.dependency_overrides[dep_target] = override
+
+    client.add_override = add_override
+    return client
+    
+
+def super_fresh_app():
+    """Forces reload of modapi.rest.rest_app using importlib.
+
+    Since python normally loads a module once, and rest_app is defined on
+    the module, any changes to dependency_overrides will persist
+    between runs of tests even though the pytest fixture
+    conftest.client is run once for each pytest test function."""
+    import modapi.rest.rest_app
+    importlib.reload(modapi.rest.rest_app)
+    return modapi.rest.rest_app.fast_app
