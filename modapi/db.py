@@ -5,23 +5,6 @@ from sqlalchemy import create_engine
 
 from modapi.config import config
 
-# Base = declarative_base()
-# """Global declarative base for use in SQLAlchemy ORM class
-# definitions"""
-
-# engine = create_async_engine(config.classic_db_uri, echo=config.echo_sql)
-# """An async engine for use by the modapi"""
-
-# Session = sessionmaker(
-#     engine,
-#     expire_on_commit=False,
-#     class_=AsyncSession,
-#     future=True
-# )
-# """ Session maker for use in API
-# This is currently not a scoped session.
-# https://docs.sqlalchemy.org/en/14/orm/session_basics.html#using-a-sessionmaker"""
-
 if 'sqlite' in config.classic_db_uri:
     args = {"check_same_thread": False}
 else:
