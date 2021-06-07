@@ -117,7 +117,7 @@ class HoldLogicRes():
     create_hold_reason: bool = False
 
 
-def _hold_comments(hold: HoldTypes, exists, oldstat) -> List[str]:
+def _hold_comments(hold: HoldTypes) -> List[str]:
     """Returns a list of comments that should be stored in the admin log in order
     in a way that will be visible to admins and mods."""
     if hold.type == 'mod':
@@ -151,7 +151,7 @@ def _hold_biz_logic(hold: HoldTypes, exists, submission_id: int, user: User) -> 
     oldstat = status_by_number.get(exists["status"], exists["status"])
     rv = HoldLogicRes(
         modapi_comments=[f"Status changed from '{oldstat}' to 'on hold', reason: {hold.reason}"],
-        visible_comments=_hold_comments(hold, exists, oldstat))
+        visible_comments=_hold_comments(hold))
 
     if hold.type == 'mod':
         if exists["status"] == ON_HOLD or exists["reason"]:
@@ -261,13 +261,6 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     arXiv_submission_hold_reason or legacy style holds.
 
     """
-    # TODO Is a 502 the rirght thing to do here?
-    # It would be unfortunate to prevent mod work due to arxiv.org/localtime being down
-    anno_time = await earliest_announce(submission_id)
-    if not isinstance(anno_time, datetime):
-        return JSONResponse(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
-                            content={"msg":"upstream server resp HTTP {anno_time} for earliest_announce time"})
-
     hold = _hold_check(db, submission_id)
     if not hold:
         return JSONResponse(
@@ -275,6 +268,14 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
             content={"msg": "submission not found"})
 
     [status, reason, hold_user_id, hold_type, submit_time, sticky_status, is_locked] = hold
+
+    # TODO Is a 502 the rirght thing to do here?
+    # It would be unfortunate to prevent mod work due to arxiv.org/localtime being down
+    anno_time = await earliest_announce(submission_id)
+    if not isinstance(anno_time, datetime):
+        return JSONResponse(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
+                            content={"msg":"upstream server resp HTTP {anno_time} for earliest_announce time"})
+
 
     if is_locked:
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
