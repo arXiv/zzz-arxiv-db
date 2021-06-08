@@ -65,6 +65,18 @@ def test_cross(client):
     assert sub["categories"]["submission"]["secondary"] == ['cs.DD']
 
 
+def test_rep(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get(f"/submission/3401", cookies=cookies)
+    assert res.status_code == 200
+    sub = res.json()
+    assert sub["type"] == 'rep'
+    assert sub["categories"]["submission"]["primary"] == 'hep-ph'
+    assert sub["categories"]["submission"]["secondary"] == ['hep-ex']
+
+
 def test_not_found(client):
     cookies = {
         "ARXIVNG_SESSION_ID": user_jwt(246231)
