@@ -16,13 +16,10 @@ An API for use by moderation and administration tools
 Config values will be read from environment variables or from the file env.
 
 # To run tests
-I had problems using the fast-api test client so test are run like this:
+Test were simplified to use fixtures for a test db. Running the tests
+is just:
 
-    JWT_SECRET=1234 python bin/launch_test_server.py &  # start test db, load test db, start API server
-    JWT_SECRET=1234 pytest
-    # At the end of the tests DB and API will still be running, end with:
-    fg
-    CTRL-C
+    pytest
 
 # Docker build and run
 You'll need a DB connection and you'll need to write a file named env_values.txt like
