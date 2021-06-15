@@ -1,7 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
-
+from contextlib import contextmanager
 
 from modapi.config import config
 
@@ -30,6 +30,7 @@ def create_tables():
     arxiv_tables.metadata.create_all(bind=sync_eng)
 
 
+@contextmanager
 def get_db():
     """Dependency for fastapi routes"""
     db = SessionLocal()

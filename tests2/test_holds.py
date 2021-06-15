@@ -1,5 +1,6 @@
 import pytest
 from modapi.auth import user_jwt
+from .test_publish_time import WithJson
 
 SUB_ID_1 = 1137914
 
@@ -19,7 +20,16 @@ def test_no_auth(client):
     assert res.status_code == 401  # Should be auth protected
 
 
-def test_make(client, brandon):
+def test_make(mocker, client, brandon):
+    mocked_fn = mocker.patch('modapi.rest.publish_time.get_timepage')    
+    mocked_fn.return_value = WithJson(
+        data={
+            "arxiv_tz": "EDT",
+            "next_freeze": "2021-05-12T18:00:00+00:00",
+            "next_mail": "2021-05-13T00:00:00+00:00",
+            "subsequent_mail": "2021-05-14T00:00:00+00:00"
+        })
+
     res = client.get("/holds", cookies=brandon)
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
