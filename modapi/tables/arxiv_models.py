@@ -1386,16 +1386,11 @@ class Submissions(Base):
     
     @property
     def secondary_categories(self) -> List[str]:
-        """Category names from this submission's secondary classifications."""
-        if self.type == 'new':
-            return [c.category for c in self.submission_category if
-                    c.is_primary == 0 and c.is_published == 0]
-        elif self.type == 'cross':
-            return [c.category for c in self.submission_category
-                    if c.is_primary == 0 and c.is_published == 1]
-        else:
-            return [c.category for c in self.submission_category
-                    if c.is_primary == 0]
+        """Category names from this submission's secondary classifications.
+
+        Returns published and unpublised secondaries."""        
+        return [c.category for c in self.submission_category
+                if c.is_primary == 0]
 
     @property
     def new_crosses(self) -> List[str]:

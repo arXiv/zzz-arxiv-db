@@ -61,8 +61,9 @@ def test_cross(client):
     assert sub["type"] == 'cross'
     new_cross = 'hep-ph'
     assert sub["categories"]["new_crosses"] == [new_cross]
-    assert new_cross not in sub["categories"]["submission"]["secondary"]
-    assert sub["categories"]["submission"]["secondary"] == ['cs.DD']
+    assert new_cross in sub["categories"]["submission"]["secondary"] # ARXIVNG-4216
+    assert 'hep-ph' in sub["categories"]["submission"]["secondary"]
+    assert 'cs.DD'  in sub["categories"]["submission"]["secondary"]
 
 
 def test_rep(client):

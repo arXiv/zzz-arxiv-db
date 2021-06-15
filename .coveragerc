@@ -1,0 +1,6 @@
+[run]
+omit =
+   */site-packages/*
+   */distutls/*
+   tests2/*
+   tests/*
