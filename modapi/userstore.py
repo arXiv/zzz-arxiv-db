@@ -50,7 +50,7 @@ async def getuser(user_id: int, db: Session) -> Optional[User]:
         return None
 
 
-async def getuser_by_nick(nick: str) -> Optional[User]:
+async def getuser_by_nick(nick: str, db: Session) -> Optional[User]:
     by_nick = [user for user in _users.values() if user.username == nick]
     if len(by_nick) == 1:
         return by_nick[0]
@@ -59,7 +59,7 @@ async def getuser_by_nick(nick: str) -> Optional[User]:
         log.error(f"{len(by_nick)} users with the same nickname {nick[:10]}")
         return None
 
-    user = _getfromdb_by_nick(nick)
+    user = await _getfromdb_by_nick(nick, db)
     if user:
         _users[user.user_id] = user
         return user
@@ -78,7 +78,7 @@ async def _getfromdb_by_nick(nick: str, db: Session) -> Optional[User]:
         log.debug("no user found in DB for nickname %s", nick[:10])
         return None
 
-    return _getfromdb(rs[0]['user_id'])
+    return _getfromdb(rs[0]['user_id'], db)
 
 
 def to_name(first_name, last_name):
