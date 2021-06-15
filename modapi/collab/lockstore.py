@@ -1,13 +1,16 @@
 """Storage of soft locks on submissions
 """
 from asyncio import Semaphore
-from typing import Dict, NamedTuple, Optional
+from typing import Dict, Optional
+from dataclasses import dataclass
 
 
-class Lock(NamedTuple):
+@dataclass
+class Lock():
     username: str
     sid: int
-
+    def copy(self):
+        return Lock(**self.__dict__)
 
 _locks: Dict[int, Lock] = {}
 """A dict of locked submission ids.
@@ -22,10 +25,6 @@ Must aquire semaphore before using this"""
 
 _semaphore = Semaphore()
 """Semaphore for both locks and users"""
-
-
-# async def is_locked(id):
-#     pass
 
 
 async def lock(sub_id, sid, username):
