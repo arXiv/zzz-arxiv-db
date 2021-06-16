@@ -140,7 +140,7 @@ def _hold_biz_logic(hold: HoldTypes, exists, submission_id: int, user: User) -> 
         return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
                             content={"msg": "submission not found"})
 
-    if exists["is_locked"]:  # This is hard locked, not an edit lock
+    if exists["is_locked"]:  # This is hard locked, not an edit collab lock
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
                             content={"msg": f"{submission_id} is locked"})
 
@@ -269,14 +269,6 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
 
     [status, reason, hold_user_id, hold_type, submit_time, sticky_status, is_locked] = hold
 
-    # TODO Is a 502 the rirght thing to do here?
-    # It would be unfortunate to prevent mod work due to arxiv.org/localtime being down
-    anno_time = await earliest_announce(submission_id)
-    if not isinstance(anno_time, datetime):
-        return JSONResponse(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
-                            content={"msg":"upstream server resp HTTP {anno_time} for earliest_announce time"})
-
-
     if is_locked:
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
                             content={"msg": f"{submission_id} is locked"})
@@ -284,9 +276,10 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     if not user.is_admin and user.is_moderator:
         if (hold_type != "mod" or reason is None):
             return JSONResponse(
-                status_code=httpstatus.HTTP_403_CONFLICT,
+                status_code=httpstatus.HTTP_403_FORBIDDEN,
                 content={"msg": f"{submission_id} is not a mod hold"})
 
+    anno_time = await earliest_announce(submission_id)
     if reason:
         db.execute(arXiv_submission_hold_reason.delete()
                    .where(arXiv_submission_hold_reason.c.submission_id == submission_id))

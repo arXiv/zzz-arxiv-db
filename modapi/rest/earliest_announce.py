@@ -17,8 +17,14 @@ from typing import Union
 from modapi.config import config
 from datetime import datetime
 
+from fastapi import HTTPException, status as httpstatus
+
 import requests
 from http import cookiejar
+
+import logging
+
+log = logging.getLogger(__file__)
 
 _req_sess = None
 
@@ -40,14 +46,32 @@ def _session():
     return _req_sess
 
 
+
+def _get(url):
+    with _session().get(url) as resp:
+        return resp
+
 async def earliest_announce(sub_id: int) -> Union[datetime, int]:
     """Earliest announcement that a submission could appear in
 
     Returns datetime if successful or an HTTP status if unsuccessful.
+
+    Make sure to mock this during unit tests to avoid errors.
     """
     url = f'{config.earliest_announce_url}/{sub_id}'
-    with _session().get(url) as resp:
-        if resp.status_code == 200:
+    try:
+        resp = _get(url)
+        if resp.status_code == httpstatus.HTTP_200_OK:
             return datetime.fromisoformat(resp.json()[0])
         else:
-            return resp.status_code
+            code = 502 if str(resp.status_code).startswith('5') else resp.status_code
+            raise HTTPException(status_code=code,
+                                detail=f"Upstream server resp for {url} was {resp.status_code}")
+    except (requests.ConnectionError, requests.TooManyRedirects) as ex:
+        log.exception(f"Could not get {url}")
+        raise HTTPException(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
+                            detail=f"Error while getting {url}: {ex}")
+    except requests.Timeout as ex:
+        log.exception(f"Timedout: could not get {url}")
+        raise HTTPException(status_code=httpstatus.HTTP_504_GATEWAY_TIMEOUT,
+                            detail=f"Timeout while getting {url}")
