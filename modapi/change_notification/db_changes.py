@@ -1,10 +1,8 @@
 """Module for monitoring changes to submission in the classic arXiv DB"""
 
 from typing import Callable, Tuple, List, Any
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 import asyncio
-from datetime import timedelta, datetime
 
 from modapi.tables.arxiv_models import AdminLog
 
@@ -46,27 +44,33 @@ async def _check_for_changes(get_db, latest: int) -> Changes:
 
     latest is the latest arXiv_admin_log.id from the previous check.
     """
-    with get_db() as db:
+    db_gen = get_db()
+    db = next(db_gen)
+    try:
         stmt = select(AdminLog)
-        if latest > 1:
+        if latest > 0:
+            log.debug("Checking for admin_log ids greater than %d", latest)
             stmt = stmt.where(AdminLog.id > latest)
         else:
             # On cold start the query needs to returns something
             # so the new_latest can be populated
+            log.debug("Cold start of check_for_changes: doing %d", COLD_CHECK_NUM_SUBS)
             stmt = stmt.limit(COLD_CHECK_NUM_SUBS).order_by(AdminLog.id.desc())
 
-        res = db.execute(stmt)
-        rows = res.scalars().all()
+        rows = db.execute(stmt).scalars().all()
         if not rows:
             return [latest, []]
         else:
             new_latest = max([row.id for row in rows])
+            log.debug("setting new_latest to %d", new_latest)
             return [new_latest, [(row.submission_id, _area_for_row(row)) for row in rows]]
+    finally:
+        db.close()
 
 
 async def periodic_check(get_db,
                          callback: Callable[[Changes], Any]):
-    latest = 0
+    latest = -1
     while True:
         try:
             await asyncio.sleep(CHECK_PERIOD_SECONDS)
