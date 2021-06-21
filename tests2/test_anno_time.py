@@ -5,39 +5,35 @@ from fastapi import HTTPException
 from modapi.rest.earliest_announce import earliest_announce
 import requests
 
-@pytest.mark.asyncio
-async def test_earliest_anno_down(mocker):
+def test_earliest_anno_down(mocker):
     mocked_get_url = mocker.patch('modapi.rest.earliest_announce._get')
     mocked_get_url.return_value = Namespace(status_code=500)
     with pytest.raises(HTTPException) as ex:
-        await earliest_announce(1234)
+        earliest_announce(1234)
     assert ex.value.status_code == 502
 
-@pytest.mark.asyncio
-async def test_earliest_anno_404(mocker):
+def test_earliest_anno_404(mocker):
     mocked_get_url = mocker.patch('modapi.rest.earliest_announce._get')
     mocked_get_url.return_value = Namespace(status_code=404)
     with pytest.raises(HTTPException) as ex:
-        await earliest_announce(1234)
+        earliest_announce(1234)
     assert ex.value.status_code == 404
 
-@pytest.mark.asyncio
-async def test_earliest_anno_timeout(mocker):
+def test_earliest_anno_timeout(mocker):
     def rr(x):
         raise requests.Timeout()
     mocked_get_url = mocker.patch('modapi.rest.earliest_announce._get',
                                   side_effect=rr)
     with pytest.raises(HTTPException) as ex:
-        await earliest_announce(1234)
+        earliest_announce(1234)
     assert ex.value.status_code == 504
 
-@pytest.mark.asyncio
-async def test_earliest_anno_connerror(mocker):
+def test_earliest_anno_connerror(mocker):
     def rr(x):
         raise requests.ConnectionError()
     mocked_get_url = mocker.patch('modapi.rest.earliest_announce._get',
                                   side_effect=rr)
     with pytest.raises(HTTPException) as ex:
-        await earliest_announce(1234)
+        earliest_announce(1234)
     assert ex.value.status_code == 502
 

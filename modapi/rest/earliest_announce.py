@@ -51,7 +51,7 @@ def _get(url):
     with _session().get(url) as resp:
         return resp
 
-async def earliest_announce(sub_id: int) -> Union[datetime, int]:
+def earliest_announce(sub_id: int) -> Union[datetime, int]:
     """Earliest announcement that a submission could appear in
 
     Returns datetime if successful or an HTTP status if unsuccessful.
@@ -71,7 +71,7 @@ async def earliest_announce(sub_id: int) -> Union[datetime, int]:
         log.exception(f"Could not get {url}")
         raise HTTPException(status_code=httpstatus.HTTP_502_BAD_GATEWAY,
                             detail=f"Error while getting {url}: {ex}")
-    except requests.Timeout as ex:
+    except requests.Timeout:
         log.exception(f"Timedout: could not get {url}")
         raise HTTPException(status_code=httpstatus.HTTP_504_GATEWAY_TIMEOUT,
                             detail=f"Timeout while getting {url}")

@@ -12,7 +12,7 @@ from modapi.collab.collab_app import send_changes
 from modapi.db import get_db
 
 from .flags import router as flags_router
-from .holds import router as hold_router
+from .holds.routes import router as hold_router
 from .status import router as status_router
 from .submissions.routes import router as subs_router
 from .user import router as user_router

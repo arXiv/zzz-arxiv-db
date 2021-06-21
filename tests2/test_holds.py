@@ -32,7 +32,7 @@ def test_make(mocker, client, brandon):
             "subsequent_mail": "2021-05-14T00:00:00+00:00"
         })
 
-    mocked_anno_time = mocker.patch('modapi.rest.holds.earliest_announce')
+    mocked_anno_time = mocker.patch('modapi.rest.holds.routes.earliest_announce')
     mocked_anno_time.return_value = datetime.fromisoformat("2010-05-14T00:00:00+00:00")
     res = client.get("/holds", cookies=brandon)
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
@@ -94,7 +94,7 @@ def test_make(mocker, client, brandon):
 
 
 def test_multi_mod(mocker, client, brandon, mod_b):
-    mocked_anno_time = mocker.patch('modapi.rest.holds.earliest_announce')
+    mocked_anno_time = mocker.patch('modapi.rest.holds.routes.earliest_announce')
     mocked_anno_time.return_value = datetime.fromisoformat("2010-05-14T00:00:00+00:00")
 
     # Brandon, mod of q-bio.CB and q-bio.NC
@@ -149,8 +149,8 @@ def test_no_sub(client, brandon):
     assert res.status_code == 404
 
 def test_comments():
-    from modapi.rest.holds import _hold_comments
-    from modapi.rest.holds import ModHoldIn, Reject, RejectOther, SendToAdminOther
+    from modapi.rest.holds.biz_logic import _hold_comments
+    from modapi.rest.holds.domain import ModHoldIn, Reject, RejectOther, SendToAdminOther
     
     assert _hold_comments(ModHoldIn(type='mod',reason='discussion'))
     assert _hold_comments(Reject(type='admin',reason= 'scope'))
