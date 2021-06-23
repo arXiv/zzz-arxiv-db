@@ -8,10 +8,13 @@ from sqlalchemy.orm.attributes import instance_dict
 from modapi.tables import arxiv_models
 from modapi.rest import schema
 
-from modapi.userstore import to_name
-
 import logging
 log = logging.getLogger(__name__)
+
+SYSTEM_USER_ID = 41106
+"""ID of the system user"""
+
+resolutions = ['unresolved', 'accepted as primary', 'accepted as secondary', 'rejected']
 
 
 def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
@@ -29,13 +32,11 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     out["comment_count"] = len([lg for lg in sub.admin_log if lg.command == 'admin comment'])
     return out
 
-
 def _suspect(sub: arxiv_models.Submissions) -> bool:
     rv = False
     with suppress(AttributeError):
         rv = sub.submitter.demographics.flag_suspect
     return rv
-
 
 def make_categories(sub: arxiv_models.Submissions):
     """Makes a schema.Categories object"""
@@ -47,7 +48,6 @@ def make_categories(sub: arxiv_models.Submissions):
             primary=sub.primary_classification,
             secondary=sub.secondary_categories)
     )
-
 
 def make_classifier(sub: arxiv_models.Submissions):
     """Make the classifier data for the submission"""
@@ -70,22 +70,25 @@ def make_classifier(sub: arxiv_models.Submissions):
                   sub.submission_id, err)
         return [{'error':'could not parse classifier json'}]
 
-
 def make_proposals(sub: arxiv_models.Submissions):
-    # need to handle type and is_system_proposal
     resolved = [convert_prop(prop) for prop in sub.proposals
                 if prop.proposal_status != 0]
     unresolved = [convert_prop(prop) for prop in sub.proposals
                   if prop.proposal_status == 0]
     return dict(resolved=resolved, unresolved=unresolved)
 
-
 def convert_prop(prop: arxiv_models.SubmissionCategoryProposal):
     out = instance_dict(prop)
-    out["is_system_proposal"] = False  # TODO
+    out["is_system_proposal"] = prop.user_id == SYSTEM_USER_ID
     out["type"] = "primary" if prop.is_primary else "secondary"
+    out["status"] = prop_status(prop)
     return out
 
+def prop_status(prop: arxiv_models.SubmissionCategoryProposal):
+    if prop and prop.proposal_status < len(resolutions):
+        return resolutions[prop.proposal_status]
+    else:
+        return f"unknown status: {prop.prop_status}"
 
 status_by_number = {
     # --- 'is_current' method statuses ( 0 - 4 )

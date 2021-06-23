@@ -49,11 +49,30 @@ def test_sub(client):
     assert sub["categories"]["submission"]["primary"] == 'q-bio.CB'
 
 
+
+def test_sub_with_proposals(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get("/submission/4400", cookies=cookies)
+    assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
+    assert res.status_code == 200
+    assert res.json() is not None
+    sub = res.json()
+
+    assert "status" in sub
+    assert type(sub["status"]) == str
+
+    sys_prop = [prop for prop in sub["categories"]["proposals"]["resolved"] if prop["proposal_id"] == 203909]
+    assert sys_prop
+    assert sys_prop[0]["is_system_proposal"]
+
+
 def test_cross(client):
     cookies = {
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
-    res = client.get(f"/submission/3400", cookies=cookies)
+    res = client.get("/submission/3400", cookies=cookies)
     assert res.status_code != 401  # Tests must run with env var JWT_SECRET same as server
     assert res.status_code == 200
     assert res.json() is not None
@@ -70,7 +89,7 @@ def test_rep(client):
     cookies = {
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
-    res = client.get(f"/submission/3401", cookies=cookies)
+    res = client.get("/submission/3401", cookies=cookies)
     assert res.status_code == 200
     sub = res.json()
     assert sub["type"] == 'rep'

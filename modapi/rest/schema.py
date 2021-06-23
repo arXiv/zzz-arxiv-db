@@ -64,6 +64,7 @@ class Proposal(OrmBaseModel):
     category: str
     type: PropTypeLiterals
     updated: datetime
+    status: str
 
 
 class Proposals(OrmBaseModel):
