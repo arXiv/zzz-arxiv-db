@@ -6,14 +6,12 @@ An API for use by moderation and administration tools
 
     git clone git@github.com:arXiv/modapi.git
     cd modapi
-    python 3.8 -m venv ./modapi-venv  # or use pyenv
+    python3.8 -m venv ./modapi-venv  # or use pyenv
     source ./modapi-venv/bin/activate
     pip install poetry
     poetry install
     DEBUG=True CLASSIC_DB_URI='mysql://user:pw@host/arXiv' JWT_SECRET=yackyack python -m modapi.app
     chrome http://localhost:8000/docs
-
-Config values will be read from environment variables or from the file env.
 
 # To run tests
 Test were simplified to use fixtures for a test db. Running the tests
@@ -35,7 +33,7 @@ Then run:
 
 Then open a browser to http://localhost:8000/docs
 
-# Testing with data from GCP
+# Testing with data from a DB on GCP
 Testing modAPI on your develoopment laptop with data from GCP and the arxiv-check UI is tricky.
 
 1. Setup GCP SQL proxy so you can access the GCP DB from your dev machine
