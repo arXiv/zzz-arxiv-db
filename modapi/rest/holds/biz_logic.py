@@ -6,22 +6,19 @@ to work for both mod and admin holds.
 The paths in this module are intended to replace the /modhold paths.
 """
 
-from typing import Union, List, Callable
+from typing import Union, List, Callable, Optional
 from datetime import datetime
 import pytz
 
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 
 from modapi.auth import User
+from modapi.tables.arxiv_models import Submissions, SubmissionHoldReason
 
 from .domain import HoldTypesIn, HoldLogicRes, HoldReleaseLogicRes,\
     SUBMITTED, WORKING, ON_HOLD
-
-import logging
-log = logging.getLogger(__name__)
 
 
 def hold_check(db: Session, submission_id: int):
@@ -35,30 +32,7 @@ def hold_check(db: Session, submission_id: int):
     in the hold table. This is might be a legacy style hold.
 
     """
-    res = db.execute(text(
-        # left join becasue we want to dstinguish between the
-        # submission doesn't exist and submission is already on
-        # mod-hold.
-        """
-        SELECT
-        s.status, shr.reason, shr.user_id, shr.type, s.submit_time, s.sticky_status, s.is_locked, docs.paper_id
-        FROM
-        arXiv_submissions s LEFT JOIN arXiv_submission_hold_reason shr
-        ON s.submission_id = shr.submission_id
-        LEFT JOIN arXiv_documents docs
-        ON s.document_id = docs.document_id
-        WHERE s.submission_id = :submission_id
-        """),
-        {"submission_id": submission_id},
-    )
-    sub = res.first()
-    if sub:
-        [status, reason, hold_user_id, hold_type, submit_time, sticky_status, is_locked, paper_id] = sub
-        log.debug('For sub %d hold_check was type: %s status: %s reason: %s sticky_status: %s is_locked: %s submit_time %s paper_id: %s',
-                  submission_id, hold_type, status, reason, sticky_status, is_locked, submit_time, paper_id)
-        return sub
-    else:
-        return None
+    return db.query(Submissions).filter(Submissions.submission_id == submission_id).first()
 
 
 def _hold_comments(hold: HoldTypesIn) -> List[str]:
@@ -80,7 +54,9 @@ def _hold_comments(hold: HoldTypesIn) -> List[str]:
 
     
     
-def release_biz_logic(exists, submission_id: int, user: User, anno_time_fn: Callable[[int],Union[datetime,int]]) -> Union[HoldReleaseLogicRes, JSONResponse]:
+def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
+                      User, anno_time_fn:
+                      Callable[[int],Union[datetime,int]]) -> Union[HoldReleaseLogicRes, JSONResponse]:
     if not user or (not user.is_admin and not user.is_moderator):
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN)
     
@@ -88,27 +64,38 @@ def release_biz_logic(exists, submission_id: int, user: User, anno_time_fn: Call
         return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
                             content={"msg": "submission not found"})
 
-    if exists["is_locked"]:  # This is hard locked, not an edit collab lock
+    if exists.is_locked:  # This is hard locked, not an edit collab lock
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
                             content={"msg": "Submission is locked"})
 
+    if exists.status != ON_HOLD:
+        return JSONResponse(status_code=httpstatus.HTTP_409_CONFLICT,
+                            content={"msg": "Submission is not on hold"})
+
+    reasontype = exists.hold_reason.type if exists.hold_reason else None
+    reasonreason = exists.hold_reason.reason if exists.hold_reason else None
+    
     if not user.is_admin and user.is_moderator:
-        if (exists["type"] != "mod" or exists["reason"] is None):
+        if (exists.hold_reason is None or reasontype != "mod"):
             return JSONResponse(
                 status_code=httpstatus.HTTP_403_FORBIDDEN,
                 content={"msg": f"{submission_id} is not a mod hold"})
 
-    if exists["type"] is not None:
-        logtext = f'Release: {exists["type"]} {exists["reason"]} hold'
+    if not exists.primary_classification:
+        return JSONResponse(status_code=httpstatus.HTTP_409_CONFLICT,
+                            content={"msg": "Submission cannot be released due to lack of a primary"})
+        
+    if reasontype:
+        logtext = f'Release: {reasontype} {reasonreason} hold'
     else:
         logtext = "Release: legacy hold"
 
     rv = HoldReleaseLogicRes(
         modapi_comments=[logtext],
         visible_comments=[logtext],
-        paper_id = exists["paper_id"] or f"submit/{submission_id}",
-        clear_reason = exists["reason"],
-        release_to_status = SUBMITTED if exists["submit_time"] else WORKING
+        paper_id = exists.doc_paper_id or f"submit/{submission_id}",
+        clear_reason = reasonreason,
+        release_to_status = SUBMITTED if exists.submit_time else WORKING
     )
 
     if rv.release_to_status == SUBMITTED:
@@ -118,8 +105,16 @@ def release_biz_logic(exists, submission_id: int, user: User, anno_time_fn: Call
             rv.set_release_time = now
 
     return rv
+
+
+def _existing_type(exists: Submissions, shr: Optional[SubmissionHoldReason] )->str:
+    if exists.status != ON_HOLD:
+        return ''    
+    if shr:
+        return shr.type
     
-def hold_biz_logic(hold: HoldTypesIn, exists, submission_id: int, user: User) -> Union[HoldLogicRes, JSONResponse]:
+def hold_biz_logic(hold: HoldTypesIn, exists: Optional[Submissions],
+                   submission_id: int, user: User) -> Union[HoldLogicRes, JSONResponse]:
     if not user or (not user.is_admin and not user.is_moderator):
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN)
     
@@ -127,23 +122,25 @@ def hold_biz_logic(hold: HoldTypesIn, exists, submission_id: int, user: User) ->
         return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
                             content={"msg": "submission not found"})
 
-    if exists["is_locked"]:  # This is hard locked, not an edit collab lock
+    if exists.is_locked:  # This is hard locked, not an edit collab lock
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN,
                             content={"msg": f"{submission_id} is locked"})
 
-    if not (exists["status"] in [1, 4, 2]):  # hold is included since some held subs can be held again
+    if not (exists.status in [1, 4, 2]):  # hold is included since some held subs can be held again
         return JSONResponse(status_code=httpstatus.HTTP_409_CONFLICT,
                             content={"msg": "Can only hold submissions in that status"})
 
-    oldstat = status_by_number.get(exists["status"], exists["status"])
+    oldstat = status_by_number.get(exists.status, exists.status)
     rv = HoldLogicRes(
         modapi_comments=[f"Status changed from '{oldstat}' to 'on hold', reason: {hold.reason}"],
         visible_comments=_hold_comments(hold),
-        paper_id = exists["paper_id"] or f"submit/{submission_id}"
+        paper_id = exists.doc_paper_id or f"submit/{submission_id}"
     )
 
+    existing_reason = exists.hold_reason and exists.hold_reason.reason
+    existing_type =  exists.hold_reason and exists.hold_reason.type
     if hold.type == 'mod':
-        if exists["status"] == ON_HOLD or exists["reason"]:
+        if existing_reason:
             # Mods cannot put a mod hold on a submission that is
             # already on admin or legacy hold. This is to avoid a
             # mod from changing a legacy hold to a mod-hold and
@@ -153,22 +150,45 @@ def hold_biz_logic(hold: HoldTypesIn, exists, submission_id: int, user: User) ->
             # accidently get published.
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
+                content={"msg": "Mod hold on submission already exists"})
+        elif exists.status == ON_HOLD:
+            return JSONResponse(
+                status_code=httpstatus.HTTP_409_CONFLICT,
                 content={"msg": "Hold on submission already exists"})
         else:
             rv.create_hold_reason = True
 
     elif hold.type == 'admin':
-        if exists["status"] != ON_HOLD and not exists["reason"]:  # not on hold
-            rv.create_hold_reason = True
-        elif exists["status"] == ON_HOLD and exists["reason"]:  # on mod hold
-            rv.delete_hold_reason = True
-            rv.create_hold_reason = True
-            rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
-            rv.modapi_comments.insert(0, "Clear modhold")
-        else:
-            return JSONResponse(
-                status_code=httpstatus.HTTP_409_CONFLICT,
-                content={"msg": "Admin hold on submission already exists"})
+        if exists.status == ON_HOLD:
+            if existing_type == "mod":
+                rv.delete_hold_reason = True
+                rv.create_hold_reason = True
+                rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
+                rv.modapi_comments.insert(0, "Clear modhold")
+            else:
+                return JSONResponse(
+                    status_code=httpstatus.HTTP_409_CONFLICT,
+                    content={"msg": "Admin or legacy hold on submission already exists"})
+            
+        else: # not ON_HOLD
+            if existing_type:
+                return JSONResponse(
+                    status_code=httpstatus.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"msg": "Submission not on hold but a hold reason exists"})
+            else:
+                rv.create_hold_reason = True
+                
+        # if exists.status != ON_HOLD and not existing_type:  # not on hold
+        #     rv.create_hold_reason = True
+        # elif exists.status == ON_HOLD and existing_type == "mod":  # on mod hold
+        #     rv.delete_hold_reason = True
+        #     rv.create_hold_reason = True
+        #     rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
+        #     rv.modapi_comments.insert(0, "Clear modhold")
+        # else:
+        #     return JSONResponse(
+        #         status_code=httpstatus.HTTP_409_CONFLICT,
+        #         content={"msg": "Admin hold on submission already exists"})
     else:
         return JSONResponse(status_code=httpstatus.HTTP_400_BAD_REQUEST,
                             content={"msg": "invalid hold type"})

@@ -1398,6 +1398,14 @@ class Submissions(Base):
         return [c.category for c in self.submission_category
                 if c.is_primary == 0 and c.is_published != 1]
 
+    @property
+    def hold_reason(self) -> Optional['SubmissionHoldReason']:
+        if self.hold_reasons:
+            return self.hold_reasons[0]
+        else:
+            return None
+        
+
 class TopPapers(Base):
     __tablename__ = 'arXiv_top_papers'
 
