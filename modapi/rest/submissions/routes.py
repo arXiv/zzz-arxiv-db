@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 # from modapi.collab.collab_app import sio
 from fastapi import APIRouter, Depends
@@ -51,21 +51,23 @@ query_options = [
 ]
 
 
-def _query(user: User):
+def _query(user: User, include_mod_archives: bool, exclude_mod_categories: bool):
     """Builds a query to select submissons"""
     stmt = select(Submissions).options(*query_options)
-    return with_queue_filters(user, stmt)
+    return with_queue_filters(user, stmt, include_mod_archives, exclude_mod_categories)
 
 
 @router.get("/submissions", response_model=List[schema.Submission])
 async def submissions(user: User = Depends(auth_user),
-                      db: Session = Depends(get_db)):
+                      db: Session = Depends(get_db),
+                      include_mod_archives: bool = True,
+                      exclude_mod_categories: bool = False):
     """Get all submissions for moderator or admin
 
-    Moderators will be limited to just submissions in thier categories
+    Moderators will be limited to just submissions in their categories
     or archives queues.
     """
-    rows = db.execute(_query(user)).unique().all()
+    rows = db.execute(_query(user, include_mod_archives, exclude_mod_categories)).unique().all()
     return [to_submission(row[0]) for row in rows]
 
 
