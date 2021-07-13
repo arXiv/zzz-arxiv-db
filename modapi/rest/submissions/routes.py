@@ -68,7 +68,7 @@ async def submissions(user: User = Depends(auth_user),
     or archives queues.
     """
     rows = db.execute(_query(user, include_mod_archives, exclude_mod_categories)).unique().all()
-    return [to_submission(row[0]) for row in rows]
+    return [to_submission(row[0], user) for row in rows]
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
@@ -80,7 +80,7 @@ async def submission(submission_id: int, user: User = Depends(auth_user),
                      .where(Submissions.submission_id == submission_id))
     row = res.unique().fetchone()
     if row:
-        return to_submission(row[0])
+        return to_submission(row[0], user)
     else:
         return JSONResponse(status_code=404,
                             content={"msg": "submission not found"})

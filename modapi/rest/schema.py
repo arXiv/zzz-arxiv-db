@@ -10,7 +10,7 @@ class OrmBaseModel(BaseModel):
     class Config:
         orm_mode = True  #  Reads from non-dict
 
-        
+
 class User(OrmBaseModel):
     is_admin: bool
     is_moderator: bool
@@ -70,7 +70,7 @@ class Proposal(OrmBaseModel):
 class Proposals(OrmBaseModel):
     resolved: List[Proposal]
     unresolved: List[Proposal]
-    
+
 
 class Categories(OrmBaseModel):
     classifier_scores: List[ClassifierScore]
@@ -78,17 +78,17 @@ class Categories(OrmBaseModel):
     new_crosses: List[str]
     proposals: Proposals
 
-    
+
 class Submitter(OrmBaseModel):
     email: str
     name: str
     is_suspect: bool
-    
+
     class Config:
         orm_mode = True  #  Reads from non-dict
 
-    
-#TODO align Optional with database table definition 
+
+#TODO align Optional with database table definition
 class Submission(OrmBaseModel):
     """Submission model to transmit to client"""
     submission_id: int
@@ -102,7 +102,7 @@ class Submission(OrmBaseModel):
     status: str
     version: Optional[int]
     type: Optional[str]
-    
+
     title: Optional[str]
     authors: Optional[str]
     comments: Optional[str]
@@ -125,7 +125,8 @@ class Submission(OrmBaseModel):
     submitter: Submitter
 
     comment_count: Optional[int]
-    
+    matched: str
+
     class Config:
         orm_mode = True  # Reads from non-dict like SQLAlchemy returns
 

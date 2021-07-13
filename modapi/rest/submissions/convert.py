@@ -5,19 +5,21 @@ from contextlib import suppress
 
 from sqlalchemy.orm.attributes import instance_dict
 
+from modapi.auth import User
 from modapi.tables import arxiv_models
 from modapi.rest import schema
 
 import logging
+
 log = logging.getLogger(__name__)
 
 SYSTEM_USER_ID = 41106
 """ID of the system user"""
 
-resolutions = ['unresolved', 'accepted as primary', 'accepted as secondary', 'rejected']
+resolutions = ["unresolved", "accepted as primary", "accepted as secondary", "rejected"]
 
 
-def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
+def to_submission(sub: arxiv_models.Submissions, user: User) -> schema.Submission:
     """Convert a submission to an object approprate to use as a response"""
     out = instance_dict(sub)
     cats = make_categories(sub)
@@ -29,14 +31,60 @@ def to_submission(sub: arxiv_models.Submissions) -> schema.Submission:
     out["categories"] = cats
     out["status"] = status_by_number[sub.status]
     out["submitter_comments"] = sub.comments
-    out["comment_count"] = len([lg for lg in sub.admin_log if lg.command == 'admin comment'])
+    out["comment_count"] = len(
+        [lg for lg in sub.admin_log if lg.command == "admin comment"]
+    )
+    out["matched"] = make_match(cats, user)
     return out
+
+
+def make_match(cats: dict, user: User):
+    "Determine how a submission matched to appear on moderator's list."
+    mods_categories = user.moderated_categories
+    mods_archives = user.moderated_archives
+
+    for cat in mods_categories:
+        if (
+            (cats["submission"]["primary"] and cat == cats["submission"]["primary"])
+            or cat in cats["submission"]["secondary"]
+            or cat in cats["new_crosses"]
+            or (
+                cats["proposals"]["unresolved"]
+                and cat
+                in list(ucat["category"] for ucat in cats["proposals"]["unresolved"])
+            )
+        ):
+            return "moderated_category"
+
+    for archive in mods_archives:
+        if (
+            (
+                cats["submission"]["primary"]
+                and cats["submission"]["primary"].startswith(archive)
+            )
+            or any(c.startswith(archive) for c in cats["submission"]["secondary"])
+            or any(c.startswith(archive) for c in cats["new_crosses"])
+            or (
+                cats["proposals"]["unresolved"]
+                and any(
+                    c.startswith(archive)
+                    for c in list(
+                        ucat["category"] for ucat in cats["proposals"]["unresolved"]
+                    )
+                )
+            )
+        ):
+            return "moderated_archive"
+
+    return "unknown"
+
 
 def _suspect(sub: arxiv_models.Submissions) -> bool:
     rv = False
     with suppress(AttributeError):
         rv = sub.submitter.demographics.flag_suspect
     return rv
+
 
 def make_categories(sub: arxiv_models.Submissions):
     """Makes a schema.Categories object"""
@@ -45,9 +93,10 @@ def make_categories(sub: arxiv_models.Submissions):
         new_crosses=sub.new_crosses,
         proposals=make_proposals(sub),
         submission=dict(
-            primary=sub.primary_classification,
-            secondary=sub.secondary_categories)
+            primary=sub.primary_classification, secondary=sub.secondary_categories
+        ),
     )
+
 
 def make_classifier(sub: arxiv_models.Submissions):
     """Make the classifier data for the submission"""
@@ -66,16 +115,23 @@ def make_classifier(sub: arxiv_models.Submissions):
             for row in data["classifier"]
         ]
     except Exception as err:
-        log.error("could not decode classifier json for submission %s: %s",
-                  sub.submission_id, err)
-        return [{'error':'could not parse classifier json'}]
+        log.error(
+            "could not decode classifier json for submission %s: %s",
+            sub.submission_id,
+            err,
+        )
+        return [{"error": "could not parse classifier json"}]
+
 
 def make_proposals(sub: arxiv_models.Submissions):
-    resolved = [convert_prop(prop) for prop in sub.proposals
-                if prop.proposal_status != 0]
-    unresolved = [convert_prop(prop) for prop in sub.proposals
-                  if prop.proposal_status == 0]
+    resolved = [
+        convert_prop(prop) for prop in sub.proposals if prop.proposal_status != 0
+    ]
+    unresolved = [
+        convert_prop(prop) for prop in sub.proposals if prop.proposal_status == 0
+    ]
     return dict(resolved=resolved, unresolved=unresolved)
+
 
 def convert_prop(prop: arxiv_models.SubmissionCategoryProposal):
     out = instance_dict(prop)
@@ -84,11 +140,13 @@ def convert_prop(prop: arxiv_models.SubmissionCategoryProposal):
     out["status"] = prop_status(prop)
     return out
 
+
 def prop_status(prop: arxiv_models.SubmissionCategoryProposal):
     if prop and prop.proposal_status < len(resolutions):
         return resolutions[prop.proposal_status]
     else:
         return f"unknown status: {prop.prop_status}"
+
 
 status_by_number = {
     # --- 'is_current' method statuses ( 0 - 4 )
