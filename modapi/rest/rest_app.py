@@ -43,22 +43,21 @@ fast_app.include_router(time_router, tags=['Times'])
 
 db_check_task = None
 
-if config.collab_debug:
-    @fast_app.on_event("startup")
-    async def on_startup():
-        async def broadcast(_, changes: Changes):
-            await send_changes(changes)
+@fast_app.on_event("startup")
+async def on_startup():
+    async def broadcast(_, changes: Changes):
+        await send_changes(changes)
 
-        ppcf = functools.partial(periodic_check, get_db, broadcast)
-        global db_check_task
-        db_check_task = asyncio.create_task(ppcf())
+    ppcf = functools.partial(periodic_check, get_db, broadcast)
+    global db_check_task
+    db_check_task = asyncio.create_task(ppcf())
 
-    @fast_app.on_event("shutdown")
-    async def on_shutdown():
-        if db_check_task:
-            if db_check_task.done() and not db_check_task.cancelled() and db_check_task.exception():
-                log.error("Exception in db_check_task")
-                log.error(db_check_task.exception())
+@fast_app.on_event("shutdown")
+async def on_shutdown():
+    if db_check_task:
+        if db_check_task.done() and not db_check_task.cancelled() and db_check_task.exception():
+            log.error("Exception in db_check_task")
+            log.error(db_check_task.exception())
 
-            if not db_check_task.done():
-                db_check_task.cancel()
+        if not db_check_task.done():
+            db_check_task.cancel()
