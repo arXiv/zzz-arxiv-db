@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
+from arxiv import taxonomy
+
 from modapi.config import config
 
 import logging
@@ -23,6 +25,17 @@ class User(BaseModel):
     # pydantic handles default list correctly
     moderated_categories: List[str] = []
     moderated_archives: List[str] = []
+
+    def can_moderate(self, category:str):
+         return (category in self.moderated_categories
+                 or self.can_moderate_due_to_archive(category))
+
+    def can_moderate_due_to_archive(self, category:str) -> bool:
+        return (self.moderated_archives
+                and category in taxonomy.CATEGORIES
+                and 'in_archive' in taxonomy.CATEGORIES[category]
+                and taxonomy.CATEGORIES[category]['in_archive'] in self.moderated_archives
+                )
 
 
 _users: Dict[int, User] = {}

@@ -8,8 +8,12 @@ from sqlalchemy import types as types
 
 from modapi.db import Base
 
+from arxiv import taxonomy as taxonomy
+
 metadata = Base.metadata
 
+# inverse of CATEGORY_ALIASES
+CATEGORY_ALIASES_INV={v: k for k, v in taxonomy.CATEGORY_ALIASES.items()}
 
 class SubscriptionUniversalInstitution(Base):
     __tablename__ = 'Subscription_UniversalInstitution'
@@ -1404,7 +1408,20 @@ class Submissions(Base):
             return self.hold_reasons[0]
         else:
             return None
+
+    @property
+    def fudged_categories(self) -> str:
+
+        #This is a close port of the legacy code
+
+        # Need same as arXiv::Schema::ResultSet::DocCategory.string
+        string ='fucking what?'
+        cat_list = set([c.category for c in self.submission_category])
         
+        cats_to_add =[CATEGORY_ALIASES_INV[cat] for cat in cat_list
+                      if cat in CATEGORY_ALIASES_INV]
+        fudged = [cat_list[0]] + sorted(cat_list[1:] + cats_to_add)
+        return ' '.join(fudged)
 
 class TopPapers(Base):
     __tablename__ = 'arXiv_top_papers'

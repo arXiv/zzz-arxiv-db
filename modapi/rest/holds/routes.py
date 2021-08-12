@@ -26,6 +26,8 @@ from modapi.tables.arxiv_models import (
     SubmissionCategoryProposal,
 )
 
+from modapi.models.admin_log import comment_admin_log
+
 from .domain import HoldReleaseLogicRes, HoldLogicRes,\
     ON_HOLD, HoldTypesIn
 from .biz_logic import hold_check, release_biz_logic, hold_biz_logic
@@ -140,15 +142,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
         db.execute(stmt)
 
     for logtext in release_res.visible_comments:
-        stmt = arXiv_admin_log.insert().values(
-            username=user.username,
-            program="Admin::Queue",
-            command="admin comment",
-            logtext=logtext,
-            submission_id=submission_id,
-            paper_id=release_res.paper_id
-        )
-        db.execute(stmt)
+        comment_admin_log(db, user, submission_id, release_res.paper_id, logtext)
 
     db.commit()
     return "success"
