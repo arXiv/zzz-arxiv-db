@@ -5,7 +5,7 @@ to work for both mod and admin holds.
 
 The paths in this module are intended to replace the /modhold paths.
 """
-from typing import Union, List
+from typing import Union, List, Optional
 
 from sqlalchemy import select, or_, and_, null
 from sqlalchemy.orm import joinedload, Session
@@ -154,6 +154,15 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     return "success"
 
 
+@router.get("/holds/{submission_id}", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)])
+async def get_hold(
+        submission_id: int,
+        user: User = Depends(auth_user),
+        db: Session = Depends(get_db)):
+    """Gets the hold for a single submission."""
+    return await _holds(submission_id, user, db)
+
+
 @router.get("/holds", response_model=List[conlist(Union[str, int], min_items=4, max_items=4)])
 async def holds(user: User = Depends(auth_user), db: Session = Depends(get_db)):
     """Gets all existing holds.
@@ -167,6 +176,10 @@ async def holds(user: User = Depends(auth_user), db: Session = Depends(get_db)):
 
     Type will be 'admin', 'mod' or 'legacy'.
     """
+    return await _holds(None, user, db)
+
+
+async def _holds(submission_id: Optional[int], user: User, db: Session):
     query_options = [
         # Could deferre all of submission?
         joinedload(Submissions.hold_reasons),
@@ -196,6 +209,9 @@ async def holds(user: User = Depends(auth_user), db: Session = Depends(get_db)):
 
         stmt = stmt.filter(Submissions.type.in_(['new', 'rep', 'cross']))
         stmt = stmt.filter(or_(*mod_ors))
+
+    if submission_id is not None:
+        stmt = stmt.filter(Submissions.submission_id == submission_id)
 
     res = db.execute(stmt)
     out = []

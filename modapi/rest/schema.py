@@ -4,6 +4,7 @@ from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel
 
+from modapi.rest.holds.domain import ModHoldReasons, HoldType, HoldReasons
 
 class OrmBaseModel(BaseModel):
 
@@ -126,6 +127,9 @@ class Submission(OrmBaseModel):
 
     comment_count: Optional[int]
     matched: str
+
+    hold_type: Optional[HoldType]
+    hold_reason: Optional[Union[ModHoldReasons, HoldReasons]]
 
     class Config:
         orm_mode = True  # Reads from non-dict like SQLAlchemy returns

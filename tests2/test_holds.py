@@ -59,7 +59,16 @@ def test_make(mocker, client, brandon):
     assert res.status_code == 200
     assert len(res.json()) == pre_add_count + 1
     holds = res.json()
-    assert [str(SUB_ID_1), "246231", "mod", "discussion"] in holds
+    assert [str(SUB_ID_1), str(246231), "mod", "discussion"] in holds
+
+    res = client.get(f"/submission/{SUB_ID_1}", cookies=brandon)
+    assert res.status_code == 200
+    assert res.json()['hold_type'] == "mod"
+    assert res.json()['hold_reason'] == "discussion"
+
+    res = client.get(f"/holds/{SUB_ID_1}", cookies=brandon)
+    assert res.status_code == 200
+    assert [str(SUB_ID_1), str(246231), 'mod', 'discussion'] in res.json()
 
     # try to add duplicate hold
     res = client.post(f"/submission/{SUB_ID_1}/hold",
