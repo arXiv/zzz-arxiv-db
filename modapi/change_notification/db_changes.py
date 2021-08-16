@@ -34,6 +34,10 @@ be needed to get the updated data.
 
 def _area_for_row(row) -> str:
     """Gets a change type for a row"""
+    # TODO This should check the arXiv_admin_log row and send some
+    # additinal info about the change event. The UI probably needs to
+    # get information about queue changes, submisison added, submission removed,
+    # submission published, flag changes, holds and releases.
     return ''
 
 
@@ -63,7 +67,7 @@ async def _check_for_changes(get_db, latest: int) -> Changes:
         else:
             new_latest = max([row.id for row in rows])
             log.debug("setting new_latest to %d", new_latest)
-            return [new_latest, [(row.submission_id, _area_for_row(row)) for row in rows]]
+            return [new_latest, set([(row.submission_id, _area_for_row(row)) for row in rows])]
     finally:
         db.close()
 

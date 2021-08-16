@@ -13,7 +13,7 @@ from sqlalchemy.orm import joinedload, Session
 from sqlalchemy.orm.attributes import instance_dict
 from sqlalchemy import exc
 
-
+from modapi.collab.collab_app import send_changes
 from modapi.auth import User, auth_user
 
 from . import schema
@@ -41,6 +41,7 @@ async def put_flag(submission_id: int,
         )
         db.execute(stmt)
         db.commit()
+        await send_changes([(submission_id, 'flag')])
         return 1
     except exc.IntegrityError:
         return JSONResponse(status_code=409,
@@ -59,6 +60,7 @@ async def del_flag(submission_id: int,
         )
     )
     db.commit()
+    await send_changes([(submission_id, 'flag')])
     return 1
 
 
