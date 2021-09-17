@@ -191,7 +191,7 @@ def test_release_mod_hold(mocker):
     assert result
     print(result)
     assert isinstance(result, HoldReleaseLogicRes)
-    assert result.release_to_status == 4
+    assert result.release_to_status == 1
 
 
 def test_release_bad_user(mocker):
