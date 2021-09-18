@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from modapi.rest.holds.biz_logic import hold_biz_logic, status_by_number, release_biz_logic
+from modapi.rest.holds.biz_logic import hold_biz_logic, status_by_number, release_biz_logic, _release_status_from_submit_time
 from modapi.rest.holds.domain import ModHoldIn, Reject, HoldReleaseLogicRes, ON_HOLD, SUBMITTED
 
 from modapi.auth import User
@@ -170,6 +170,39 @@ def test_hold_existing_admin_hold(mocker):
     assert result
     assert result.status_code == 409
 
+def test_release_status_from_submit_time():
+
+    # submit on Monday, release time on Monday
+    status = _release_status_from_submit_time(datetime(2021,9,13,13,59,59), datetime(2021,9,13,19,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,0), datetime(2021,9,13,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,20,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,20,0,1))
+    assert status == 1
+
+    # submit on Wednesday, release time on Thursday
+    status = _release_status_from_submit_time(datetime(2021,9,15,13,59,59), datetime(2021,9,16,19,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,15,14,0,0), datetime(2021,9,16,20,0,0))
+    assert status == 1
+
+    # submit and release time on Friday
+    status = _release_status_from_submit_time(datetime(2021,9,17,13,59,59), datetime(2021,9,17,20,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,17,14,0,0), datetime(2021,9,17,20,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,17,14,0,0), datetime(2021,9,17,20,0,1))
+    assert status == 4
+
+    # Sunday / Sunday
+    status = _release_status_from_submit_time(datetime(2021,9,19,13,59,59), datetime(2021,9,19,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,19,13,59,59), datetime(2021,9,19,20,0,1))
+    assert status == 1
 
 def test_release_mod_hold(mocker):
     hr = mocker.patch('modapi.tables.arxiv_models.SubmissionHoldReason')
@@ -181,7 +214,8 @@ def test_release_mod_hold(mocker):
     exists.status=ON_HOLD
     exists.hold_reasons=[hr]
     exists.hold_reason=hr
-    exists.submit_time=datetime.fromisoformat("2010-05-13T00:00:00+00:00")
+    # exists.submit_time=datetime(2010, 5, 14, 13, 0, 0)
+    exists.submit_time=datetime(2010, 5, 13, 0, 0, 0)
     exists.sticky_status=False
     exists.is_locked=False
     exists.doc_paper_id=None
@@ -245,7 +279,7 @@ def test_release_legacy_hold(mocker):
     exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=ON_HOLD
     exists.hold_reasons=[]
-    exists.submit_time='bogus-time'
+    exists.submit_time=datetime.now()
     exists.sticky_status=False
     exists.is_locked=False
     exists.doc_paper_id=None

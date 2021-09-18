@@ -54,6 +54,38 @@ def _hold_comments(hold: HoldTypesIn) -> List[str]:
         return [f'Hold of type {hold.type}']
 
 
+def _release_status_from_submit_time(submit_time: datetime, release_time: datetime=None) -> int:
+    """Return a submission status based on the best guess of announcement time."""
+    if not submit_time:
+        return WORKING
+    now = release_time
+    tz=pytz.timezone('US/Eastern')
+    submit_time = datetime.fromtimestamp(submit_time.timestamp(), tz=tz)
+    if not now:
+        now = datetime.now(tz=tz)
+    else:
+        now = datetime.fromtimestamp(now.timestamp(), tz=tz)
+
+    # the crudest guess is relative to today, ignoring the current hour.
+    # (specifying tzinfo with datetime is buggy for some timezones
+    # so we have this strange workaround using fromtimestamp)
+    anno_time_guess = datetime.fromtimestamp(
+        datetime(now.year, now.month, now.day, 20, 0, 0).timestamp(),
+        tz=tz
+    )
+    # if now is Monday through Thursday
+    if now.weekday() in (0,1,2,3):
+        if submit_time < anno_time_guess - timedelta(hours=6) or now > anno_time_guess:
+            return SUBMITTED
+    # if now is Friday through Sunday
+    elif now.weekday() in (4,5,6):
+        anno_time_guess = anno_time_guess + timedelta(days=6-now.weekday())
+        last_freeze_guess = anno_time_guess - timedelta(days=2, hours=6)
+        if submit_time < last_freeze_guess or now > anno_time_guess:
+            return SUBMITTED
+
+    return NEXT
+
 
 def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
                       User, anno_time_fn:
@@ -91,45 +123,15 @@ def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
     else:
         logtext = "Release: legacy hold"
 
-
-    if exists.submit_time:
-        # default to NEXT
-        release_status = NEXT
-        tz=pytz.timezone('US/Eastern')
-        now = datetime.now(tz=tz)
-
-        # the crudest guess is relative to today, ignoring the current hour.
-        # (specifying tzinfo with datetime is buggy for some timezones
-        # so we have this strange workaround using fromtimestamp)
-        anno_time_guess = datetime.fromtimestamp(
-            datetime(now.year, now.month, now.day, 20, 0, 0).timestamp(),
-            tz=tz
-        )
-        submit_time = datetime.fromtimestamp(exists.submit_time.timestamp(), tz=tz)
-
-        # if now is Monday through Thursday
-        if now.weekday() in (0,1,2,3):
-            if submit_time < anno_time_guess - timedelta(hours=6) or submit_time > anno_time_guess:
-                release_status = SUBMITTED
-        # is now is Friday through Sunday
-        if now.weekday in (4,5,6):
-            anno_time_guess = anno_time_guess + timedelta(days=6-now.weekday())
-            last_freeze_guess = anno_time_guess - timedelta(days=2, hours=6)
-            if submit_time < last_freeze_guess or submit_time > anno_time_guess:
-                release_status = SUBMITTED
-    else:
-        release_status = WORKING
-
-
     rv = HoldReleaseLogicRes(
         modapi_comments=[logtext],
         visible_comments=[logtext],
         paper_id = exists.doc_paper_id or f"submit/{submission_id}",
         clear_reason = reasonreason,
-        release_to_status = release_status
+        release_to_status = _release_status_from_submit_time(exists.submit_time)
     )
 
-    if rv.release_to_status == SUBMITTED:
+    if rv.release_to_status in (SUBMITTED, NEXT):
         now = datetime.now(tz=pytz.timezone('US/Eastern'))
         anno_time = anno_time_fn(submission_id)
         if now > anno_time:
