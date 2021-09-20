@@ -216,6 +216,10 @@ def test_release_status_from_submit_time():
     status = _release_status_from_submit_time(datetime(2021,9,20,14,1,0), datetime(2021,9,20,20,0,5))
     assert status == 1
 
+    # submit time later than release time (artificial; should never happen)
+    status = _release_status_from_submit_time(datetime(2021,9,21,9,0,0), datetime(2021,9,20,9,0,5))
+    assert status == 4
+
 def test_release_mod_hold(mocker):
     hr = mocker.patch('modapi.tables.arxiv_models.SubmissionHoldReason')
     hr.reason="discussion"
