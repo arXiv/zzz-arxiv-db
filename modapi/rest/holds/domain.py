@@ -31,14 +31,17 @@ RejectReasons = Union[SpecificRejectReasons, Literal["reject-other"]]
 
 HoldReasons = Union[RejectReasons, Literal["other"]]
 
-SUBMITTED = 1
-"""Submission table status for submitted and not on hold"""
-
 WORKING = 0
 """Submission table status for not yet submitted"""
 
+SUBMITTED = 1
+"""Submission table status for submitted and not on hold"""
+
 ON_HOLD = 2
 """Submission table status for on hold"""
+
+NEXT = 4
+"""Submission table status for next."""
 
 
 @dataclass
@@ -95,4 +98,3 @@ class HoldOut(BaseModel):
     type: HoldType
     username: Optional[str]
     reason: Optional[Union[ModHoldReasons, HoldReasons]]
-

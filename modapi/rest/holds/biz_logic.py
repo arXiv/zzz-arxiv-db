@@ -7,8 +7,9 @@ The paths in this module are intended to replace the /modhold paths.
 """
 
 from typing import Union, List, Callable, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
+
 
 from sqlalchemy.orm import Session
 from fastapi import status as httpstatus
@@ -18,7 +19,7 @@ from modapi.auth import User
 from modapi.tables.arxiv_models import Submissions, SubmissionHoldReason
 
 from .domain import HoldTypesIn, HoldLogicRes, HoldReleaseLogicRes,\
-    SUBMITTED, WORKING, ON_HOLD
+    SUBMITTED, WORKING, ON_HOLD, NEXT
 
 
 def hold_check(db: Session, submission_id: int):
@@ -52,14 +53,46 @@ def _hold_comments(hold: HoldTypesIn) -> List[str]:
     else:
         return [f'Hold of type {hold.type}']
 
-    
-    
+
+def _release_status_from_submit_time(submit_time: datetime, release_time: datetime=None) -> int:
+    """Return a submission status based on the best guess of announcement time."""
+    if not submit_time:
+        return WORKING
+    now = release_time
+    tz=pytz.timezone('US/Eastern')
+    submit_time = datetime.fromtimestamp(submit_time.timestamp(), tz=tz)
+    if not now:
+        now = datetime.now(tz=tz)
+    else:
+        now = datetime.fromtimestamp(now.timestamp(), tz=tz)
+
+    # the crudest guess is relative to today, ignoring the current hour.
+    # (specifying tzinfo with datetime is buggy for some timezones
+    # so we have this strange workaround using fromtimestamp)
+    anno_time_guess = datetime.fromtimestamp(
+        datetime(now.year, now.month, now.day, 20, 0, 0).timestamp(),
+        tz=tz
+    )
+    # if now is Monday through Thursday
+    if now.weekday() in (0,1,2,3):
+        if submit_time < anno_time_guess - timedelta(hours=6) or now > anno_time_guess:
+            return SUBMITTED
+    # if now is Friday through Sunday
+    elif now.weekday() in (4,5,6):
+        anno_time_guess = anno_time_guess + timedelta(days=6-now.weekday())
+        last_freeze_guess = anno_time_guess - timedelta(days=2, hours=6)
+        if submit_time < last_freeze_guess or now > anno_time_guess:
+            return SUBMITTED
+
+    return NEXT
+
+
 def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
                       User, anno_time_fn:
                       Callable[[int],Union[datetime,int]]) -> Union[HoldReleaseLogicRes, JSONResponse]:
     if not user or (not user.is_admin and not user.is_moderator):
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN)
-    
+
     if not exists:
         return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
                             content={"msg": "submission not found"})
@@ -74,7 +107,7 @@ def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
 
     reasontype = exists.hold_reason.type if exists.hold_reason else None
     reasonreason = exists.hold_reason.reason if exists.hold_reason else None
-    
+
     if not user.is_admin and user.is_moderator:
         if (exists.hold_reason is None or reasontype != "mod"):
             return JSONResponse(
@@ -84,7 +117,7 @@ def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
     if not exists.primary_classification:
         return JSONResponse(status_code=httpstatus.HTTP_409_CONFLICT,
                             content={"msg": "Submission cannot be released due to lack of a primary"})
-        
+
     if reasontype:
         logtext = f'Release: {reasontype} {reasonreason} hold'
     else:
@@ -95,10 +128,10 @@ def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
         visible_comments=[logtext],
         paper_id = exists.doc_paper_id or f"submit/{submission_id}",
         clear_reason = reasonreason,
-        release_to_status = SUBMITTED if exists.submit_time else WORKING
+        release_to_status = _release_status_from_submit_time(exists.submit_time)
     )
 
-    if rv.release_to_status == SUBMITTED:
+    if rv.release_to_status in (SUBMITTED, NEXT):
         now = datetime.now(tz=pytz.timezone('US/Eastern'))
         anno_time = anno_time_fn(submission_id)
         if now > anno_time:
@@ -109,15 +142,15 @@ def release_biz_logic(exists: Optional[Submissions], submission_id: int, user:
 
 def _existing_type(exists: Submissions, shr: Optional[SubmissionHoldReason] )->str:
     if exists.status != ON_HOLD:
-        return ''    
+        return ''
     if shr:
         return shr.type
-    
+
 def hold_biz_logic(hold: HoldTypesIn, exists: Optional[Submissions],
                    submission_id: int, user: User) -> Union[HoldLogicRes, JSONResponse]:
     if not user or (not user.is_admin and not user.is_moderator):
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN)
-    
+
     if not exists:
         return JSONResponse(status_code=httpstatus.HTTP_404_NOT_FOUND,
                             content={"msg": "submission not found"})
@@ -169,7 +202,7 @@ def hold_biz_logic(hold: HoldTypesIn, exists: Optional[Submissions],
                 return JSONResponse(
                     status_code=httpstatus.HTTP_409_CONFLICT,
                     content={"msg": "Admin or legacy hold on submission already exists"})
-            
+
         else: # not ON_HOLD
             if existing_type:
                 return JSONResponse(
@@ -177,7 +210,7 @@ def hold_biz_logic(hold: HoldTypesIn, exists: Optional[Submissions],
                     content={"msg": "Submission not on hold but a hold reason exists"})
             else:
                 rv.create_hold_reason = True
-                
+
         # if exists.status != ON_HOLD and not existing_type:  # not on hold
         #     rv.create_hold_reason = True
         # elif exists.status == ON_HOLD and existing_type == "mod":  # on mod hold

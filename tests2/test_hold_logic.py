@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from modapi.rest.holds.biz_logic import hold_biz_logic, status_by_number, release_biz_logic
+from modapi.rest.holds.biz_logic import hold_biz_logic, status_by_number, release_biz_logic, _release_status_from_submit_time
 from modapi.rest.holds.domain import ModHoldIn, Reject, HoldReleaseLogicRes, ON_HOLD, SUBMITTED
 
 from modapi.auth import User
@@ -26,7 +26,7 @@ def test_mod_new_hold(mocker):
     exists.doc_paper_id=None
     exists.hold_reason =None
     exists.primary_classification = 'cs.OH'
-    
+
     result = hold_biz_logic(
         ModHoldIn(type='mod', reason='discussion'), exists, sub_id, mod_user)
     assert result
@@ -44,7 +44,7 @@ def test_mod_duplicate_hold(mocker):
     hr.user_id="2343"
     hr.type="mod"
 
-    exists = mocker.patch('modapi.tables.arxiv_models.Submissions')    
+    exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=SUBMITTED
     exists.hold_reasons = [hr]
     exists.hold_reason =hr
@@ -54,7 +54,7 @@ def test_mod_duplicate_hold(mocker):
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
 
-    
+
     result = hold_biz_logic(
         ModHoldIn(type='mod', reason='discussion'), exists, sub_id, mod_user)
     assert isinstance(result, JSONResponse)
@@ -79,7 +79,7 @@ def test_mod_islocked(mocker):
     exists.is_locked=True
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
-    
+
     result = hold_biz_logic(
         ModHoldIn(type='mod', reason='discussion'), exists, sub_id, mod_user)
     assert isinstance(result, JSONResponse)
@@ -91,7 +91,7 @@ def test_mod_bad_sub_status(mocker):
     for status in status_by_number.keys():
         if status in (1,2,4):
             continue
-        
+
         exists.status=status
         exists.hold_reasons = []
         exists.submit_time='bogus-time'
@@ -99,7 +99,7 @@ def test_mod_bad_sub_status(mocker):
         exists.is_locked=False
         exists.doc_paper_id=None
         exists.primary_classification = 'cs.OH'
-        
+
         result = hold_biz_logic(
             ModHoldIn(type='mod', reason='discussion'), exists, sub_id, mod_user)
         assert result
@@ -111,7 +111,7 @@ def test_mod_to_admin_hold(mocker):
     hr.reason="discussion"
     hr.user_id=1234
     hr.type="mod"
-    
+
     exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=ON_HOLD
     exists.hold_reasons = [hr]
@@ -121,7 +121,7 @@ def test_mod_to_admin_hold(mocker):
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
-    
+
     result = hold_biz_logic(
         Reject(type='admin', reason='nonresearch'), exists, sub_id, mod_user)
     assert result
@@ -142,7 +142,7 @@ def test_hold_new_admin_hold(mocker):
     exists.doc_paper_id=None
     exists.hold_reason =None
     exists.primary_classification = 'cs.OH'
-    
+
     hold = Reject(type='admin', reason='nonresearch')
     result = hold_biz_logic(hold, exists, 1234, admin_user)
     assert result
@@ -164,11 +164,84 @@ def test_hold_existing_admin_hold(mocker):
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
-    
+
     hold = Reject(type='admin', reason='nonresearch')
     result = hold_biz_logic(hold, exists, 1234, admin_user)
     assert result
     assert result.status_code == 409
+
+def test_release_status_from_submit_time():
+
+    # submit on Monday, release time on Monday
+    status = _release_status_from_submit_time(datetime(2021,9,13,13,59,59), datetime(2021,9,13,19,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,0), datetime(2021,9,13,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,20,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,13,14,0,1), datetime(2021,9,13,20,0,1))
+    assert status == 1
+
+    # submit on Wednesday, release time on Thursday
+    status = _release_status_from_submit_time(datetime(2021,9,15,13,59,59), datetime(2021,9,16,19,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,15,14,0,0), datetime(2021,9,16,20,0,0))
+    assert status == 1
+
+    # submit and release time on Friday
+    status = _release_status_from_submit_time(datetime(2021,9,17,13,59,59), datetime(2021,9,17,20,0,0))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,17,14,0,0), datetime(2021,9,17,20,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,17,14,0,0), datetime(2021,9,17,20,0,1))
+    assert status == 4
+
+    # Sunday / Sunday
+    status = _release_status_from_submit_time(datetime(2021,9,19,13,59,59), datetime(2021,9,19,19,0,0))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,19,13,59,59), datetime(2021,9,19,20,0,1))
+    assert status == 1
+
+    # Monday
+    status = _release_status_from_submit_time(datetime(2021,9,20,9,0,0), datetime(2021,9,20,9,0,5))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,20,9,0,0), datetime(2021,9,20,14,0,5))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,20,9,0,0), datetime(2021,9,20,20,0,5))
+    assert status == 1
+    status = _release_status_from_submit_time(datetime(2021,9,20,14,1,0), datetime(2021,9,20,14,0,5))
+    assert status == 4
+    status = _release_status_from_submit_time(datetime(2021,9,20,14,1,0), datetime(2021,9,20,20,0,5))
+    assert status == 1
+
+    # submit time later than release time (artificial; should never happen)
+    status = _release_status_from_submit_time(datetime(2021,9,21,9,0,0), datetime(2021,9,20,9,0,5))
+    assert status == 4
+
+def test_release_mod_hold(mocker):
+    hr = mocker.patch('modapi.tables.arxiv_models.SubmissionHoldReason')
+    hr.reason="discussion"
+    hr.user_id=1234
+    hr.type="mod"
+
+    exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
+    exists.status=ON_HOLD
+    exists.hold_reasons=[hr]
+    exists.hold_reason=hr
+    # exists.submit_time=datetime(2010, 5, 14, 13, 0, 0)
+    exists.submit_time=datetime(2010, 5, 13, 0, 0, 0)
+    exists.sticky_status=False
+    exists.is_locked=False
+    exists.doc_paper_id=None
+    exists.primary_classification = 'cs.OH'
+
+    result = release_biz_logic(exists, 1234, mod_user, lambda _: datetime.fromisoformat("2010-05-14T00:00:00+00:00"))
+    assert result
+    print(result)
+    assert isinstance(result, HoldReleaseLogicRes)
+    assert result.release_to_status == 1
 
 
 def test_release_bad_user(mocker):
@@ -179,7 +252,7 @@ def test_release_bad_user(mocker):
     bad_user.is_moderator=False
     bad_user.is_admin=False
     bad_user.moderated_categories=[]
-    
+
     res = release_biz_logic(None, 1234, bad_user, None)
     assert res
     assert res.status_code == 403
@@ -191,12 +264,12 @@ def test_release_bad_user(mocker):
     res = hold_biz_logic(None, None, 1234, bad_user)
     assert res
     assert res.status_code == 403
-    
+
     res = hold_biz_logic(None, None, 1234, None)
     assert res
     assert res.status_code == 403
-    
-    
+
+
 def test_mod_cannot_release_admin_hold(mocker):
     hr = mocker.patch('modapi.tables.arxiv_models.SubmissionHoldReason')
     hr.reason=None
@@ -212,7 +285,7 @@ def test_mod_cannot_release_admin_hold(mocker):
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
-    
+
     result = release_biz_logic(exists, 1234, mod_user, None)
     assert result
     assert result.status_code == 403
@@ -222,12 +295,12 @@ def test_release_legacy_hold(mocker):
     exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=ON_HOLD
     exists.hold_reasons=[]
-    exists.submit_time='bogus-time'
+    exists.submit_time=datetime.now()
     exists.sticky_status=False
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification = 'cs.OH'
-    
+
     result = release_biz_logic(exists, 1234, admin_user, lambda _: datetime.fromisoformat("2010-05-14T00:00:00+00:00"))
     assert result
     assert isinstance(result, HoldReleaseLogicRes)
@@ -243,13 +316,13 @@ def test_admin_cannot_hold_release_no_primary(mocker):
     exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=ON_HOLD
     exists.hold_reasons=[hr]
-    exists.hold_reason =hr    
+    exists.hold_reason =hr
     exists.submit_time='bogus-time'
     exists.sticky_status=False
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification=None
-    
+
     result = release_biz_logic(exists, 1234, admin_user,
                                lambda _: datetime.fromisoformat("2010-05-14T00:00:00+00:00"))
     assert result
@@ -261,8 +334,8 @@ def test_admin_cannot_hold_release_no_primary(mocker):
     hr.type="admin"
 
     exists.hold_reasons=[hr]
-    exists.hold_reason =hr    
-    
+    exists.hold_reason =hr
+
     result = release_biz_logic(exists, 1234, admin_user,
                                lambda _: datetime.fromisoformat("2010-05-14T00:00:00+00:00"))
     assert result
@@ -278,15 +351,14 @@ def test_mod_cannot_hold_release_no_primary(mocker):
     exists = mocker.patch('modapi.tables.arxiv_models.Submissions')
     exists.status=ON_HOLD
     exists.hold_reasons=[hr]
-    exists.hold_reason =hr    
+    exists.hold_reason =hr
     exists.submit_time='bogus-time'
     exists.sticky_status=False
     exists.is_locked=False
     exists.doc_paper_id=None
     exists.primary_classification=None
-    
+
     result = release_biz_logic(exists, 1234, mod_user,
                                lambda _: datetime.fromisoformat("2010-05-14T00:00:00+00:00"))
     assert result
     assert result.status_code > 400
-
