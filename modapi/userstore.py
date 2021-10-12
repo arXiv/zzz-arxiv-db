@@ -1,11 +1,11 @@
 """Caching of arXiv mod and admin users"""
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 from sqlalchemy import text
 from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
-from arxiv.taxonomy.definitions import ARCHIVES, CATEGORIES
+from arxiv.taxonomy.definitions import ARCHIVES_ACTIVE, CATEGORIES, CATEGORIES_ACTIVE
 
 from modapi.config import config
 
@@ -105,27 +105,11 @@ def _getfromdb(user_id: int, db: Session) -> Optional[User]:
     JOIN tapir_nicknames ON tapir_users.user_id = tapir_nicknames.user_id
     WHERE tapir_users.user_id = :userid"""
 
-    # Using definitive to distinguish categories from archives
-    cat_mod_query = """
-    SELECT
-    m.archive as 'arch', m.subject_class as 'cat', c.definitive as 'definitive'
-    FROM arXiv_moderators AS m
-    JOIN arXiv_categories AS c ON  m.archive = c.archive AND m.subject_class = c.subject_class
-    WHERE user_id = :userid"""
-
     rs = list(db.execute(text(user_query), {"userid": user_id}))
     if not rs:
         return None
 
-    mod_rs = list(db.execute(text(cat_mod_query), {"userid": user_id}))
-    # normal categories like cs.LG
-    cats = [f"{row['arch']}.{row['cat']}"
-            for row in mod_rs if row['arch'] and row['cat']]
-    # archive like categories like hep-ph
-    cats.extend([row['arch'] for row in mod_rs
-                 if row['arch'] and not row['cat'] and row['definitive']])
-    archives = [row['arch'] for row in mod_rs
-                if row['arch'] and not row['cat'] and not row['definitive']]
+    cats, archives = _cats_and_archives(user_id, db)
     ur = User(user_id=user_id,
               name=to_name(
                   bytes.fromhex(rs[0]['first_name']).decode('utf-8'),
@@ -135,5 +119,29 @@ def _getfromdb(user_id: int, db: Session) -> Optional[User]:
               is_moderator=bool(cats or archives),
               moderated_categories=cats,
               moderated_archives=archives)
-    log.debug("User: %s", ur)
     return ur
+
+def _cats_and_archives(user_id: int, db: Session) -> Tuple[List[str],List[str]]:
+    """Archives and categories for the moderator.
+
+    Returns
+    -------
+    Tuple of (categories, archives)
+
+    The archvies list can be thought of as a lit of things that have sub-categories    
+    The categories list can be thought of as a list of things that have submissions.
+    """
+    cat_mod_query = """SELECT archive as 'arch', subject_class as 'cat'
+    FROM arXiv_moderators WHERE user_id = :userid"""    
+    mod_rs = list(db.execute(text(cat_mod_query), {"userid": user_id}))
+    
+    archives = [row['arch'] for row in mod_rs
+                if row['arch'] and not row['cat'] and row['arch'] in ARCHIVES_ACTIVE]
+    
+    # normal categories like cs.LG
+    cats = [f"{row['arch']}.{row['cat']}"
+            for row in mod_rs if row['arch'] and row['cat']]
+    # archive like categories like hep-ph, gr-qc, nucl-ex, hep-ph, math-ph, quant-ph, etc.
+    cats.extend([row['arch'] for row in mod_rs
+                 if row['arch'] and not row['cat'] and row['arch'] in CATEGORIES_ACTIVE])    
+    return (cats, archives)

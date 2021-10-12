@@ -27,3 +27,9 @@ async def test_userstore(get_test_db):
     assert not userstore.invalidate_user(246231)
 
     
+@pytest.mark.asyncio
+async def test_archives(get_test_db):
+    db = next(get_test_db())
+    user = await userstore.getuser(9999, db)
+    assert user.moderated_archives ==  ['astro-ph', 'cond-mat', 'physics']
+    assert user.moderated_categories == ['astro-ph.HE']
