@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
+from arxiv.taxonomy.definitions import ARCHIVES, CATEGORIES
+
 from modapi.config import config
 
 import logging
@@ -24,6 +26,13 @@ class User(BaseModel):
     moderated_categories: List[str] = []
     moderated_archives: List[str] = []
 
+    def can_edit_category(self, category:str) -> bool:    
+        return (category in CATEGORIES and (
+            self.is_admin or
+            category in self.moderated_categories or
+            any([cat for cat in self.moderated_categories
+                 if CATEGORIES[cat]['in_archive'] in self.moderated_archives])
+        ))
 
 _users: Dict[int, User] = {}
 
