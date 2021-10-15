@@ -141,7 +141,11 @@ def _cats_and_archives(user_id: int, db: Session) -> Tuple[List[str],List[str]]:
     # normal categories like cs.LG
     cats = [f"{row['arch']}.{row['cat']}"
             for row in mod_rs if row['arch'] and row['cat']]
-    # archive like categories like hep-ph, gr-qc, nucl-ex, hep-ph, math-ph, quant-ph, etc.
+
+    # Archive like categories. ex. hep-ph, gr-qc, nucl-ex, etc.
+    # Don't include inactive archives since they should have been
+    # subsumed (ex cmp-lg -> cs.LG) or turned to archives (ex cond-mat).
     cats.extend([row['arch'] for row in mod_rs
-                 if row['arch'] and not row['cat'] and row['arch'] in CATEGORIES_ACTIVE])    
+                 if row['arch'] and not row['cat']
+                 and row['arch'] in CATEGORIES_ACTIVE])
     return (cats, archives)
