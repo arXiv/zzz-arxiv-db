@@ -13,9 +13,17 @@ INSERT INTO `tapir_users` VALUES (246233,'Frank','Franky','',1,1,'no-mailx234@ex
 INSERT INTO `arXiv_moderators` VALUES (246233,'hep-ph', '','0','0','0','0','0');
 INSERT INTO `tapir_nicknames` VALUES (246210,'ffrky',246233,1,1,0,0,1);
 
+INSERT INTO `tapir_users` VALUES (9999,'Ralf','W','',1,1,'no-mail-rw@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'',0,0);
+
+INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', '', '0' , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', 'HE', 1 , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'cond-mat', '', '0' , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'physics', '', '0' , '0' , '0' , '0' , '0' );
+
 -- Tapir Nicknames
 INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
+INSERT INTO `tapir_nicknames` VALUES (249999,'ralph',9999,1,1,0,0,1);
 
 -- Submissions
 INSERT INTO `arXiv_submissions` 
