@@ -9,17 +9,16 @@ from fastapi.responses import JSONResponse
 
 from modapi.auth import User, auth_user
 from modapi.db import get_db
-from modapi.tables.arxiv_tables import (
-    arXiv_admin_log,
-    arXiv_submissions
-)
+from modapi.tables.arxiv_tables import arXiv_admin_log, arXiv_submissions
 
 from modapi.tables.arxiv_models import Submissions
+from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
 from .biz_logic import cross_categories, active_cross_check
 
 from .. import schema
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -34,7 +33,7 @@ async def reject_cross(
     submission_id: int,
     category: schema.CrossRejection,
     # user: User = Depends(auth_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> JSONResponse:
     """Reject a single category from a submission of type `cross`.
 
@@ -55,10 +54,28 @@ async def reject_cross(
     if cross_cats and category.category in cross_cats:
         if len(cross_cats) > 1:
             # remove the category
-            pass
+            stmt = arXiv_submission_category.delete().where(
+                and_(
+                    arXiv_submission_category.c.submission_id == submission_id,
+                    arXiv_submission_category.c.is_primary == 0,
+                    arXiv_submission_category.c.category == category.category,
+                )
+            )
+            db.execute(stmt)
+            db.commit()
+            return 1
         else:
             submission.status = REMOVED
             # TODO: admin log entry
             db.commit()
+    else:
+        return JSONResponse(status_code=409)
 
-    return "success" if cross_cats else "failed"
+    # TODO
+    # logtext = f"rejected {category.category}"
+    # stmt = arXiv_admin_log.insert().values(
+    #     submission_id=submission_id, paper_id=submission.paper_id, username=user.username,
+    #     program="modapi.rest", command="Reject Cross", logtext=logtext)
+    # db.execute(stmt)
+
+    return 1
