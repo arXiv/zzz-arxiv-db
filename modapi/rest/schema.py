@@ -73,6 +73,10 @@ class Proposals(OrmBaseModel):
     unresolved: List[Proposal]
 
 
+class CrossRejection(OrmBaseModel):
+    category: str
+
+
 class Categories(OrmBaseModel):
     classifier_scores: List[ClassifierScore]
     submission: SubmissionClassification
