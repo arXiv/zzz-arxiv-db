@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     earliest_announce_url: str = f"{legacy_url_prefix}/modapi/earliest_announce"
     """URL to use for legacy earliest announcement service"""
 
-    enable_modkey: bool = True
+    enable_modkey: bool = False
     """Enable access via modkey. Do not run in production"""
 
     collab_updates: bool = True
