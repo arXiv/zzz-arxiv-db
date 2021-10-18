@@ -47,3 +47,12 @@ Testing modAPI on your develoopment laptop with data from GCP and the arxiv-chec
 4. Config the arxiv-check UI in src/config.ts to use the mod3 API at localhost:8000
 5. Config the arxiv-check UI in src/config.ts to use a modkey
 6. Run the arxiv-check UI on a port other than 8000.
+
+# Testing email functionality
+
+If you want to test sending emails via localhost, you can create a tunnel to nexus:
+```bash
+ssh arxiv-nexus -2 -L 25:127.0.0.1:25 -q -N -g
+```
+Note that `config.allow_emails` must be set to `True`. Be careful not to
+accidentally send emails to submitters.

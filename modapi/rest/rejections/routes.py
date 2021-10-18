@@ -1,19 +1,21 @@
 """Routes for category rejections on submissions."""
+import smtplib
 from typing import Union, List, Optional
 
-from sqlalchemy import select, or_, and_, null
+from sqlalchemy import select, and_, null
 from sqlalchemy.orm import joinedload, Session
 from fastapi import APIRouter, Depends
-from pydantic import conlist
 from fastapi.responses import JSONResponse
 
+from modapi.config import config
 from modapi.auth import User, auth_user
 from modapi.db import get_db
 from modapi.tables.arxiv_tables import arXiv_admin_log, arXiv_submissions
 
 from modapi.tables.arxiv_models import Submissions
 from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
-from .biz_logic import cross_categories, active_cross_check
+from modapi.util.email import build_reject_cross_email, send_email
+from .biz_logic import active_cross_check
 
 from .. import schema
 
@@ -50,7 +52,7 @@ async def reject_cross(
     if not submission:
         return JSONResponse(status_code=404)
     cross_cats = submission.new_crosses
-    send_email = False
+    do_send_email = False
 
     if cross_cats and category.category in cross_cats:
         logtext = f"rejected {category.category} from cross"
@@ -67,18 +69,23 @@ async def reject_cross(
         else:
             submission.status = REMOVED
             logtext = logtext + "; removed submission"
-            send_email = True
+            do_send_email = True
 
         stmt = arXiv_admin_log.insert().values(
-            submission_id=submission_id, paper_id=submission.doc_paper_id, username=user.username,
-            program="modapi.rest", command="reject_cross", logtext=logtext)
+            submission_id=submission_id,
+            paper_id=submission.doc_paper_id,
+            username=user.username,
+            program="modapi.rest",
+            command="reject_cross",
+            logtext=logtext,
+        )
         db.execute(stmt)
         db.commit()
     else:
         return JSONResponse(status_code=409)
 
-    # TODO: email
-    if send_email:
-        pass
+    if do_send_email:
+        msg = build_reject_cross_email(submission.submitter_email, [category.category])
+        send_email(msg)
 
     return 1
