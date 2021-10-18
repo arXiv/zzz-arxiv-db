@@ -32,7 +32,7 @@ REMOVED = 9
 async def reject_cross(
     submission_id: int,
     category: schema.CrossRejection,
-    # user: User = Depends(auth_user),
+    user: User = Depends(auth_user),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """Reject a single category from a submission of type `cross`.
@@ -50,8 +50,10 @@ async def reject_cross(
     if not submission:
         return JSONResponse(status_code=404)
     cross_cats = submission.new_crosses
+    send_email = False
 
     if cross_cats and category.category in cross_cats:
+        logtext = f"rejected {category.category} from cross"
         if len(cross_cats) > 1:
             # remove the category
             stmt = arXiv_submission_category.delete().where(
@@ -62,20 +64,21 @@ async def reject_cross(
                 )
             )
             db.execute(stmt)
-            db.commit()
-            return 1
         else:
             submission.status = REMOVED
-            # TODO: admin log entry
-            db.commit()
+            logtext = logtext + "; removed submission"
+            send_email = True
+
+        stmt = arXiv_admin_log.insert().values(
+            submission_id=submission_id, paper_id=submission.doc_paper_id, username=user.username,
+            program="modapi.rest", command="reject_cross", logtext=logtext)
+        db.execute(stmt)
+        db.commit()
     else:
         return JSONResponse(status_code=409)
 
-    # TODO
-    # logtext = f"rejected {category.category}"
-    # stmt = arXiv_admin_log.insert().values(
-    #     submission_id=submission_id, paper_id=submission.paper_id, username=user.username,
-    #     program="modapi.rest", command="Reject Cross", logtext=logtext)
-    # db.execute(stmt)
+    # TODO: email
+    if send_email:
+        pass
 
     return 1
