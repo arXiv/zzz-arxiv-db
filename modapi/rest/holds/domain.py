@@ -25,7 +25,6 @@ class SpecificRejectReasons(str, Enum):
     hardreject = "hardreject"
     nonresearch = "nonresearch"
     salami = "salami"
-    rejectcross = "reject-cross"
 
 
 RejectReasons = Union[SpecificRejectReasons, Literal["reject-other"]]
