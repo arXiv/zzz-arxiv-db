@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     collab_debug: bool = False
     """Debugging of the socketio collab app"""
-    
+
     jwt_secret: SecretStr = "not-set-" + secrets.token_urlsafe(16)
     """NG JWT_SECRET from arxiv-auth login service"""
 
@@ -45,6 +45,12 @@ class Settings(BaseSettings):
 
     collab_updates: bool = True
     """Allows disabling of change updates sent via socketio"""
+
+    allow_emails: bool = False
+    """Allows modapi to send emails."""
+
+    smtp_host: str = 'localhost'
+    """SMTP host used to send emails."""
 
     allow_origins = [
         "https://mod.arxiv.org",
@@ -69,7 +75,7 @@ class Settings(BaseSettings):
         """File to read environment from"""
 
         case_sensitive = False
-                
+
 
 config = Settings()
 """Settings build from defaults, env file, and env vars.

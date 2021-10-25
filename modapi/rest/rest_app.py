@@ -18,6 +18,7 @@ from .submissions.routes import router as subs_router
 from .user import router as user_router
 from .publish_time import router as time_router
 from .islocked import router as locked_router
+from .rejections.routes import router as rejections_router
 
 import logging
 
@@ -40,6 +41,7 @@ fast_app.include_router(status_router, tags=['Service Status'])
 fast_app.include_router(hold_router, tags=['Holds'])
 fast_app.include_router(user_router, tags=['User'])
 fast_app.include_router(time_router, tags=['Times'])
+fast_app.include_router(rejections_router, tags=['Rejections'])
 
 db_check_task = None
 
