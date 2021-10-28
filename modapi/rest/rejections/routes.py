@@ -14,7 +14,7 @@ from modapi.tables.arxiv_tables import arXiv_admin_log, arXiv_submissions
 
 from modapi.tables.arxiv_models import Submissions
 from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
-from modapi.util.email import build_reject_cross_email, send_email
+from modapi.email import build_reject_cross_email, send_email
 from .biz_logic import active_cross_check
 
 from .. import schema
