@@ -13,18 +13,26 @@ INSERT INTO `tapir_users` VALUES (246233,'Frank','Franky','',1,1,'no-mailx234@ex
 INSERT INTO `arXiv_moderators` VALUES (246233,'hep-ph', '','0','0','0','0','0');
 INSERT INTO `tapir_nicknames` VALUES (246210,'ffrky',246233,1,1,0,0,1);
 
+INSERT INTO `tapir_users` VALUES (9999,'Ralf','W','',1,1,'no-mail-rw@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'',0,0);
+
+INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', '', '0' , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', 'HE', 1 , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'cond-mat', '', '0' , '0' , '0' , '0' , '0' );
+INSERT INTO `arXiv_moderators` VALUES (9999, 'physics', '', '0' , '0' , '0' , '0' , '0' );
+
 -- Tapir Nicknames
 INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
+INSERT INTO `tapir_nicknames` VALUES (249999,'ralph',9999,1,1,0,0,1);
 
 -- Submissions
-INSERT INTO `arXiv_submissions` 
-(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`) 
-VALUES 
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
 (1137914,NULL,NULL,NULL,1,1,1,1,4 /* stage */,246231,'Brandon Barker','beb82@cornell.edu','2015-10-12 17:11:21','2015-10-12 21:58:44',1 /* status */,NULL,0,'2015-11-17 15:11:21',NULL,2848951,'pdf','1',0,0,'MPI 3 One more time','Brandon Barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'The Message Passing Interface, version three point zero.','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'new',NULL,NULL,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/Kubla_Khan.pdf',NULL,0,NULL);
 
-INSERT INTO `arXiv_submission_category` 
-(`submission_id`, `category`, `is_primary`, `is_published`) 
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
 VALUES (1137914,'q-bio.CB',1,0);
 
 
@@ -145,6 +153,33 @@ VALUES
 (4400,'cs.LG',1,1),
 (4400,'cs.DD',0,1),
 (4400,'hep-ph',0,0);
+
+--- a cross submission
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
+(4401,NULL,NULL,NULL,1,1,1,1,5,246231,'Brandon Barker','beb82@cornell.edu','2015-11-16 19:58:40','2015-11-17 14:15:41', 1, NULL,0,NULL,NULL,1502662,'pdftex','',0,0,'proposal test case','Brandon barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Proposal test case','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'cross',0,0,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/extraction_timeout1_1137932.tar.gz',NULL,0,NULL);
+
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
+VALUES
+(4401,'cs.LG',1,1),
+(4401,'cs.DD',0,1),
+(4401,'hep-ph',0,0);
+
+--- a cross submission with more than one category
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
+(4402,NULL,NULL,NULL,1,1,1,1,5,246231,'Brandon Barker','beb82@cornell.edu','2015-11-17 19:58:40','2015-11-18 14:15:41', 1, NULL,0,NULL,NULL,1502662,'pdftex','',0,0,'proposal test case','Brandon barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Proposal test case','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'cross',0,0,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/extraction_timeout1_1137932.tar.gz',NULL,0,NULL);
+
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
+VALUES
+(4402,'cs.LG',1,1),
+(4402,'cs.DD',0,1),
+(4402,'hep-ph',0,0),
+(4402,'cs.AI',0,0);
 
 
 INSERT INTO tapir_users VALUES

@@ -35,6 +35,10 @@ def to_submission(sub: arxiv_models.Submissions, user: User) -> schema.Submissio
         [lg for lg in sub.admin_log if lg.command == "admin comment"]
     )
     out["matched"] = make_match(cats, user)
+
+    out["hold_type"] = sub.hold_reason and sub.hold_reason.type or None
+    out["hold_reason"] = sub.hold_reason and sub.hold_reason.reason or None
+
     return out
 
 

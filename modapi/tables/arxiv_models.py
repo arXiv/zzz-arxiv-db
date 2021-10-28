@@ -1397,6 +1397,11 @@ class Submissions(Base):
                 if c.is_primary == 0]
 
     @property
+    def categories(self) -> List[str]:
+        """All the categories"""
+        return [cr.category for cr in self.submission_category]
+    
+    @property
     def new_crosses(self) -> List[str]:
         """For type 'new' these will be redundent with secondary_categories"""
         return [c.category for c in self.submission_category
