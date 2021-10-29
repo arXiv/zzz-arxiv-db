@@ -1,6 +1,6 @@
 from unittest import mock
 from modapi.auth import user_jwt
-from modapi.util.email import build_reject_cross_email
+from modapi.email import build_reject_cross_email
 
 SUB_ID_1 = 4401
 SUB_ID_2 = 4402

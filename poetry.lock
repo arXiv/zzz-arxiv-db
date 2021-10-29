@@ -19,11 +19,12 @@ speedups = ["aiodns", "brotlipy", "cchardet"]
 
 [[package]]
 name = "arxiv-base"
-version = "0.17.2.1"
+version = "0.16.8-124-g4c4812c"
 description = ""
 category = "main"
 optional = false
 python-versions = "*"
+develop = false
 
 [package.dependencies]
 backports-datetime-fromisoformat = "1.0.0"
@@ -34,6 +35,12 @@ jsonschema = "*"
 pytz = "*"
 typing-extensions = "*"
 uwsgi = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/arXiv/arxiv-base.git/"
+reference = "4c4812c8957ff0152e16fc701782acb2986f005d"
+resolved_reference = "4c4812c8957ff0152e16fc701782acb2986f005d"
 
 [[package]]
 name = "astroid"
@@ -635,7 +642,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.4.0"
+version = "5.4.1"
 description = "Socket.IO server and client for Python"
 category = "main"
 optional = false
@@ -896,7 +903,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "d9495381393e79941c85e440143be932b3bbf13f3efcd2418c9fb1c0d6c87d7f"
+content-hash = "f9dbbcc091340ce228e44536e52b28705fea5d7e45d729deaba89daccdbac304"
 
 [metadata.files]
 aiohttp = [
@@ -938,9 +945,7 @@ aiohttp = [
     {file = "aiohttp-3.7.4.post0-cp39-cp39-win_amd64.whl", hash = "sha256:02f46fc0e3c5ac58b80d4d56eb0a7c7d97fcef69ace9326289fb9f1955e65cfe"},
     {file = "aiohttp-3.7.4.post0.tar.gz", hash = "sha256:493d3299ebe5f5a7c66b9819eacdcfbbaaf1a8e84911ddffcdc48888497afecf"},
 ]
-arxiv-base = [
-    {file = "arxiv-base-0.17.2.1.tar.gz", hash = "sha256:ea5afc2012ddaa8ae568ff1ca78c82bc0427ce370be10fbb74bc405f85a793e0"},
-]
+arxiv-base = []
 astroid = [
     {file = "astroid-2.5.2-py3-none-any.whl", hash = "sha256:cd80bf957c49765dce6d92c43163ff9d2abc43132ce64d4b1b47717c6d2522df"},
     {file = "astroid-2.5.2.tar.gz", hash = "sha256:6b0ed1af831570e500e2437625979eaa3b36011f66ddfc4ce930128610258ca9"},
@@ -1342,8 +1347,8 @@ python-engineio = [
     {file = "python_engineio-4.2.0-py2.py3-none-any.whl", hash = "sha256:c6c119c2039fcb6f64d260211ca92c0c61b2b888a28678732a961f2aaebcc848"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.4.0.tar.gz", hash = "sha256:ca807c9e1f168e96dea412d64dd834fb47c470d27fd83da0504aa4b248ba2544"},
-    {file = "python_socketio-5.4.0-py3-none-any.whl", hash = "sha256:7ed57f6c024abdfeb9b25c74c0c00ffc18da47d903e8d72deecb87584370d1fc"},
+    {file = "python-socketio-5.4.1.tar.gz", hash = "sha256:ef4e273ddfebb421144a228cbab1e7e27ffe8d372514fa561e57d590ea6627b0"},
+    {file = "python_socketio-5.4.1-py3-none-any.whl", hash = "sha256:d84fa319e943aa18328280c8fbc4e2ba03cf9e96ff905b294b8b482af64532c9"},
 ]
 pytz = [
     {file = "pytz-2021.1-py2.py3-none-any.whl", hash = "sha256:eb10ce3e7736052ed3623d49975ce333bcd712c7bb19a58b9e2089d4057d0798"},
