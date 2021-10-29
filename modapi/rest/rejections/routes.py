@@ -15,7 +15,7 @@ from modapi.tables.arxiv_tables import arXiv_admin_log, arXiv_submissions
 from modapi.tables.arxiv_models import Submissions
 from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
 from modapi.email import build_reject_cross_email, send_email
-from .biz_logic import active_cross_check
+from .biz_logic import active_submission_check
 
 from .. import schema
 
@@ -30,15 +30,16 @@ REMOVED = 9
 """Submission table status for removed."""
 
 
-@router.post("/submission/{submission_id}/reject_cross")
-async def reject_cross(
+@router.post("/submission/{submission_id}/category_rejection")
+async def category_rejection(
     submission_id: int,
     category: schema.CrossRejection,
     user: User = Depends(auth_user),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
-    """Reject a single category from a submission of type `cross`.
+    """Reject a single category from a submission.
 
+    If submission is of type `cross`:
     If the category being rejected is the only category in the set of new
     "cross" categories, set the submission status to REMOVED (9), log the
     action to the admin log and notify the
@@ -48,44 +49,57 @@ async def reject_cross(
     categories, remove the category from the submission
     and log the action to the admin log.
     """
-    submission = active_cross_check(db, submission_id)
+    submission = active_submission_check(db, submission_id)
     if not submission:
         return JSONResponse(status_code=404)
-    cross_cats = submission.new_crosses
-    do_send_email = False
 
-    if cross_cats and category.category in cross_cats:
-        logtext = f"rejected {category.category} from cross"
-        if len(cross_cats) > 1:
-            # remove the category
-            stmt = arXiv_submission_category.delete().where(
-                and_(
-                    arXiv_submission_category.c.submission_id == submission_id,
-                    arXiv_submission_category.c.is_primary == 0,
-                    arXiv_submission_category.c.category == category.category,
+    if submission.type == "cross":
+        cross_cats = submission.new_crosses
+        do_send_email = False
+
+        if cross_cats and category.category in cross_cats:
+            logtext = f"rejected {category.category} from cross"
+            if len(cross_cats) > 1:
+                # remove the category
+                stmt = arXiv_submission_category.delete().where(
+                    and_(
+                        arXiv_submission_category.c.submission_id == submission_id,
+                        arXiv_submission_category.c.is_primary == 0,
+                        arXiv_submission_category.c.category == category.category,
+                    )
                 )
+                db.execute(stmt)
+            else:
+                submission.status = REMOVED
+                logtext = logtext + "; removed submission"
+                do_send_email = True
+
+            stmt = arXiv_admin_log.insert().values(
+                submission_id=submission_id,
+                paper_id=submission.doc_paper_id,
+                username=user.username,
+                program="modapi.rest",
+                command="reject_cross",
+                logtext=logtext,
             )
             db.execute(stmt)
+            db.commit()
         else:
-            submission.status = REMOVED
-            logtext = logtext + "; removed submission"
-            do_send_email = True
+            return JSONResponse(status_code=409)
 
-        stmt = arXiv_admin_log.insert().values(
-            submission_id=submission_id,
-            paper_id=submission.doc_paper_id,
-            username=user.username,
-            program="modapi.rest",
-            command="reject_cross",
-            logtext=logtext,
-        )
-        db.execute(stmt)
-        db.commit()
+        if do_send_email:
+            msg = build_reject_cross_email(submission.submitter_email, [category.category])
+            send_email(msg)
+    elif submission.type == "new":
+        # TODO:
+        # if valid category, remove
+        # if category was primary
+        #   put on hold with sticky status
+        # if cateogry was secondary no need for hold
+        # log action
+        # log as proposal? 
+        pass
     else:
-        return JSONResponse(status_code=409)
-
-    if do_send_email:
-        msg = build_reject_cross_email(submission.submitter_email, [category.category])
-        send_email(msg)
+        return JSONResponse(status_code=403)
 
     return 1

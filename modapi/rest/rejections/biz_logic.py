@@ -25,3 +25,8 @@ def active_cross_check(db: Session, submission_id):
     return db.query(Submissions).filter(Submissions.submission_id == submission_id,
                                         Submissions.type == "cross",
                                         Submissions.status.in_([SUBMITTED, ON_HOLD, NEXT])).first()
+
+def active_submission_check(db: Session, submission_id):
+    """Check whether submission_id is an active cross."""
+    return db.query(Submissions).filter(Submissions.submission_id == submission_id,
+                                        Submissions.status.in_([SUBMITTED, ON_HOLD, NEXT])).first()
