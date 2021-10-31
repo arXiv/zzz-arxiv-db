@@ -95,7 +95,10 @@ async def category_rejection(
                 submission.submitter_email, [rejection.category]
             )
             send_email(msg)
-    elif submission.type == "new":
+    elif submission.type == "new" and rejection.action in (
+        "reject",
+        "accept_secondary",
+    ):
 
         # TODO:
         # if valid category, remove
@@ -112,24 +115,40 @@ async def category_rejection(
 
         if is_primary and submission.status in [SUBMITTED, NEXT]:
             # put on hold
-            stmt = (arXiv_submissions.update()
-                    .values(status=ON_HOLD)
-                    .where(arXiv_submissions.c.submission_id == submission_id))
+            stmt = (
+                arXiv_submissions.update()
+                .values(status=ON_HOLD)
+                .where(arXiv_submissions.c.submission_id == submission_id)
+            )
             db.execute(stmt)
             # log old/new status?
 
-        stmt = arXiv_submission_category.delete().where(
-            and_(
-                arXiv_submission_category.c.submission_id == submission_id,
-                arXiv_submission_category.c.is_primary == int(is_primary),
-                arXiv_submission_category.c.category == rejection.category,
+        if rejection.action == "reject":
+            stmt = arXiv_submission_category.delete().where(
+                and_(
+                    arXiv_submission_category.c.submission_id == submission_id,
+                    arXiv_submission_category.c.is_primary == int(is_primary),
+                    arXiv_submission_category.c.category == rejection.category,
+                )
             )
-        )
-        db.execute(stmt)
-        # log action
-        # log as proposal?
-        db.commit()
-        pass
+            db.execute(stmt)
+            db.commit()
+        elif rejection.action == "accept_secondary" and is_primary:
+            stmt = (
+                arXiv_submission_category.update()
+                .values(is_primary=0)
+                .where(
+                    and_(
+                        arXiv_submission_category.c.submission_id == submission_id,
+                        arXiv_submission_category.c.is_primary == 1,
+                        arXiv_submission_category.c.category == rejection.category,
+                    )
+                )
+            )
+            db.execute(stmt)
+            db.commit()
+        else:
+            return JSONResponse(status_code=409)
     else:
         return JSONResponse(status_code=403)
 
