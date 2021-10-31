@@ -4,13 +4,18 @@ from typing import Union, List, Optional
 
 from sqlalchemy import select, and_, null
 from sqlalchemy.orm import joinedload, Session
+from sqlalchemy.sql import func
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from modapi.config import config
 from modapi.auth import User, auth_user
 from modapi.db import get_db
-from modapi.tables.arxiv_tables import arXiv_admin_log, arXiv_submissions
+from modapi.tables.arxiv_tables import (
+    arXiv_admin_log,
+    arXiv_submissions,
+    arXiv_submission_category_proposal,
+)
 
 from modapi.tables.arxiv_models import Submissions
 from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
@@ -132,8 +137,14 @@ async def category_rejection(
                 )
             )
             db.execute(stmt)
+            # create a rejected proposal
+            stmt = _build_proposal_insert_stmt(
+                submission_id, rejection.category, int(is_primary), user.user_id, 3
+            )
+            db.execute(stmt)
             db.commit()
         elif rejection.action == "accept_secondary" and is_primary:
+            # change primary to secondary
             stmt = (
                 arXiv_submission_category.update()
                 .values(is_primary=0)
@@ -146,6 +157,11 @@ async def category_rejection(
                 )
             )
             db.execute(stmt)
+            # create an accepted-as-secondary proposal
+            stmt = _build_proposal_insert_stmt(
+                submission_id, rejection.category, 1, user.user_id, 2
+            )
+            db.execute(stmt)
             db.commit()
         else:
             return JSONResponse(status_code=409)
@@ -153,3 +169,16 @@ async def category_rejection(
         return JSONResponse(status_code=403)
 
     return 1
+
+
+def _build_proposal_insert_stmt(
+    submission_id, category, is_primary, user_id, proposal_status
+):
+    return arXiv_submission_category_proposal.insert().values(
+        submission_id=submission_id,
+        category=category,
+        is_primary=is_primary,
+        user_id=user_id,
+        proposal_status=proposal_status,
+        updated=func.now(),
+    )
