@@ -669,7 +669,7 @@ class TapirUsers(Base):
     username = relationship("TapirNicknames", uselist=False)
     demographics = relationship("Demographics", uselist=False)
 
-    
+
 class AuthorIds(Base):
     __tablename__ = 'arXiv_author_ids'
 
@@ -1387,12 +1387,12 @@ class Submissions(Base):
         except Exception:
             return None
         return cat
-    
+
     @property
     def secondary_categories(self) -> List[str]:
         """Category names from this submission's secondary classifications.
 
-        Returns published and unpublised secondaries."""        
+        Returns published and unpublished secondaries."""
         return [c.category for c in self.submission_category
                 if c.is_primary == 0]
 
@@ -1400,10 +1400,10 @@ class Submissions(Base):
     def categories(self) -> List[str]:
         """All the categories"""
         return [cr.category for cr in self.submission_category]
-    
+
     @property
     def new_crosses(self) -> List[str]:
-        """For type 'new' these will be redundent with secondary_categories"""
+        """For type 'new' these will be redundant with secondary_categories"""
         return [c.category for c in self.submission_category
                 if c.is_primary == 0 and c.is_published != 1]
 
@@ -1422,7 +1422,7 @@ class Submissions(Base):
         # Need same as arXiv::Schema::ResultSet::DocCategory.string
         string ='fucking what?'
         cat_list = set([c.category for c in self.submission_category])
-        
+
         cats_to_add =[CATEGORY_ALIASES_INV[cat] for cat in cat_list
                       if cat in CATEGORY_ALIASES_INV]
         fudged = [cat_list[0]] + sorted(cat_list[1:] + cats_to_add)

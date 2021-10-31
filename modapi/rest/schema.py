@@ -47,6 +47,8 @@ StatusLiteral = Literal[1, 2, 4]
 
 PropTypeLiterals = Literal["primary", "secondary"]
 
+RejectActionLiterals = Literal["reject", "accept_secondary"]
+
 class ClassifierScore(OrmBaseModel):
     score: float
     category: str
@@ -73,8 +75,9 @@ class Proposals(OrmBaseModel):
     unresolved: List[Proposal]
 
 
-class CrossRejection(OrmBaseModel):
+class CategoryRejection(OrmBaseModel):
     category: str
+    action: RejectActionLiterals
 
 
 class Categories(OrmBaseModel):

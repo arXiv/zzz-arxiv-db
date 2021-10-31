@@ -95,7 +95,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     """Releases a hold.
 
     To release a hold means to set the submission status so that it is
-    avaialbe to be published.
+    available to be published.
 
     If Moderator the submission must be:
     - on hold
