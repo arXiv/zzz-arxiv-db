@@ -1417,15 +1417,14 @@ class Submissions(Base):
     @property
     def fudged_categories(self) -> str:
 
-        #This is a close port of the legacy code
-
-        # Need same as arXiv::Schema::ResultSet::DocCategory.string
-        string ='fucking what?'
-        cat_list = set([c.category for c in self.submission_category])
-
-        cats_to_add =[CATEGORY_ALIASES_INV[cat] for cat in cat_list
-                      if cat in CATEGORY_ALIASES_INV]
-        fudged = [cat_list[0]] + sorted(cat_list[1:] + cats_to_add)
+        # This is a close port of the legacy code
+        # Needs to be same as arXiv::Schema::ResultSet::DocCategory.string
+        primary_str = self.primary_classification if self.primary_classification else '-'
+        secondary_list = list(set([cat for cat in self.secondary_categories]))
+        cats_to_add = [CATEGORY_ALIASES_INV[cat] for cat in secondary_list
+                       if cat in CATEGORY_ALIASES_INV]
+        fudged = [primary_str] + sorted(secondary_list + cats_to_add)
+        print(f"FUDGED: {fudged}")
         return ' '.join(fudged)
 
 class TopPapers(Base):
