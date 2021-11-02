@@ -1452,10 +1452,10 @@ arXiv_submission_category = Table(
 
 arXiv_submission_category_proposal = Table(
     'arXiv_submission_category_proposal', metadata,
-    Column('proposal_id', Integer(), primary_key=True, nullable=False, index=True),
-    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False, index=True),
-    Column('category', ForeignKey('arXiv_category_def.category'), primary_key=True, nullable=False, index=True),
-    Column('is_primary', Integer(), primary_key=True, nullable=False, index=True, server_default=text("'0'")),
+    Column('proposal_id', Integer(), primary_key=True, nullable=False, index=True, autoincrement=True),
+    Column('submission_id', ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False, index=True),
+    Column('category', ForeignKey('arXiv_category_def.category'), nullable=False, index=True),
+    Column('is_primary', Integer(), nullable=False, index=True, server_default=text("'0'")),
     Column('proposal_status', Integer(), server_default=text("'0'")),
     Column('user_id', ForeignKey('tapir_users.user_id'), nullable=False, index=True),
     Column('updated', DateTime),
@@ -1552,7 +1552,7 @@ arXiv_submission_hold_reason = Table(
     Column('comment_id', ForeignKey('arXiv_admin_log.id')),
 )
 
- 
+
 arXiv_submission_flag = Table(
     'arXiv_submission_flag', metadata,
     Column('flag_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
@@ -1581,7 +1581,7 @@ CREATE TABLE `arXiv_submission_mod_flag` (
 
 # Allow for null because some of the inactive cats don't need relations.
 alter_cat_def="""
-ALTER TABLE arXiv_category_def 
+ALTER TABLE arXiv_category_def
   ADD COLUMN archive String(16),
   ADD COLUMN subject_class String(16),
   ADD CONSTRAINT FOREIGN KEY archive_subject_class_idx (archive, subject_class) REFERENCES arXiv_categories
@@ -1592,11 +1592,11 @@ CREATE TABLE `arXiv_submission_hold_reason` (
     reason_id Integer  NULL AUTO_INCREMENT,
     submission_id Integer() NOT NULL,
     `user_id` int(4) unsigned NOT NULL DEFAULT '0',
-    reason String(30), 
-    type String(30), 
-    comment_id Integer(), 
+    reason String(30),
+    type String(30),
+    comment_id Integer(),
     PRIMARY KEY (reason_id),
-    FOREIGN KEY(submission_id) REFERENCES arXiv_submissions (submission_id) ON DELETE CASCADE, 
+    FOREIGN KEY(submission_id) REFERENCES arXiv_submissions (submission_id) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `tapir_users` (`user_id`) ON DELETE CASCADE,
     FOREIGN KEY(comment_id) REFERENCES `arXiv_admin_log` (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1

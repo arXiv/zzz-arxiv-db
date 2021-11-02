@@ -1424,7 +1424,6 @@ class Submissions(Base):
         cats_to_add = [CATEGORY_ALIASES_INV[cat] for cat in secondary_list
                        if cat in CATEGORY_ALIASES_INV]
         fudged = [primary_str] + sorted(secondary_list + cats_to_add)
-        print(f"FUDGED: {fudged}")
         return ' '.join(fudged)
 
 class TopPapers(Base):
@@ -1694,7 +1693,7 @@ class SubmissionCategory(Base):
 class SubmissionCategoryProposal(Base):
     __tablename__ = 'arXiv_submission_category_proposal'
 
-    proposal_id = Column(INTEGER(11), primary_key=True, nullable=False, index=True)
+    proposal_id = Column(INTEGER(11), primary_key=True, nullable=False, index=True, autoincrement=True)
     submission_id = Column(ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False, index=True)
     category = Column(ForeignKey('arXiv_category_def.category'), primary_key=True, nullable=False, index=True)
     is_primary = Column(TINYINT(1), primary_key=True, nullable=False, index=True, server_default=text("'0'"))

@@ -109,8 +109,8 @@ INSERT INTO `arXiv_submission_category`
 VALUES (1137934,'cs.LG',1,0);
 
 INSERT INTO arXiv_submission_category_proposal
-( proposal_id, submission_id, category, is_primary, proposal_status, user_id, updated            , proposal_comment_id, response_comment_id)
-values(      212475,       1137934, 'hep-ph' ,          0,               0,   20584, '2021-06-02 13:27:49',            21317484,                NULL);
+( proposal_id, submission_id, category, is_primary, proposal_status, user_id, updated, proposal_comment_id, response_comment_id)
+values(      1,       1137934, 'hep-ph' ,          0,               0,   20584, '2021-06-02 13:27:49',            21317484,                NULL);
 
 -- a cross submission
 -- it's a little fake because it doens't have a paper with it

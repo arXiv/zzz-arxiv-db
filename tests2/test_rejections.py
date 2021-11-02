@@ -4,12 +4,69 @@ from modapi.email import build_reject_cross_email
 
 SUB_ID_1 = 4401
 SUB_ID_2 = 4402
+SUB_ID_3 = 1137932
 
 
-def test_reject_cross_unauthorized(client):
-    res = client.post(f"/submission/{SUB_ID_1}/reject_cross")
+def test_category_rejection_unauthorized(client):
+    res = client.post(f"/submission/{SUB_ID_1}/category_rejection")
     assert res.status_code == 401
 
+def test_reject_category(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+
+    # get submission
+    res = client.get(f"/submission/{SUB_ID_3}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+
+    data = res.json()
+    assert data["status"] == "submitted"
+    assert data["type"] == "new"
+    assert data["categories"]["submission"]["primary"] == "q-bio.GN"
+    assert data["categories"]["submission"]["secondary"] == []
+
+    # accept_secondary action
+    res = client.post(
+        f"/submission/{SUB_ID_3}/category_rejection",
+        json={"category": "q-bio.GN", "action": "accept_secondary"},
+        cookies=cookies
+    )
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data == "success"
+
+    res = client.get(f"/submission/{SUB_ID_3}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+
+    # expect the status to be changed to `on_hold`
+    data = res.json()
+    assert data["status"] == "on hold"
+    assert data["type"] == "new"
+    assert data["categories"]["submission"]["primary"] == None
+    assert data["categories"]["submission"]["secondary"] == ["q-bio.GN"]
+
+    # reject action
+    res = client.post(
+        f"/submission/{SUB_ID_3}/category_rejection",
+        json={"category": "q-bio.GN", "action": "reject"},
+        cookies=cookies
+    )
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data == "success"
+
+    res = client.get(f"/submission/{SUB_ID_3}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data["status"] == "on hold"
+    assert data["categories"]["submission"]["primary"] == None
+    assert data["categories"]["submission"]["secondary"] == []
 
 def test_reject_cross(client):
     cookies = {
@@ -28,16 +85,24 @@ def test_reject_cross(client):
 
     # try to reject some other category not associated with cross--should fail
     res = client.post(
-        f"/submission/{SUB_ID_1}/reject_cross",
-        json={"category": "cs.ML"},
+        f"/submission/{SUB_ID_1}/category_rejection",
+        json={"category": "cs.ML", "action": "reject"},
         cookies=cookies,
     )
     assert res.status_code == 409
 
+    # try accept_secondary action for cross--should fail
+    res = client.post(
+        f"/submission/{SUB_ID_1}/category_rejection",
+        json={"category": "cs.ML", "action": "accept_secondary"},
+        cookies=cookies,
+    )
+    assert res.status_code == 403
+
     # try to reject the only cross category
     res = client.post(
-        f"/submission/{SUB_ID_1}/reject_cross",
-        json={"category": "hep-ph"},
+        f"/submission/{SUB_ID_1}/category_rejection",
+        json={"category": "hep-ph", "action": "reject"},
         cookies=cookies,
     )
     assert res.status_code == 200
@@ -66,8 +131,8 @@ def test_reject_cross(client):
 
     # try to reject first of two cross categories
     res = client.post(
-        f"/submission/{SUB_ID_2}/reject_cross",
-        json={"category": "cs.AI"},
+        f"/submission/{SUB_ID_2}/category_rejection",
+        json={"category": "cs.AI", "action": "reject"},
         cookies=cookies,
     )
     res = client.get(f"/submission/{SUB_ID_2}", cookies=cookies)
@@ -78,8 +143,8 @@ def test_reject_cross(client):
 
     # try to reject second of two cross categories
     res = client.post(
-        f"/submission/{SUB_ID_2}/reject_cross",
-        json={"category": "hep-ph"},
+        f"/submission/{SUB_ID_2}/category_rejection",
+        json={"category": "hep-ph", "action": "reject"},
         cookies=cookies,
     )
     res = client.get(f"/submission/{SUB_ID_2}", cookies=cookies)
