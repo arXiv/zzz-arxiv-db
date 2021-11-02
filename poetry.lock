@@ -19,12 +19,11 @@ speedups = ["aiodns", "brotlipy", "cchardet"]
 
 [[package]]
 name = "arxiv-base"
-version = "0.16.8-124-g4c4812c"
+version = "0.17.2.1"
 description = ""
 category = "main"
 optional = false
 python-versions = "*"
-develop = false
 
 [package.dependencies]
 backports-datetime-fromisoformat = "1.0.0"
@@ -35,12 +34,6 @@ jsonschema = "*"
 pytz = "*"
 typing-extensions = "*"
 uwsgi = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/arXiv/arxiv-base.git/"
-reference = "4c4812c8957ff0152e16fc701782acb2986f005d"
-resolved_reference = "4c4812c8957ff0152e16fc701782acb2986f005d"
 
 [[package]]
 name = "astroid"
@@ -903,7 +896,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f9dbbcc091340ce228e44536e52b28705fea5d7e45d729deaba89daccdbac304"
+content-hash = "6cfca381c644e7e2170ff257652c7400bdc50002877357dd389c2d474a6e7da3"
 
 [metadata.files]
 aiohttp = [
@@ -945,7 +938,9 @@ aiohttp = [
     {file = "aiohttp-3.7.4.post0-cp39-cp39-win_amd64.whl", hash = "sha256:02f46fc0e3c5ac58b80d4d56eb0a7c7d97fcef69ace9326289fb9f1955e65cfe"},
     {file = "aiohttp-3.7.4.post0.tar.gz", hash = "sha256:493d3299ebe5f5a7c66b9819eacdcfbbaaf1a8e84911ddffcdc48888497afecf"},
 ]
-arxiv-base = []
+arxiv-base = [
+    {file = "arxiv-base-0.17.2.1.tar.gz", hash = "sha256:ea5afc2012ddaa8ae568ff1ca78c82bc0427ce370be10fbb74bc405f85a793e0"},
+]
 astroid = [
     {file = "astroid-2.5.2-py3-none-any.whl", hash = "sha256:cd80bf957c49765dce6d92c43163ff9d2abc43132ce64d4b1b47717c6d2522df"},
     {file = "astroid-2.5.2.tar.gz", hash = "sha256:6b0ed1af831570e500e2437625979eaa3b36011f66ddfc4ce930128610258ca9"},
