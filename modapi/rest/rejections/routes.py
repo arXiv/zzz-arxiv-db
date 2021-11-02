@@ -96,20 +96,12 @@ async def category_rejection(
                 logtext = logtext + "; removed submission"
                 do_send_email = True
 
-            # stmt = arXiv_admin_log.insert().values(
-            #     submission_id=submission_id,
-            #     paper_id=submission.doc_paper_id,
-            #     username=user.username,
-            #     program="modapi.rest",
-            #     command="reject_cross",
-            #     logtext=logtext,
-            # )
             admin_log = AdminLog(
                 submission_id=submission_id,
                 paper_id=submission.doc_paper_id,
                 username=user.username,
                 program="modapi.rest",
-                command="reject_cross",
+                command="admin comment",
                 logtext=logtext,
             )
             db.add(admin_log)
@@ -167,22 +159,6 @@ async def category_rejection(
                 was_held=was_held,
                 rejection_msg=f"{original_cats} => {_get_category_str(submission)}",
             )
-            # admin_log = _build_rejection_log(
-            #     submission, rejection, is_primary, was_held, rejected_msg, user
-            # )
-            # db.add(admin_log)
-            #
-            # # create a rejected proposal
-            # stmt = _build_proposal_insert_stmt(
-            #     submission_id=submission_id,
-            #     category=rejection.category,
-            #     is_primary=is_primary,
-            #     user_id=user.user_id,
-            #     proposal_status=PROPOSAL_STATUS_REJECTED,
-            #     admin_log_id=admin_log.id,
-            # )
-            # db.execute(stmt)
-            # db.commit()
         elif rejection.action == "accept_secondary" and is_primary:
             # change primary to secondary
             stmt = (
@@ -199,7 +175,6 @@ async def category_rejection(
             db.execute(stmt)
             db.commit()
 
-            # rejection_msg = f"{original_cats} => {_get_category_str(submission)}"
             _log_and_propose_rejection(
                 db=db,
                 submission=submission,
@@ -209,23 +184,6 @@ async def category_rejection(
                 was_held=was_held,
                 rejection_msg=f"{original_cats} => {_get_category_str(submission)}",
             )
-            # admin_log = _build_rejection_log(
-            #     submission, rejection, is_primary, was_held, rejected_msg, user
-            # )
-            # db.add(admin_log)
-            # db.commit()
-            #
-            # # create an accepted-as-secondary proposal
-            # stmt = _build_proposal_insert_stmt(
-            #     submission_id=submission_id,
-            #     category=rejection.category,
-            #     is_primary=True,
-            #     user_id=user.user_id,
-            #     proposal_status=PROPOSAL_STATUS_ACCEPTED_AS_SECONDARY,
-            #     admin_log_id=admin_log.id,
-            # )
-            # db.execute(stmt)
-            # db.commit()
         else:
             return JSONResponse(status_code=409)
     else:
