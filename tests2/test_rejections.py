@@ -12,6 +12,7 @@ def test_category_rejection_unauthorized(client):
     res = client.post(f"/submission/{SUB_ID_1}/category_rejection")
     assert res.status_code == 401
 
+
 def test_reject_category_singleton(client):
     """Test rejection for a submission that only has a single category."""
     cookies = {
@@ -33,7 +34,7 @@ def test_reject_category_singleton(client):
     res = client.post(
         f"/submission/{SUB_ID_3}/category_rejection",
         json={"category": "q-bio.GN", "action": "accept_secondary"},
-        cookies=cookies
+        cookies=cookies,
     )
     assert res.status_code == 200
     assert res.headers["Content-Type"] == "application/json"
@@ -55,7 +56,7 @@ def test_reject_category_singleton(client):
     res = client.post(
         f"/submission/{SUB_ID_3}/category_rejection",
         json={"category": "q-bio.GN", "action": "reject"},
-        cookies=cookies
+        cookies=cookies,
     )
     assert res.status_code == 200
     assert res.headers["Content-Type"] == "application/json"
@@ -69,6 +70,7 @@ def test_reject_category_singleton(client):
     assert data["status"] == "on hold"
     assert data["categories"]["submission"]["primary"] == None
     assert data["categories"]["submission"]["secondary"] == []
+
 
 def test_reject_category_multiple(client):
     """Test rejection for a submission that has multiple categories."""
@@ -85,13 +87,15 @@ def test_reject_category_multiple(client):
     assert data["status"] == "submitted"
     assert data["type"] == "new"
     assert data["categories"]["submission"]["primary"] == "cs.LG"
-    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "hep-ph"])
+    assert set(data["categories"]["submission"]["secondary"]) == set(
+        ["cs.AI", "cs.DD", "hep-ph"]
+    )
 
     # accept_secondary action
     res = client.post(
         f"/submission/{SUB_ID_4}/category_rejection",
         json={"category": "cs.LG", "action": "accept_secondary"},
-        cookies=cookies
+        cookies=cookies,
     )
     assert res.status_code == 200
     assert res.headers["Content-Type"] == "application/json"
@@ -107,13 +111,15 @@ def test_reject_category_multiple(client):
     assert data["status"] == "on hold"
     assert data["type"] == "new"
     assert data["categories"]["submission"]["primary"] == None
-    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "cs.LG", "hep-ph"])
+    assert set(data["categories"]["submission"]["secondary"]) == set(
+        ["cs.AI", "cs.DD", "cs.LG", "hep-ph"]
+    )
 
     # reject action
     res = client.post(
         f"/submission/{SUB_ID_4}/category_rejection",
         json={"category": "hep-ph", "action": "reject"},
-        cookies=cookies
+        cookies=cookies,
     )
     assert res.status_code == 200
     assert res.headers["Content-Type"] == "application/json"
@@ -126,7 +132,10 @@ def test_reject_category_multiple(client):
     data = res.json()
     assert data["status"] == "on hold"
     assert data["categories"]["submission"]["primary"] == None
-    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "cs.LG"])
+    assert set(data["categories"]["submission"]["secondary"]) == set(
+        ["cs.AI", "cs.DD", "cs.LG"]
+    )
+
 
 def test_reject_cross(client):
     cookies = {

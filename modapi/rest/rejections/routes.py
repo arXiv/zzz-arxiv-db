@@ -69,6 +69,8 @@ async def category_rejection(
     submission = _active_submission_check(db, submission_id)
     if not submission:
         return JSONResponse(status_code=404)
+    if submission.is_locked:
+        return JSONResponse(status_code=403)
     unpublished_secondaries = submission.new_crosses
 
     if submission.type == "cross" and rejection.action == "reject":
