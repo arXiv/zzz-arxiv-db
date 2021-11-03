@@ -1,34 +1,29 @@
 """Routes for category rejections on submissions."""
 import re
-from typing import Union, List, Optional
 
-from sqlalchemy import select, and_, null
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from modapi.config import config
 from modapi.auth import User, auth_user
 from modapi.db import get_db
 from modapi.tables.arxiv_tables import (
-    arXiv_admin_log,
     arXiv_submissions,
+    arXiv_submission_category,
     arXiv_submission_category_proposal,
 )
 
 from modapi.tables.arxiv_models import Submissions, AdminLog
-from modapi.tables.arxiv_tables import arXiv_submission_category, arXiv_admin_log
 from modapi.email import build_reject_cross_email, send_email
 from ..holds.domain import SUBMITTED, ON_HOLD, NEXT
-from .biz_logic import active_submission_check
 
 from .. import schema
 
 import logging
 
 log = logging.getLogger(__name__)
-
 
 router = APIRouter()
 
@@ -71,7 +66,7 @@ async def category_rejection(
 
     Returns "success" if the category_rejection completed successfully.
     """
-    submission = active_submission_check(db, submission_id)
+    submission = _active_submission_check(db, submission_id)
     if not submission:
         return JSONResponse(status_code=404)
     unpublished_secondaries = submission.new_crosses
@@ -190,6 +185,18 @@ async def category_rejection(
         return JSONResponse(status_code=403)
 
     return "success"
+
+
+def _active_submission_check(db: Session, submission_id: int):
+    """Check whether submission_id is an active cross."""
+    return (
+        db.query(Submissions)
+        .filter(
+            Submissions.submission_id == submission_id,
+            Submissions.status.in_([SUBMITTED, ON_HOLD, NEXT]),
+        )
+        .first()
+    )
 
 
 def _get_category_str(submission: Submissions) -> str:

@@ -5,13 +5,15 @@ from modapi.email import build_reject_cross_email
 SUB_ID_1 = 4401
 SUB_ID_2 = 4402
 SUB_ID_3 = 1137932
+SUB_ID_4 = 4403
 
 
 def test_category_rejection_unauthorized(client):
     res = client.post(f"/submission/{SUB_ID_1}/category_rejection")
     assert res.status_code == 401
 
-def test_reject_category(client):
+def test_reject_category_singleton(client):
+    """Test rejection for a submission that only has a single category."""
     cookies = {
         "ARXIVNG_SESSION_ID": user_jwt(246231)
     }  # Brandon, mod of q-bio.CB and q-bio.NC
@@ -67,6 +69,64 @@ def test_reject_category(client):
     assert data["status"] == "on hold"
     assert data["categories"]["submission"]["primary"] == None
     assert data["categories"]["submission"]["secondary"] == []
+
+def test_reject_category_multiple(client):
+    """Test rejection for a submission that has multiple categories."""
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+
+    # get submission
+    res = client.get(f"/submission/{SUB_ID_4}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+
+    data = res.json()
+    assert data["status"] == "submitted"
+    assert data["type"] == "new"
+    assert data["categories"]["submission"]["primary"] == "cs.LG"
+    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "hep-ph"])
+
+    # accept_secondary action
+    res = client.post(
+        f"/submission/{SUB_ID_4}/category_rejection",
+        json={"category": "cs.LG", "action": "accept_secondary"},
+        cookies=cookies
+    )
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data == "success"
+
+    res = client.get(f"/submission/{SUB_ID_4}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+
+    # expect the status to be changed to `on_hold`
+    data = res.json()
+    assert data["status"] == "on hold"
+    assert data["type"] == "new"
+    assert data["categories"]["submission"]["primary"] == None
+    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "cs.LG", "hep-ph"])
+
+    # reject action
+    res = client.post(
+        f"/submission/{SUB_ID_4}/category_rejection",
+        json={"category": "hep-ph", "action": "reject"},
+        cookies=cookies
+    )
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data == "success"
+
+    res = client.get(f"/submission/{SUB_ID_4}", cookies=cookies)
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/json"
+    data = res.json()
+    assert data["status"] == "on hold"
+    assert data["categories"]["submission"]["primary"] == None
+    assert set(data["categories"]["submission"]["secondary"]) == set(["cs.AI", "cs.DD", "cs.LG"])
 
 def test_reject_cross(client):
     cookies = {
