@@ -78,17 +78,18 @@ async def category_rejection(
 
         if rejection.category in unpublished_secondaries:
             logtext = f"rejected {rejection.category} from cross"
-            if len(unpublished_secondaries) > 1:
-                # remove the category
-                stmt = arXiv_submission_category.delete().where(
-                    and_(
-                        arXiv_submission_category.c.submission_id == submission_id,
-                        arXiv_submission_category.c.is_primary == 0,
-                        arXiv_submission_category.c.category == rejection.category,
-                    )
+
+            # remove the category
+            stmt = arXiv_submission_category.delete().where(
+                and_(
+                    arXiv_submission_category.c.submission_id == submission_id,
+                    arXiv_submission_category.c.is_primary == 0,
+                    arXiv_submission_category.c.category == rejection.category,
                 )
-                db.execute(stmt)
-            else:
+            )
+            db.execute(stmt)
+
+            if len(unpublished_secondaries) == 1:
                 submission.status = REMOVED
                 logtext = logtext + "; removed submission"
                 do_send_email = True
