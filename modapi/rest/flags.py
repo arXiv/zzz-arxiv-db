@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from modapi.rest.debug_log import debuglog, msg
 from modapi.db import get_db
 from modapi.tables.arxiv_tables import arXiv_submission_flag
 from modapi.tables.arxiv_models import SubmissionFlag, TapirUsers, Submissions
@@ -42,8 +43,10 @@ async def put_flag(submission_id: int,
         db.execute(stmt)
         db.commit()
         await send_changes([(submission_id, 'flag')])
+        debuglog.debug(msg(user, payload={'submission_id':submission_id, 'flag':flag}))
         return 1
     except exc.IntegrityError:
+        debuglog.debug(msg(user, payload={'submission_id':submission_id, 'flag':flag}, status_code=409))
         return JSONResponse(status_code=409,
                             content={"msg": "Flag already exists"})
 
@@ -52,6 +55,11 @@ async def put_flag(submission_id: int,
 async def del_flag(submission_id: int,
                    user: User = Depends(auth_user),
                    db: Session = Depends(get_db)):
+    """Deletes the flag for the user on the submission.
+
+    Warning: This does not check if the flag exists. If a flag was
+    deleted or not deleted, it aways returns 1.
+    """
     # TODO check that the row actually gets deleted
     db.execute(
         arXiv_submission_flag.delete().where(
@@ -61,6 +69,7 @@ async def del_flag(submission_id: int,
     )
     db.commit()
     await send_changes([(submission_id, 'flag')])
+    debuglog.debug(msg(user, payload={'submission_id':submission_id}))
     return 1
 
 
@@ -75,6 +84,7 @@ async def flags(user: User = Depends(auth_user), db: Session = Depends(get_db)):
                                .options(*query_options)
                                .join(Submissions))
     res = db.execute(query).scalars().all()
+    debuglog.debug(msg(user))
     return list(map(_convert, res))
 
 
@@ -94,6 +104,7 @@ async def get_flag(submission_id: int, user: User = Depends(auth_user),
     query = (select(SubmissionFlag)
              .options(*query_options)
              .filter(SubmissionFlag.submission_id == submission_id))
+    debuglog.debug(msg(user))
     return list(map(_convert, db.execute(query).scalars().all()))
 
 

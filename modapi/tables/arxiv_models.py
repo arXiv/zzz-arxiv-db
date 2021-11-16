@@ -662,7 +662,7 @@ class TapirUsers(Base):
     flag_can_lock = Column(INTEGER(1), nullable=False, index=True, server_default=text("'0'"))
 
     tapir_policy_classes = relationship('TapirPolicyClasses')
-    username = relationship("TapirNicknames", uselist=False)
+    username = relationship("TapirNicknames", uselist=False, viewonly=True)
     demographics = relationship("Demographics", uselist=False)
 
     
@@ -1102,7 +1102,7 @@ class Demographics(Base):
     veto_status = Column(Enum('ok', 'no-endorse', 'no-upload', 'no-replace'), nullable=False, server_default=text("'ok'"))
 
     arXiv_categories = relationship('Categories')
-    user = relationship('TapirUsers', uselist=False)
+    user = relationship('TapirUsers', uselist=False, viewonly=True)
 
 
 class EndorsementRequests(Base):
@@ -1362,11 +1362,11 @@ class Submissions(Base):
     arXiv_licenses = relationship('Licenses')
     submitter = relationship('TapirUsers')
     sword = relationship('Tracking')
-    submission_category = relationship('SubmissionCategory')
-    abs_classifier_data = relationship('SubmissionAbsClassifierData')
-    proposals = relationship('SubmissionCategoryProposal')
-    hold_reasons = relationship('SubmissionHoldReason')
-    flags = relationship('SubmissionFlag')
+    submission_category = relationship('SubmissionCategory', viewonly=True)
+    abs_classifier_data = relationship('SubmissionAbsClassifierData', viewonly=True)
+    proposals = relationship('SubmissionCategoryProposal', viewonly=True)
+    hold_reasons = relationship('SubmissionHoldReason', viewonly=True)
+    flags = relationship('SubmissionFlag', viewonly=True)
     admin_log = relationship('AdminLog',
                              primaryjoin='AdminLog.submission_id == Submissions.submission_id',
                              foreign_keys='AdminLog.submission_id',

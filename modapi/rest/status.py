@@ -1,5 +1,10 @@
+import subprocess
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Depends
+
 from modapi.db import get_db
+
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 
@@ -16,6 +21,7 @@ async def status(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
     except Exception:
         raise HTTPException(status_code=503, detail='DB is not avaiable')
+
     return 'Good, DB up.'
 
 
@@ -27,8 +33,12 @@ async def version():
     """Returns git version"""
     global _GVER
     if not _GVER:
-        with open('git-commit.txt') as fh:
-            _GVER = fh.read().rstrip("\n")
+        cmtf = Path('git-commit.txt')
+        if cmtf.is_file():
+            with open('git-commit.txt') as fh:
+                _GVER = fh.read().rstrip()
+        else:
+            _GVER = subprocess.check_output('git rev-parse --short HEAD'.split()).rstrip()
 
     if _GVER:
         return _GVER

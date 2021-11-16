@@ -1,3 +1,4 @@
+from modapi.rest.debug_log import debuglog, msg
 from typing import List, Optional
 
 # from modapi.collab.collab_app import sio
@@ -24,9 +25,7 @@ from modapi.tables.arxiv_models import (
 
 from .convert import to_submission
 
-router = APIRouter(
-   dependencies=[Depends(auth_user)]
-)
+router = APIRouter(dependencies=[Depends(auth_user)])
 
 # Options to for that are needed to bring in all the
 # values that are used for the ORM queries.
@@ -42,7 +41,8 @@ query_options = [
     joinedload(Submissions.submission_category),
     joinedload(Submissions.submitter).joinedload(TapirUsers.username),
     joinedload(Submissions.submitter)
-    .joinedload(TapirUsers.demographics).load_only("flag_suspect"),
+    .joinedload(TapirUsers.demographics)
+    .load_only("flag_suspect"),
     joinedload(Submissions.abs_classifier_data).load_only("json"),
     joinedload(Submissions.proposals),
     joinedload(Submissions.hold_reasons),
@@ -58,29 +58,51 @@ def _query(user: User, include_mod_archives: bool, exclude_mod_categories: bool)
 
 
 @router.get("/submissions", response_model=List[schema.Submission])
-async def submissions(user: User = Depends(auth_user),
-                      db: Session = Depends(get_db),
-                      include_mod_archives: bool = True,
-                      exclude_mod_categories: bool = False):
+async def submissions(
+    user: User = Depends(auth_user),
+    db: Session = Depends(get_db),
+    include_mod_archives: bool = True,
+    exclude_mod_categories: bool = False,
+):
     """Get all submissions for moderator or admin
 
     Moderators will be limited to just submissions in their categories
     or archives queues.
     """
-    rows = db.execute(_query(user, include_mod_archives, exclude_mod_categories)).unique().all()
+    rows = (
+        db.execute(_query(user, include_mod_archives, exclude_mod_categories))
+        .unique()
+        .all()
+    )
+    debuglog.debug(
+        msg(
+            user,
+            payload={
+                "include_mod_archives": include_mod_archives,
+                "exclude_mod_categories": exclude_mod_categories,
+            },
+            status_code=404,
+        )
+    )
     return [to_submission(row[0], user) for row in rows]
 
 
 @router.get("/submission/{submission_id}", response_model=schema.Submission)
-async def submission(submission_id: int, user: User = Depends(auth_user),
-                     db: Session = Depends(get_db)):
+async def submission(
+    submission_id: int, user: User = Depends(auth_user), db: Session = Depends(get_db)
+):
     """Gets a single submission."""
-    res = db.execute(select(Submissions)
-                     .options(*query_options)
-                     .where(Submissions.submission_id == submission_id))
+    res = db.execute(
+        select(Submissions)
+        .options(*query_options)
+        .where(Submissions.submission_id == submission_id)
+    )
     row = res.unique().fetchone()
     if row:
+        debuglog.debug(msg(user, payload={"submission_id": submission_id}))
         return to_submission(row[0], user)
     else:
-        return JSONResponse(status_code=404,
-                            content={"msg": "submission not found"})
+        debuglog.debug(
+            msg(user, payload={"submission_id": submission_id}, status_code=404)
+        )
+        return JSONResponse(status_code=404, content={"msg": "submission not found"})

@@ -5,6 +5,7 @@ to work for both mod and admin holds.
 
 The paths in this module are intended to replace the /modhold paths.
 """
+from modapi.rest.debug_log import debuglog, msg
 from typing import Union, List, Optional
 
 from sqlalchemy import select, or_, and_, null
@@ -52,9 +53,11 @@ async def hold(
 
     hold_res = hold_biz_logic(hold, exists, submission_id, user)
     if not isinstance(hold_res, HoldLogicRes):
+        debuglog.debug(msg(user,
+                           payload={'submission_id':submission_id, 'hold':hold},
+                           status_code=hold_res.status_code))
         return hold_res
 
-    
     for logtext in hold_res.modapi_comments:
         stmt = arXiv_admin_log.insert().values(
             submission_id=submission_id, paper_id=hold_res.paper_id, username=user.username,
@@ -83,6 +86,7 @@ async def hold(
             .where(arXiv_submissions.c.submission_id == submission_id))
     db.execute(stmt)
     db.commit()
+    debuglog.debug(msg(user, payload={'submission_id':submission_id, 'hold':hold}))
     return "success"
 
 
@@ -111,6 +115,9 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     exists = hold_check(db, submission_id)
     release_res = release_biz_logic(exists, submission_id, user, earliest_announce)
     if not isinstance(release_res, HoldReleaseLogicRes):
+        debuglog.debug(msg(user,
+                           payload={'submission_id':submission_id},
+                           status_code=release_res.status_code))
         return release_res
     
     if release_res.clear_reason:
@@ -151,6 +158,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
         db.execute(stmt)
 
     db.commit()
+    debuglog.debug(msg(user, payload={'submission_id':submission_id}))
     return "success"
 
 
@@ -160,6 +168,7 @@ async def get_hold(
         user: User = Depends(auth_user),
         db: Session = Depends(get_db)):
     """Gets the hold for a single submission."""
+    debuglog.debug(msg(user))
     return await _holds(submission_id, user, db)
 
 
@@ -176,6 +185,7 @@ async def holds(user: User = Depends(auth_user), db: Session = Depends(get_db)):
 
     Type will be 'admin', 'mod' or 'legacy'.
     """
+    debuglog.debug(msg(user))
     return await _holds(None, user, db)
 
 

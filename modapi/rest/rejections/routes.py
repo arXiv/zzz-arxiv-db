@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload, Session
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from modapi.rest.debug_log import debuglog, msg
 from modapi.config import config
 from modapi.auth import User, auth_user
 from modapi.db import get_db
@@ -50,6 +51,8 @@ async def reject_cross(
     """
     submission = active_cross_check(db, submission_id)
     if not submission:
+        debuglog.debug(msg(user, payload={'submission_id':submission_id, 'category':category},
+                           status_code=404))
         return JSONResponse(status_code=404)
     cross_cats = submission.new_crosses
     do_send_email = False
@@ -82,10 +85,13 @@ async def reject_cross(
         db.execute(stmt)
         db.commit()
     else:
+        debuglog.debug(msg(user, payload={'submission_id':submission_id, 'category':category},
+                           status_code=409))
         return JSONResponse(status_code=409)
 
     if do_send_email:
-        msg = build_reject_cross_email(submission.submitter_email, [category.category])
-        send_email(msg)
+        email_msg = build_reject_cross_email(submission.submitter_email, [category.category])
+        send_email(email_msg)
 
+    debuglog.debug(msg(user, payload={'submission_id':submission_id, 'category':category}))
     return 1
