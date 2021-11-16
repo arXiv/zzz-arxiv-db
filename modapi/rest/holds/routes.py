@@ -26,6 +26,9 @@ from modapi.tables.arxiv_models import (
     SubmissionCategoryProposal,
 )
 
+# TODO: not yet implemented
+# from modapi.models.admin_log import comment_admin_log
+
 from .domain import HoldReleaseLogicRes, HoldLogicRes,\
     ON_HOLD, HoldTypesIn
 from .biz_logic import hold_check, release_biz_logic, hold_biz_logic
@@ -34,7 +37,7 @@ import logging
 log = logging.getLogger(__name__)
 
 router = APIRouter()
-    
+
 @router.post("/submission/{submission_id}/hold")
 async def hold(
         submission_id: int,
@@ -54,7 +57,7 @@ async def hold(
     if not isinstance(hold_res, HoldLogicRes):
         return hold_res
 
-    
+
     for logtext in hold_res.modapi_comments:
         stmt = arXiv_admin_log.insert().values(
             submission_id=submission_id, paper_id=hold_res.paper_id, username=user.username,
@@ -92,7 +95,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     """Releases a hold.
 
     To release a hold means to set the submission status so that it is
-    avaialbe to be published.
+    available to be published.
 
     If Moderator the submission must be:
     - on hold
@@ -112,7 +115,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
     release_res = release_biz_logic(exists, submission_id, user, earliest_announce)
     if not isinstance(release_res, HoldReleaseLogicRes):
         return release_res
-    
+
     if release_res.clear_reason:
         db.execute(arXiv_submission_hold_reason.delete()
                    .where(arXiv_submission_hold_reason.c.submission_id == submission_id))
@@ -139,6 +142,9 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
         )
         db.execute(stmt)
 
+    # TODO: comment_admin_log not yet implemented
+    # for logtext in release_res.visible_comments:
+    #     comment_admin_log(db, user, submission_id, release_res.paper_id, logtext)
     for logtext in release_res.visible_comments:
         stmt = arXiv_admin_log.insert().values(
             username=user.username,

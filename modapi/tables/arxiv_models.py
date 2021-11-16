@@ -8,8 +8,12 @@ from sqlalchemy import types as types
 
 from modapi.db import Base
 
+from arxiv import taxonomy as taxonomy
+
 metadata = Base.metadata
 
+# inverse of CATEGORY_ALIASES
+CATEGORY_ALIASES_INV={v: k for k, v in taxonomy.CATEGORY_ALIASES.items()}
 
 class SubscriptionUniversalInstitution(Base):
     __tablename__ = 'Subscription_UniversalInstitution'
@@ -665,7 +669,7 @@ class TapirUsers(Base):
     username = relationship("TapirNicknames", uselist=False)
     demographics = relationship("Demographics", uselist=False)
 
-    
+
 class AuthorIds(Base):
     __tablename__ = 'arXiv_author_ids'
 
@@ -1383,12 +1387,12 @@ class Submissions(Base):
         except Exception:
             return None
         return cat
-    
+
     @property
     def secondary_categories(self) -> List[str]:
         """Category names from this submission's secondary classifications.
 
-        Returns published and unpublised secondaries."""        
+        Returns published and unpublished secondaries."""
         return [c.category for c in self.submission_category
                 if c.is_primary == 0]
 
@@ -1396,10 +1400,10 @@ class Submissions(Base):
     def categories(self) -> List[str]:
         """All the categories"""
         return [cr.category for cr in self.submission_category]
-    
+
     @property
     def new_crosses(self) -> List[str]:
-        """For type 'new' these will be redundent with secondary_categories"""
+        """For type 'new' these will be redundant with secondary_categories"""
         return [c.category for c in self.submission_category
                 if c.is_primary == 0 and c.is_published != 1]
 
@@ -1409,7 +1413,18 @@ class Submissions(Base):
             return self.hold_reasons[0]
         else:
             return None
-        
+
+    @property
+    def fudged_categories(self) -> str:
+
+        # This is a close port of the legacy code
+        # Needs to be same as arXiv::Schema::ResultSet::DocCategory.string
+        primary_str = self.primary_classification if self.primary_classification else '-'
+        secondary_list = list(set([cat for cat in self.secondary_categories]))
+        cats_to_add = [CATEGORY_ALIASES_INV[cat] for cat in secondary_list
+                       if cat in CATEGORY_ALIASES_INV]
+        fudged = [primary_str] + sorted(secondary_list + cats_to_add)
+        return ' '.join(fudged)
 
 class TopPapers(Base):
     __tablename__ = 'arXiv_top_papers'
@@ -1678,7 +1693,7 @@ class SubmissionCategory(Base):
 class SubmissionCategoryProposal(Base):
     __tablename__ = 'arXiv_submission_category_proposal'
 
-    proposal_id = Column(INTEGER(11), primary_key=True, nullable=False, index=True)
+    proposal_id = Column(INTEGER(11), primary_key=True, nullable=False, index=True, autoincrement=True)
     submission_id = Column(ForeignKey('arXiv_submissions.submission_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False, index=True)
     category = Column(ForeignKey('arXiv_category_def.category'), primary_key=True, nullable=False, index=True)
     is_primary = Column(TINYINT(1), primary_key=True, nullable=False, index=True, server_default=text("'0'"))

@@ -15,7 +15,7 @@ PyJWT = "^2.0.1"
 sqlalchemy = "^1.4"
 pytz = "^2021.1"
 pydantic = {extras = ["dotenv"], version = "^1.8.2"}
-arxiv-base = "^0.17.2"
+arxiv-base = "0.17.2.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
