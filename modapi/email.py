@@ -3,7 +3,7 @@ import smtplib
 from typing import List
 from email.message import EmailMessage
 
-from ..config import config
+from .config import config
 
 def send_email(msg: EmailMessage):
     """Send an email."""

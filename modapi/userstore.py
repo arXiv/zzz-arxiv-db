@@ -26,7 +26,7 @@ class User(BaseModel):
     moderated_categories: List[str] = []
     moderated_archives: List[str] = []
 
-    def can_edit_category(self, category:str) -> bool:    
+    def can_edit_category(self, category:str) -> bool:
         return (category in CATEGORIES and (
             self.is_admin or
             category in self.moderated_categories or
@@ -97,7 +97,7 @@ def to_name(first_name, last_name):
 
 def _getfromdb(user_id: int, db: Session) -> Optional[User]:
     user_query = """
-    SELECT 
+    SELECT
     hex(tapir_users.first_name) as first_name,
     hex(tapir_users.last_name) as last_name,
     tapir_nicknames.nickname, tapir_users.flag_edit_users
@@ -128,16 +128,16 @@ def _cats_and_archives(user_id: int, db: Session) -> Tuple[List[str],List[str]]:
     -------
     Tuple of (categories, archives)
 
-    The archvies list can be thought of as a lit of things that have sub-categories    
+    The archvies list can be thought of as a lit of things that have sub-categories
     The categories list can be thought of as a list of things that have submissions.
     """
     cat_mod_query = """SELECT archive as 'arch', subject_class as 'cat'
-    FROM arXiv_moderators WHERE user_id = :userid"""    
+    FROM arXiv_moderators WHERE user_id = :userid"""
     mod_rs = list(db.execute(text(cat_mod_query), {"userid": user_id}))
-    
+
     archives = [row['arch'] for row in mod_rs
                 if row['arch'] and not row['cat'] and row['arch'] in ARCHIVES_ACTIVE]
-    
+
     # normal categories like cs.LG
     cats = [f"{row['arch']}.{row['cat']}"
             for row in mod_rs if row['arch'] and row['cat']]
