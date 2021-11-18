@@ -49,8 +49,9 @@ async def debug_log(lines: int = 10000, user: User = Depends(auth_user)):
     if not user or not user.is_admin:
         return HTTPException(status_code=401, detail='Unauthorized dl_dl')
 
-    # Warning: race condition but not worried about it due to this just being
-    # a debugging output.
+    # Warning: getting the length and reading the file has a race
+    # condition with writes but not worried about it due to this just
+    # being a debugging output.
     length = 0 
     with open(filename) as logf:
         length = len(logf.readlines())
