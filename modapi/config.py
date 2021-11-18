@@ -1,4 +1,5 @@
 import secrets
+from typing import Union
 
 from pydantic import (
     BaseSettings,
@@ -51,6 +52,9 @@ class Settings(BaseSettings):
 
     smtp_host: str = 'localhost'
     """SMTP host used to send emails."""
+
+    email_log: Union[None, str] = None
+    """Logs emails to a file. Only for debugging"""
 
     allow_origins = [
         "https://mod.arxiv.org",
