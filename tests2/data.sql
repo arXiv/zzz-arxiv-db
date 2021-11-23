@@ -196,6 +196,27 @@ VALUES
 (4403,'hep-ph',0,0),
 (4403,'cs.AI',0,0);
 
+--- a submission with bad classifier JSON
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
+(1234888,NULL,NULL,NULL,1,1,1,1,4 /* stage */,246231,'Brandon Barker','beb82@cornell.edu','2015-10-12 17:11:21','2015-10-12 21:58:44',1 /* status */,NULL,0,'2015-11-17 15:11:21',NULL,2848951,'pdf','1',0,0,'MPI 3 One more time','Brandon Barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'The Message Passing Interface, version three point zero.','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'new',NULL,NULL,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/Kubla_Khan.pdf',NULL,0,NULL);
+
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
+VALUES (1234888,'q-bio.CB',1,0);
+
+
+INSERT INTO `arXiv_submission_abs_classifier_data`
+( `submission_id`, `json`, `last_update`, `status`, `message`,
+`is_oversize`, `suggested_primary`, `suggested_reason`,
+`autoproposal_primary`, `autoproposal_reason`,
+`classifier_service_version`, `classifier_model_version`)
+VALUES(
+1234888,
+'total-junk-json',
+'2021-04-13 12:49:38', 'success', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+
 INSERT INTO tapir_users VALUES
 (29538, 'Michael J.','ODonnell', '', 1, 1, 'michael_odonnell@acm.org', 8, 0, 3, 942856736, NULL, 'satisfaction.cs.uchicago.edu', 0, 0, 0, 1, 1, 0, 0, 0, 0, '', 0, 0),
 (41106, 'Thomas','Dietterich', '', 1, 1, 'tgd@cs.orst.edu', 8, 0, 3, 927294463, NULL, 'thomas.iiia.csic.es', 0, 0, 0, 1, 1, 0, 0, 0, 0, '', 0, 0),

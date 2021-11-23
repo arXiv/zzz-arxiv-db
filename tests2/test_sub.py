@@ -107,3 +107,13 @@ def test_not_found(client):
         res.status_code != 200
     )  # look for a missing SUB id in the test data (FYI, this exists in the real data)
     assert res.status_code != 500
+
+
+def test_classifier_json(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get("/submission/1234888", cookies=cookies)
+    assert res.status_code == 200
+    assert 'error' in res.json()['categories']['classifier_scores'][0]
+

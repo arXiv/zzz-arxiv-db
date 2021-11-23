@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 from modapi.rest.holds.domain import ModHoldReasons, HoldType, HoldReasons
 
-class OrmBaseModel(BaseModel):
 
+class OrmBaseModel(BaseModel):
     class Config:
         orm_mode = True  #  Reads from non-dict
 
@@ -49,9 +49,16 @@ PropTypeLiterals = Literal["primary", "secondary"]
 
 RejectActionLiterals = Literal["reject", "accept_secondary"]
 
+
 class ClassifierScore(OrmBaseModel):
     score: float
     category: str
+
+
+class ClassifierParseError(OrmBaseModel):
+    """Returned when the classifier cannot be deserialized."""
+
+    error: str
 
 
 class SubmissionClassification(OrmBaseModel):
@@ -81,7 +88,7 @@ class CategoryRejection(OrmBaseModel):
 
 
 class Categories(OrmBaseModel):
-    classifier_scores: List[ClassifierScore]
+    classifier_scores: List[Union[ClassifierScore, ClassifierParseError]]
     submission: SubmissionClassification
     new_crosses: List[str]
     proposals: Proposals
@@ -96,9 +103,10 @@ class Submitter(OrmBaseModel):
         orm_mode = True  #  Reads from non-dict
 
 
-#TODO align Optional with database table definition
+# TODO align Optional with database table definition
 class Submission(OrmBaseModel):
     """Submission model to transmit to client"""
+
     submission_id: int
     doc_paper_id: Optional[str]
 

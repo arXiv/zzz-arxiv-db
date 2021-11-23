@@ -119,7 +119,7 @@ def make_classifier(sub: arxiv_models.Submissions):
             for row in data["classifier"]
         ]
     except Exception as err:
-        log.error(
+        log.warning(
             "could not decode classifier json for submission %s: %s",
             sub.submission_id,
             err,
