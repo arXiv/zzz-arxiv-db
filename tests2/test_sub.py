@@ -117,3 +117,19 @@ def test_classifier_json(client):
     assert res.status_code == 200
     assert 'error' in res.json()['categories']['classifier_scores'][0]
 
+
+def test_working(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get("/submission/888", cookies=cookies)
+    assert res.status_code == 200
+
+
+def test_problem(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get("/submission/4024428", cookies=cookies)
+    assert res.status_code == 200
+

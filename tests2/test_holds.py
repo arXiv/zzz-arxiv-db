@@ -1,3 +1,4 @@
+from modapi.rest.holds.domain import SendToAdminOther
 import pytest
 from datetime import datetime
 
@@ -166,3 +167,12 @@ def test_comments():
     assert _hold_comments(RejectOther(type='admin',reason='reject-other',comment='this paper lacks math'))
     assert _hold_comments(SendToAdminOther(type='admin',reason='other',comment='This is some kind of comment',sendback=False))
     assert _hold_comments(SendToAdminOther(type='admin',reason='other',comment='This is some kind of comment',sendback=True))
+
+def test_problem(client, brandon):
+    payload =  {'type':'admin',
+                        'reason':'other',
+                        'comment':'Only some of the highlighting has been fixed.',
+                        'sendback':True}
+    res=client.post("/submission/4024428/hold", cookies=brandon,
+                json= payload)
+    assert str(res) == {}
