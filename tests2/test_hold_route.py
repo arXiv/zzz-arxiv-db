@@ -168,11 +168,11 @@ def test_comments():
     assert _hold_comments(SendToAdminOther(type='admin',reason='other',comment='This is some kind of comment',sendback=False))
     assert _hold_comments(SendToAdminOther(type='admin',reason='other',comment='This is some kind of comment',sendback=True))
 
-def test_problem(client, brandon):
+def test_published(client, brandon):
     payload =  {'type':'admin',
                         'reason':'other',
                         'comment':'Only some of the highlighting has been fixed.',
                         'sendback':True}
     res=client.post("/submission/4024428/hold", cookies=brandon,
                 json= payload)
-    assert str(res) == {}
+    assert res.status_code > 299

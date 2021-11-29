@@ -6,6 +6,7 @@ to work for both mod and admin holds.
 The paths in this module are intended to replace the /modhold paths.
 """
 
+from modapi.rest.status import status
 from typing import Union, List, Callable, Optional
 from datetime import datetime, timedelta
 import pytz
@@ -186,7 +187,7 @@ def hold_biz_logic(
 
     if not (
         exists.status in [1, 4, 2]
-    ):  # hold is included since some held subs can be held again
+    ):  # hold is included for legacy_hold -> new_style_hold
         return JSONResponse(
             status_code=httpstatus.HTTP_409_CONFLICT,
             content={"msg": "Can only hold submissions in that status"},
@@ -202,65 +203,69 @@ def hold_biz_logic(
     )
 
     existing_reason = exists.hold_reason and exists.hold_reason.reason
-    existing_type = exists.hold_reason and exists.hold_reason.type
+    existing_type = (exists.hold_reason and exists.hold_reason.type) or "legacy"
     if hold.type == "mod":
-        if existing_reason:
-            # Mods cannot put a mod hold on a submission that is
-            # already on admin or legacy hold. This is to avoid a
-            # mod from changing a legacy hold to a mod-hold and
-            # then that mod releaseing the hold. This would allow
-            # a submission that is on hold for non-moderatorion
-            # reasons such as copyright or failed TeX to
+        if exists.status == ON_HOLD:
+            # Mods cannot put a mod hold on a submission that is already on
+            # admin or legacy hold. This is to avoid a mod from changing a
+            # legacy hold to a mod-hold and then that mod releaseing the
+            # hold. This would allow a submission that is on hold for
+            # non-moderatorion reasons such as copyright or failed TeX to
             # accidently get published.
-            return JSONResponse(
-                status_code=httpstatus.HTTP_409_CONFLICT,
-                content={"msg": "Mod hold on submission already exists"},
-            )
-        elif exists.status == ON_HOLD:
             return JSONResponse(
                 status_code=httpstatus.HTTP_409_CONFLICT,
                 content={"msg": "Hold on submission already exists"},
             )
+        elif existing_reason:
+            # This is a case that should not exist, if there is a hold reason,
+            # the submission should be on hold. Roll with it.
+            rv.create_hold_reason = True
+            rv.delete_hold_reason = True
+            rv.visible_comments.insert(
+                0, "Clear lingering {existing_type} hold, about to mod hold"
+            )
+            rv.modapi_comments.insert(0, "Clear {existing_type} hold")
         else:
             rv.create_hold_reason = True
 
     elif hold.type == "admin":
         if exists.status == ON_HOLD:
-            if existing_type == "mod":
+            if existing_reason and existing_type == "mod":
                 rv.delete_hold_reason = True
                 rv.create_hold_reason = True
-                rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
-                rv.modapi_comments.insert(0, "Clear modhold")
+                rv.visible_comments.insert(0, "Clear mod hold, about to admin hold")
+                rv.modapi_comments.insert(0, "Clear mod hold")
+            elif existing_type == "legacy":
+                rv.create_hold_reason = True
             else:
                 return JSONResponse(
                     status_code=httpstatus.HTTP_409_CONFLICT,
                     content={
-                        "msg": "Admin or legacy hold on submission already exists"
+                        "msg": f"{existing_type} hold on submission already exists"
                     },
                 )
 
-        else:  # not ON_HOLD
-            if existing_type:
-                return JSONResponse(
-                    status_code=httpstatus.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content={"msg": "Submission not on hold but a hold reason exists"},
+        else:  # type admin but not ON_HOLD
+            if existing_reason:
+                # This is a case that should not exist, if there is a
+                # hold in the hold reasons, the submission should be
+                # on hold. But submissions can get into this state due
+                # to the submitter putting a submision on 'working', and
+                # then back to 'submitted'.
+                #
+                # The clear intent of the mod/admin is to put this submission on hold,
+                # so try to put it on hold.
+                rv.create_hold_reason = True
+                rv.delete_hold_reason = True
+                rv.visible_comments.insert(
+                    0, "Clear lingering {existing_type}, about to admin hold"
                 )
+                rv.modapi_comments.insert(0, "Clear {existing_type}")
             else:
                 rv.create_hold_reason = True
 
-        # if exists.status != ON_HOLD and not existing_type:  # not on hold
-        #     rv.create_hold_reason = True
-        # elif exists.status == ON_HOLD and existing_type == "mod":  # on mod hold
-        #     rv.delete_hold_reason = True
-        #     rv.create_hold_reason = True
-        #     rv.visible_comments.insert(0, "Clear modhold, about to admin hold")
-        #     rv.modapi_comments.insert(0, "Clear modhold")
-        # else:
-        #     return JSONResponse(
-        #         status_code=httpstatus.HTTP_409_CONFLICT,
-        #         content={"msg": "Admin hold on submission already exists"})
     else:
-        return JSONResponse(
+        return JSONResponse(   # pragma: no cover
             status_code=httpstatus.HTTP_400_BAD_REQUEST,
             content={"msg": "invalid hold type"},
         )
