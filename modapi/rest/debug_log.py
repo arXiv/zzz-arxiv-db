@@ -39,8 +39,12 @@ debuglog.propagate = False
 router = APIRouter()
 
 
-def msg(user, payload=None, status_code=200):
-    return {"user": user, "payload": payload, "status_code": status_code}
+def msg(user, payload=None, status_code=200, err_msg=None):
+    data= {"user": user, "payload": payload, "status_code": status_code}
+    if err_msg:
+        data['err_msg']=err_msg
+
+    return data
 
 
 @router.get("/debug_log")

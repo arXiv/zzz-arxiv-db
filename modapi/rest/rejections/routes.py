@@ -72,11 +72,11 @@ async def category_rejection(
     if not submission:
         debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
                            status_code=404))
-        return JSONResponse(status_code=404)
+        return JSONResponse(status_code=404, content={"msg":"Submission not found"})
     if submission.is_locked:
         debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
-                           status_code=403))
-        return JSONResponse(status_code=403)
+                           status_code=403, err_msg="submission is locked"))
+        return JSONResponse(status_code=403, content={"msg":"submission is locked"})
     unpublished_secondaries = submission.new_crosses
 
     if submission.type == "cross" and rejection.action == "reject":
@@ -112,27 +112,27 @@ async def category_rejection(
             db.commit()
         else:
             debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
-                               status_code=409))
-            return JSONResponse(status_code=409)
+                               status_code=409, err_msg="Rejected category is not an unpublished secondary"))
+            return JSONResponse(status_code=409,
+                                content={"msg":"Rejected category is not an unpublished secondary"})
 
         if do_send_email:
             emailmsg = build_reject_cross_email(
-                submission.submitter_email, [rejection.category]
-            )
+                submission.submitter_email, submission_id,
+                [rejection.category] )
             send_email(emailmsg)
     elif submission.type == "new" and rejection.action in (
         "reject",
         "accept_secondary",
     ):
-
         if rejection.category == submission.primary_classification:
             is_primary = True
         elif rejection.category in unpublished_secondaries:
             is_primary = False
         else:
             debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
-                               status_code=409))
-            return JSONResponse(status_code=409)
+                               status_code=409, err_msg="Category not found on submission"))
+            return JSONResponse(status_code=409, content={"msg":"Category not found on submission"})
 
         original_cats = _get_category_str(submission)
         was_held = False
@@ -194,12 +194,12 @@ async def category_rejection(
             )
         else:
             debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
-                               status_code=409))
-            return JSONResponse(status_code=409)        
+                               status_code=409, err_msg="Unknown rejection action"))
+            return JSONResponse(status_code=409, content={"msg":"Unknown rejection action"})
     else:
         debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection},
-                           status_code=403))
-        return JSONResponse(status_code=403)
+                           status_code=403, err_msg="invalid rejection"))
+        return JSONResponse(status_code=403, content={"msg":"invalid rejection type"})
 
     debuglog.debug(msg(user, payload={'submission_id':submission_id, 'rejection':rejection}))
     return "success"

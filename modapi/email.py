@@ -25,11 +25,11 @@ def send_email(msg: EmailMessage):
         _log_email(msg, more=f"Email Not sent due to {ex}: ")
 
 
-def build_reject_cross_email(to_address: str, categories: List[str]) -> EmailMessage:
+def build_reject_cross_email(to_address: str, submission_id: int, categories: List[str]) -> EmailMessage:
     """Build email for rejected cross."""
     msg = EmailMessage()
     cat_str = str.join(", ", categories)
-    msg["Subject"] = "Cross-list declined"
+    msg["Subject"] = f"Cross-list for {submission_id} declined by moderators"
     msg["From"] = "moderation@arxiv.org"
     msg["Reply-to"] = msg["From"]
     msg["To"] = to_address
