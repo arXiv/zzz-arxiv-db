@@ -39,6 +39,7 @@ def test_sub(client):
     assert type(sub["status"]) == str
 
     assert sub["submitter"]["name"] == "Brandon Barker"
+    assert sub["submitter"]["user_id"] == 246231
 
     assert "classifier_scores" in sub["categories"]
     assert sub["categories"]["classifier_scores"]

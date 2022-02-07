@@ -95,6 +95,7 @@ class Categories(OrmBaseModel):
 
 
 class Submitter(OrmBaseModel):
+    user_id: int
     email: str
     name: str
     is_suspect: bool

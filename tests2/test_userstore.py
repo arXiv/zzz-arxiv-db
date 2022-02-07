@@ -26,6 +26,27 @@ async def test_userstore(get_test_db):
     assert userstore.invalidate_user(246231)
     assert not userstore.invalidate_user(246231)
 
+@pytest.mark.asyncio
+async def test_by_email(get_test_db):
+    db = next(get_test_db())
+    user = await userstore.get_user_by_email('no-mail@example.com', db)
+    assert user
+    
+    user = await userstore.get_user_by_email('other-no-mail@example.com', db)
+    assert user
+    
+    user = await userstore.get_user_by_email('no-mailx234@example.com', db)
+    assert user
+    
+    user = await userstore.get_user_by_email('no-mail-rw@example.com', db)
+    assert user
+    
+    user = await userstore.get_user_by_email('no-mail-randomreader@example.com', db)
+    assert user
+    
+    user = await userstore.get_user_by_email('qa-tools-sa@arxiv-proj.iam.gserviceaccount.com', db)
+    assert user
+    
     
 @pytest.mark.asyncio
 async def test_archives(get_test_db):

@@ -25,6 +25,7 @@ class User(BaseModel):
     # pydantic handles default list correctly
     moderated_categories: List[str] = []
     moderated_archives: List[str] = []
+    email: str
 
     def can_edit_category(self, category:str) -> bool:
         return (category in CATEGORIES and (
@@ -75,6 +76,21 @@ async def getuser_by_nick(nick: str, db: Session) -> Optional[User]:
     else:
         return None
 
+async def get_user_by_email(email: str, db: Session) -> Optional[User]:
+    by_email = [user for user in _users.values() if user.email == email]
+    if len(by_email) == 1:
+        return by_email[0]
+
+    if len(by_email) > 1:
+        log.error(f"{len(by_email)} users with the same email {email[:10]}")
+        return None
+
+    user = await _getfromdb_by_email(email, db)
+    if user:
+        _users[user.user_id] = user
+        return user
+    else:
+        return None
 
 async def _getfromdb_by_nick(nick: str, db: Session) -> Optional[User]:
     query = """
@@ -89,6 +105,21 @@ async def _getfromdb_by_nick(nick: str, db: Session) -> Optional[User]:
 
     return _getfromdb(rs[0]['user_id'], db)
 
+async def _getfromdb_by_email(email: str, db: Session) -> Optional[User]:
+    query = """
+    SELECT tapir_users.user_id, flag_email_verified
+    FROM tapir_users
+    WHERE tapir_users.email = :email
+    """
+    rs = list(db.execute(text(query), {"email": email}))
+    if not rs:
+        log.debug("no user found in DB for %s", email)
+        return None
+    if rs[0]['flag_email_verified'] == 0:
+        log.debug("user %s has flag_email_verified == 0, cannot use", email)
+        return None
+    else:
+        return _getfromdb(rs[0]['user_id'], db)
 
 def to_name(first_name, last_name):
     """Display name from first_name and last_name"""
@@ -100,7 +131,8 @@ def _getfromdb(user_id: int, db: Session) -> Optional[User]:
     SELECT
     hex(tapir_users.first_name) as first_name,
     hex(tapir_users.last_name) as last_name,
-    tapir_nicknames.nickname, tapir_users.flag_edit_users
+    tapir_nicknames.nickname, tapir_users.flag_edit_users,
+    tapir_users.email as email
     FROM tapir_users
     JOIN tapir_nicknames ON tapir_users.user_id = tapir_nicknames.user_id
     WHERE tapir_users.user_id = :userid"""
@@ -118,7 +150,8 @@ def _getfromdb(user_id: int, db: Session) -> Optional[User]:
               is_admin=bool(rs[0]['flag_edit_users']),
               is_moderator=bool(cats or archives),
               moderated_categories=cats,
-              moderated_archives=archives)
+              moderated_archives=archives,
+              email=rs[0]['email'])
     return ur
 
 def _cats_and_archives(user_id: int, db: Session) -> Tuple[List[str],List[str]]:

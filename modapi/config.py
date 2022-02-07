@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     ]
     """Origins allowed for CORS"""
 
+    audience: str = "https://mod.arxiv.org"
+    """audience used when checking JWT from GCP"""
+
     class Config:
         env_file = "env"
         """File to read environment from"""

@@ -55,9 +55,6 @@ async def version():
 @router.get("/email_log")
 async def email_log(lines: int, user: User = Depends(auth_user)):
     """Gets the email debug log."""
-    if not user or not user.is_admin:
-        raise HTTPException(status_code=401)
-
     if config.email_log is None:
         return "Currently configured to not write an email."
 

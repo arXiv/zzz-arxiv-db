@@ -42,6 +42,7 @@ Testing modAPI on your develoopment laptop with data from GCP and the arxiv-chec
 
    CLASSIC_DATABASE_URI=mysql://root:CLOUD_PW_1234abcd@127.0.0.1:1234/arXiv  \
    JWT_SECRET=fake_jwt_secret \
+   DEBUG=True \
    python -m modapi.app
 
 4. Config the arxiv-check UI in src/config.ts to use the mod3 API at localhost:8000

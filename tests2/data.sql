@@ -20,10 +20,21 @@ INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', 'HE', 1 , '0' , '0' , '
 INSERT INTO `arXiv_moderators` VALUES (9999, 'cond-mat', '', '0' , '0' , '0' , '0' , '0' );
 INSERT INTO `arXiv_moderators` VALUES (9999, 'physics', '', '0' , '0' , '0' , '0' , '0' );
 
+-- non-mod non-admin user
+INSERT INTO `tapir_users` VALUES (1212,'Random','Reader','',1,1,'no-mail-randomreader@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'xyz',0,0);
+
+INSERT INTO `tapir_nicknames` VALUES (241212,'reader',1212,1,1,0,0,1);
+
+-- admin service account user for GCP test
+INSERT INTO `tapir_users` VALUES (4455,'Service','account','',1,1,'qa-tools-sa@arxiv-proj.iam.gserviceaccount.com',8,0,2,1384185389,'dedicated','',0,1,0,1,1,0,0,0,0,'xyz',0,0);
+
+INSERT INTO `tapir_nicknames` VALUES (2412,'qaServiceAccount',4455,1,1,0,0,1);
+
 -- Tapir Nicknames
 INSERT INTO `tapir_nicknames` VALUES (246208,'bbarker',246231,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (246209,'lowjack',246232,1,1,0,0,1);
 INSERT INTO `tapir_nicknames` VALUES (249999,'ralph',9999,1,1,0,0,1);
+
 
 -- Submissions
 INSERT INTO `arXiv_submissions`

@@ -12,10 +12,10 @@ from fastapi.responses import JSONResponse
 
 
 mod_user = User(user_id=1111111, name='M The Mod', username='mtm', is_moderator=True,
-                is_admin=False, moderated_categories=['cs.LG'])
+                is_admin=False, moderated_categories=['cs.LG'], email='a@example.com')
 
 admin_user = User(user_id=99999, name='A The Admin',
-                  username='ata', is_admin=True)
+                  username='ata', is_admin=True, email='ab@example.com')
 
 sub_id = 3434343
 
