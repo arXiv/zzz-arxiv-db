@@ -6,7 +6,7 @@ to work for both mod and admin holds.
 The paths in this module are intended to replace the /modhold paths.
 """
 
-from modapi.rest.status import status
+from modapi.rest.earliest_announce import earliest_announce
 from typing import Union, List, Callable, Optional
 from datetime import datetime, timedelta
 import pytz
@@ -17,7 +17,7 @@ from fastapi import status as httpstatus
 from fastapi.responses import JSONResponse
 
 from modapi.auth import User
-from modapi.tables.arxiv_models import Submissions, SubmissionHoldReason
+from modapi.tables.arxiv_models import Submissions
 
 from .domain import (
     HoldTypesIn,
@@ -102,35 +102,33 @@ def _release_status_from_submit_time(
     return NEXT
 
 
-def release_biz_logic(
+def release_by_mod_biz_logic(
     exists: Optional[Submissions],
     submission_id: int,
     user: User,
-    anno_time_fn: Callable[[int], Union[datetime, int]],
+    anno_time_fn: Callable[[int], datetime],
 ) -> Union[HoldReleaseLogicRes, JSONResponse]:
+    """Hold logic for moderator users"""
     if not user or (not user.is_admin and not user.is_moderator):
         return JSONResponse(status_code=httpstatus.HTTP_403_FORBIDDEN)
-
     if not exists:
         return JSONResponse(
             status_code=httpstatus.HTTP_404_NOT_FOUND,
             content={"msg": "submission not found"},
         )
-
     if exists.is_locked:  # This is hard locked, not an edit collab lock
         return JSONResponse(
             status_code=httpstatus.HTTP_403_FORBIDDEN,
             content={"msg": "Submission is locked"},
         )
-
     if exists.status != ON_HOLD:
         return JSONResponse(
             status_code=httpstatus.HTTP_409_CONFLICT,
             content={"msg": "Submission is not on hold"},
         )
 
-    reasontype = exists.hold_reason.type if exists.hold_reason else None
-    reasonreason = exists.hold_reason.reason if exists.hold_reason else None
+    reasontype = exists.hold_reason.type if exists.hold_reason else "legacy"
+    reasonreason = f" {exists.hold_reason.reason}" if exists.hold_reason else ""
 
     if not user.is_admin and user.is_moderator:
         if exists.hold_reason is None or reasontype != "mod":
@@ -138,30 +136,41 @@ def release_biz_logic(
                 status_code=httpstatus.HTTP_403_FORBIDDEN,
                 content={"msg": f"{submission_id} is not a mod hold"},
             )
-
     if not exists.primary_classification:
         return JSONResponse(
             status_code=httpstatus.HTTP_409_CONFLICT,
             content={"msg": "Submission cannot be released due to lack of a primary"},
         )
 
-    if reasontype:
-        logtext = f"Release: {reasontype} {reasonreason} hold"
+    if exists.auto_hold:
+        new_status = 2  # admins need to release auto hold to retrigger checks in legacy
+        logtext = [f"Release: {reasontype}{reasonreason} hold",
+                   f"Hold: {reasontype}{reasonreason} cleared but submission was on auto-hold "+\
+                   "and needs to be cleared by admins" ]
     else:
-        logtext = "Release: legacy hold"
-
+        new_status = _release_status_from_submit_time(exists.submit_time)
+        logtext = [f"Release: {reasontype}{reasonreason} hold"]
+        
     rv = HoldReleaseLogicRes(
-        modapi_comments=[logtext],
-        visible_comments=[logtext],
+        modapi_comments=logtext,
+        visible_comments=logtext,
         paper_id=exists.doc_paper_id or f"submit/{submission_id}",
-        clear_reason=reasonreason,
-        release_to_status=_release_status_from_submit_time(exists.submit_time),
+        clear_reason=bool(reasonreason),
+        release_to_status=new_status
     )
 
+    """ This code snippet implements the logic from here:
+    https://github.com/arXiv/arxiv-lib/blob/fa9cf336b81dbea4428233ec081feb7b0a4c1b9e/lib/arXiv/Schema/Result/Submission.pm#L2810
+
+        # Release time is used to determine order of paper_id assignment for
+        # held submissions, so that they don't show up at the top of the
+        # list. In the case of things held and released in the same day,
+        # we don't want to change the order
+    """
     if rv.release_to_status in (SUBMITTED, NEXT):
         now = datetime.now(tz=pytz.timezone("US/Eastern"))
-        anno_time = anno_time_fn(submission_id)
-        if now > anno_time:
+        earliest_possible_anno_time = anno_time_fn(submission_id)
+        if now > earliest_possible_anno_time:
             rv.set_release_time = now
 
     return rv

@@ -19,7 +19,7 @@ router = APIRouter()
 async def status(db: Session = Depends(get_db)):
     """Get the status of the ModAPI service as HTTP status code.
 
-    Tests connection to DB. Returns an empty body on success.
+    Tests connection to DB.
     """
     try:
         db.execute(text("SELECT 1"))
