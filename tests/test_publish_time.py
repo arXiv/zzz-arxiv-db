@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import datetime
 
-from modapi.rest.publish_time import get_times, Times
+from modapi.rest.publish_time import _get_times, Times
 from fastapi.testclient import TestClient
 
 from modapi.app import app
@@ -20,7 +20,7 @@ class WithJson:
 
 
 def test_get_times():
-    times = get_times(WithJson(
+    times = _get_times(WithJson(
         data={
             "arxiv_tz": "EDT",
             "next_freeze": "2021-05-12T18:00:00+00:00",
@@ -51,7 +51,7 @@ def test_times_page(mocker, the_app):
     mocked_auth = mocker.patch('modapi.auth.auth_user')
     mocked_auth.return_value = {'something': 'mocked'}
     
-    mocked_fn = mocker.patch('modapi.rest.publish_time.get_timepage')    
+    mocked_fn = mocker.patch('modapi.rest.publish_time._get_timepage')
     mocked_fn.return_value = WithJson(
         data={
             "arxiv_tz": "EDT",

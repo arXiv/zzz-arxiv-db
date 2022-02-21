@@ -107,6 +107,7 @@ def release_by_mod_biz_logic(
     submission_id: int,
     user: User,
     anno_time_fn: Callable[[int], datetime],
+    is_freeze: bool
 ) -> Union[HoldReleaseLogicRes, JSONResponse]:
     """Hold logic for moderator users"""
     if not user or (not user.is_admin and not user.is_moderator):
@@ -148,7 +149,7 @@ def release_by_mod_biz_logic(
                    f"Hold: {reasontype}{reasonreason} cleared but submission was on auto-hold "+\
                    "and needs to be cleared by admins" ]
     else:
-        new_status = _release_status_from_submit_time(exists.submit_time)
+        new_status = 4 if is_freeze else _release_status_from_submit_time(exists.submit_time)
         logtext = [f"Release: {reasontype}{reasonreason} hold"]
         
     rv = HoldReleaseLogicRes(

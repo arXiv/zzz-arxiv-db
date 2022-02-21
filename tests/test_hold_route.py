@@ -24,7 +24,7 @@ def test_no_auth(client):
 
 
 def test_make(mocker, client, brandon):
-    mocked_fn = mocker.patch('modapi.rest.publish_time.get_timepage')    
+    mocked_fn = mocker.patch('modapi.rest.publish_time._get_timepage')
     mocked_fn.return_value = WithJson(
         data={
             "arxiv_tz": "EDT",

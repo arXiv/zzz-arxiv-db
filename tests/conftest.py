@@ -32,7 +32,7 @@ SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE}"
 CONNECT_ARGS = {"check_same_thread": False} if 'sqlite' in SQLALCHEMY_DATABASE_URL  \
     else {}
 
-SQL_DATA_FILE = './tests2/data.sql'
+SQL_DATA_FILE = './tests/data.sql'
 
 DELETE_DB_FILE_ON_EXIT = True
 

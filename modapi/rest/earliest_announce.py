@@ -1,4 +1,6 @@
-"""ModAPI2 earliest_announce
+"""Gets earliest announced datetime for a submission
+
+Calls to ModAPI2 to get earliest_announce.
 
 The publish time info and holiday schedule are encoded in the Perl
 libraries.  That is needed to figure out the earliest announcement

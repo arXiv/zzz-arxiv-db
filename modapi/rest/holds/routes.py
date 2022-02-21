@@ -16,6 +16,7 @@ from pydantic import conlist
 from modapi.auth import User, auth_user
 from modapi.db import get_db
 from modapi.rest.earliest_announce import earliest_announce
+from modapi.rest.publish_time import is_freeze
 from modapi.tables.arxiv_tables import (
     arXiv_admin_log,
     arXiv_submissions,
@@ -116,7 +117,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
 
     """
     exists = hold_check(db, submission_id)
-    release_res = release_by_mod_biz_logic(exists, submission_id, user, earliest_announce)
+    release_res = release_by_mod_biz_logic(exists, submission_id, user, earliest_announce, is_freeze())
     if not isinstance(release_res, HoldReleaseLogicRes):
         debuglog.debug(msg(user,
                            payload={'submission_id':submission_id},
