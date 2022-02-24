@@ -32,7 +32,7 @@ from modapi.tables.arxiv_models import (
 
 from .domain import HoldReleaseLogicRes, HoldLogicRes,\
     ON_HOLD, HoldTypesIn
-from .biz_logic import hold_check, release_biz_logic, hold_biz_logic
+from .biz_logic import hold_check, release_by_mod_biz_logic, hold_biz_logic
 
 import logging
 log = logging.getLogger(__name__)
@@ -116,7 +116,7 @@ async def hold_release(submission_id: int, user: User = Depends(auth_user),
 
     """
     exists = hold_check(db, submission_id)
-    release_res = release_biz_logic(exists, submission_id, user, earliest_announce)
+    release_res = release_by_mod_biz_logic(exists, submission_id, user, earliest_announce)
     if not isinstance(release_res, HoldReleaseLogicRes):
         debuglog.debug(msg(user,
                            payload={'submission_id':submission_id},

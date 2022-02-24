@@ -51,7 +51,7 @@ def _get(url):
     with _session().get(url) as resp:
         return resp
 
-def earliest_announce(sub_id: int) -> Union[datetime, int]:
+def earliest_announce(sub_id: int) -> Union[datetime]:
     """Earliest announcement that a submission could appear in
 
     Returns datetime if successful or an HTTP status if unsuccessful.

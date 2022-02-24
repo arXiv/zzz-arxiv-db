@@ -55,7 +55,7 @@ class HoldLogicRes():
 
 @dataclass
 class HoldReleaseLogicRes():
-    release_to_status: str
+    release_to_status: int
     visible_comments: List[str] =  field(default_factory=list)
     modapi_comments: List[str] =  field(default_factory=list)
     clear_reason: bool = False
