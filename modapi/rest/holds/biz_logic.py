@@ -68,40 +68,6 @@ def _hold_comments(hold: HoldTypesIn) -> List[str]:
         return [f"Hold of type {hold.type}"]
 
 
-def _release_status_from_submit_time(
-    submit_time: datetime, release_time: datetime = None
-) -> int:
-    """Return a submission status based on the best guess of announcement time."""
-    if not submit_time:
-        return WORKING
-    now = release_time
-    tz = pytz.timezone("US/Eastern")
-    submit_time = datetime.fromtimestamp(submit_time.timestamp(), tz=tz)
-    if not now:
-        now = datetime.now(tz=tz)
-    else:
-        now = datetime.fromtimestamp(now.timestamp(), tz=tz)
-
-    # the crudest guess is relative to today, ignoring the current hour.
-    # (specifying tzinfo with datetime is buggy for some timezones
-    # so we have this strange workaround using fromtimestamp)
-    anno_time_guess = datetime.fromtimestamp(
-        datetime(now.year, now.month, now.day, 20, 0, 0).timestamp(), tz=tz
-    )
-    # if now is Monday through Thursday
-    if now.weekday() in (0, 1, 2, 3):
-        if submit_time < anno_time_guess - timedelta(hours=6) or now > anno_time_guess:
-            return SUBMITTED
-    # if now is Friday through Sunday
-    elif now.weekday() in (4, 5, 6):
-        anno_time_guess = anno_time_guess + timedelta(days=6 - now.weekday())
-        last_freeze_guess = anno_time_guess - timedelta(days=2, hours=6)
-        if submit_time < last_freeze_guess or now > anno_time_guess:
-            return SUBMITTED
-
-    return NEXT
-
-
 def release_by_mod_biz_logic(
     exists: Optional[Submissions],
     submission_id: int,
@@ -149,8 +115,11 @@ def release_by_mod_biz_logic(
                    f"Hold: {reasontype}{reasonreason} cleared but submission was on auto-hold "+\
                    "and needs to be cleared by admins" ]
     else:
-        new_status = 4 if is_freeze else _release_status_from_submit_time(exists.submit_time)
-        logtext = [f"Release: {reasontype}{reasonreason} hold"]
+        submitted_by_user = exists.submit_time
+        new_status =(0 if not submitted_by_user
+            else 4 if is_freeze
+            else 1)
+        logtext = [f"Release: {reasontype}{reasonreason} hold to {status_by_number[new_status]}"]
         
     rv = HoldReleaseLogicRes(
         modapi_comments=logtext,
