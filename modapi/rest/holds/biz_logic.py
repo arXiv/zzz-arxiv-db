@@ -116,9 +116,9 @@ def release_by_mod_biz_logic(
                    "and needs to be cleared by admins" ]
     else:
         submitted_by_user = exists.submit_time
-        new_status =(0 if not submitted_by_user
-            else 4 if is_freeze
-            else 1)
+        new_status =(WORKING if not submitted_by_user
+                     else NEXT if is_freeze
+                     else SUBMITTED)
         logtext = [f"Release: {reasontype}{reasonreason} hold to {status_by_number[new_status]}"]
         
     rv = HoldReleaseLogicRes(
@@ -165,11 +165,11 @@ def hold_biz_logic(
         )
 
     if not (
-        exists.status in [1, 4, 2]
+        exists.status in [SUBMITTED, NEXT, ON_HOLD]
     ):  # hold is included for legacy_hold -> new_style_hold
         return JSONResponse(
             status_code=httpstatus.HTTP_409_CONFLICT,
-            content={"msg": "Can only hold submissions in that status"},
+            content={"msg": "Submission in status that does not allow hold"},
         )
 
     oldstat = status_by_number.get(exists.status, exists.status)
