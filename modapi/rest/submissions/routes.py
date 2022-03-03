@@ -51,18 +51,19 @@ query_options = [
 ]
 
 
-def _query(user: User, include_mod_archives: bool, exclude_mod_categories: bool):
+def _query(user: User, include_mod_archives: bool, exclude_mod_categories: bool, include_auto_holds: bool):
     """Builds a query to select submissons"""
     stmt = select(Submissions).options(*query_options)
-    return with_queue_filters(user, stmt, include_mod_archives, exclude_mod_categories)
+    return with_queue_filters(user, stmt, include_mod_archives, exclude_mod_categories, include_auto_holds)
 
 
 @router.get("/submissions", response_model=List[schema.Submission])
 async def submissions(
-    user: User = Depends(auth_user),
-    db: Session = Depends(get_db),
-    include_mod_archives: bool = True,
-    exclude_mod_categories: bool = False,
+        user: User = Depends(auth_user),
+        db: Session = Depends(get_db),
+        include_mod_archives: bool = True,
+        exclude_mod_categories: bool = False,
+        include_auto_holds: bool = False,
 ):
     """Get all submissions for moderator or admin
 
@@ -70,7 +71,7 @@ async def submissions(
     or archives queues.
     """
     rows = (
-        db.execute(_query(user, include_mod_archives, exclude_mod_categories))
+        db.execute(_query(user, include_mod_archives, exclude_mod_categories, include_auto_holds))
         .unique()
         .all()
     )
@@ -80,6 +81,7 @@ async def submissions(
             payload={
                 "include_mod_archives": include_mod_archives,
                 "exclude_mod_categories": exclude_mod_categories,
+                "include_auto_holds": include_auto_holds,
             },
             status_code=404,
         )

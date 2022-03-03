@@ -207,6 +207,17 @@ VALUES
 (4403,'hep-ph',0,0),
 (4403,'cs.AI',0,0);
 
+--- a new submission on auto_hold (Legacy style hold with auto_hold set)
+INSERT INTO `arXiv_submissions`
+(`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)
+VALUES
+(441708,NULL,NULL,NULL,1,1,1,1,5,246231,'Brandon Barker','beb82@cornell.edu','2015-11-17 19:58:40','2015-11-18 14:15:41', 2, NULL,0,NULL,NULL,1502662,'pdftex','',0,0,'proposal test case','Brandon barker',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Proposal test case','http://arxiv.org/licenses/nonexclusive-distrib/1.0/',1,'new',0,0,0,'128.84.31.207','bbsurfacepro3.tc.cornell.edu','/users/e-prints/arXivLib/t/user_data/extraction_timeout1_1137932.tar.gz',NULL,1,NULL);
+
+INSERT INTO `arXiv_submission_category`
+(`submission_id`, `category`, `is_primary`, `is_published`)
+VALUES
+(441708,'q-bio.CB',1,0);
+
 --- a submission with bad classifier JSON
 INSERT INTO `arXiv_submissions`
 (`submission_id`, `document_id`, `doc_paper_id`, `sword_id`, `userinfo`, `is_author`, `agree_policy`, `viewed`, `stage`, `submitter_id`, `submitter_name`, `submitter_email`, `created`, `updated`, `status`, `sticky_status`, `must_process`, `submit_time`, `release_time`, `source_size`, `source_format`, `source_flags`, `has_pilot_data`, `is_withdrawn`, `title`, `authors`, `comments`, `proxy`, `report_num`, `msc_class`, `acm_class`, `journal_ref`, `doi`, `abstract`, `license`, `version`, `type`, `is_ok`, `admin_ok`, `allow_tex_produced`, `remote_addr`, `remote_host`, `package`, `rt_ticket_id`, `auto_hold`, `is_oversize`)

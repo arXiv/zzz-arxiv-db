@@ -5,12 +5,8 @@ from modapi.auth import User
 
 from modapi.tables.arxiv_models import (
     Submissions,
-    TapirUsers,
-    Demographics,
-    CategoryDef,
     SubmissionCategory,
     SubmissionCategoryProposal,
-    AdminLog,
 )
 
 
@@ -19,11 +15,21 @@ def with_queue_filters(
     stmt,
     include_mod_archives: bool = True,
     exclude_mod_categories: bool = False,
+    include_auto_holds: bool = False,
 ):
     """Returns the statement limited to just queue submissions.
 
-    This will limit to a moderators queue is user is a moderator."""
+    This will limit to a moderators queue if the user is a moderator.
+    The filters `include_mod_archives` and `exclude_mod_categories` only
+    have an effect for moderators.
+
+    `include_auto_holds` has an effect for both mods and admins.
+    """
     stmt = stmt.filter(Submissions.status.in_([1, 2, 4]))
+    
+    if not include_auto_holds:
+        stmt = stmt.filter(Submissions.auto_hold == 0)
+
     if user.is_moderator and not user.is_admin:
         stmt = with_mod_filters(
             user, stmt, include_mod_archives, exclude_mod_categories

@@ -2,6 +2,7 @@ from modapi.auth import user_jwt
 
 SUB_ID_1 = 1137914
 
+SUB_ON_AUTO_HOLD = 441708
 
 def test_auth(client):
     res = client.get(f"/submission/{SUB_ID_1}")
@@ -24,6 +25,26 @@ def test_subs(client):
     sub = res.json()
     assert type(sub) == list
 
+    assert SUB_ON_AUTO_HOLD not in [itm['submission_id'] for itm in sub] # mods should not get auto_hold subs by default
+
+
+def test_auto_hold(client):
+    cookies = {
+        "ARXIVNG_SESSION_ID": user_jwt(246231)
+    }  # Brandon, mod of q-bio.CB and q-bio.NC
+    res = client.get("/submissions?include_auto_holds=0", cookies=cookies)
+    assert res.status_code == 200 and res.json() is not None
+    subs = res.json()
+    assert type(subs) == list
+    assert SUB_ON_AUTO_HOLD not in [itm['submission_id'] for itm in subs]
+
+    res = client.get("/submissions?include_auto_holds=1", cookies=cookies)
+    assert res.status_code == 200 and res.json() is not None
+    subs = res.json()
+    assert type(subs) == list
+    subs = [sub for sub in subs if sub['submission_id'] == SUB_ON_AUTO_HOLD]
+    assert subs and len(subs) == 1
+    assert subs[0]['auto_hold']
 
 def test_sub(client):
     cookies = {
