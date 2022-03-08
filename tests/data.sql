@@ -1,6 +1,8 @@
 -- SET FOREIGN_KEY_CHECKS = 0;
 
 -- Tapir Users
+
+-- admin users
 INSERT INTO `tapir_users` VALUES (246231,'Brandon','Barker','',1,1,'no-mail@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'cpe-24-59.res.rr.com.1372902602452690',0,0);
 INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','CB','0','0','0','0','0');
 INSERT INTO `arXiv_moderators` VALUES (246231,'q-bio','NC','0','0','0','0','0');
@@ -19,6 +21,10 @@ INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', '', '0' , '0' , '0' , '
 INSERT INTO `arXiv_moderators` VALUES (9999, 'astro-ph', 'HE', 1 , '0' , '0' , '0' , '0' );
 INSERT INTO `arXiv_moderators` VALUES (9999, 'cond-mat', '', '0' , '0' , '0' , '0' , '0' );
 INSERT INTO `arXiv_moderators` VALUES (9999, 'physics', '', '0' , '0' , '0' , '0' , '0' );
+
+-- admin user
+INSERT INTO `tapir_users` VALUES (21,'Sara','TheAdmin','',1,1,'saraTheAdmin@example.com',8,0,2,1384185389,'dedicated','',0,1,1,1,1,0,0,0,0,'example.com.1372902602452690',0,0);
+INSERT INTO `tapir_nicknames` VALUES (212,'saraTheAdmin',21,1,1,0,0,1);
 
 -- non-mod non-admin user
 INSERT INTO `tapir_users` VALUES (1212,'Random','Reader','',1,1,'no-mail-randomreader@example.com',8,0,2,1384185389,'dedicated','',0,0,0,1,1,0,0,0,0,'xyz',0,0);
