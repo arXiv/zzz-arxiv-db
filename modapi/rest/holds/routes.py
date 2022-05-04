@@ -197,19 +197,28 @@ async def holds(user: User = Depends(auth_user), db: Session = Depends(get_db)):
 
 
 async def _holds(submission_id: Optional[int], user: User, db: Session):
+    """Get holds.
+
+    If submission_id is set it will just get a list of holds for the
+    submission id. Right now there can only be one hold on a
+    submission.
+
+    If submission_id is not None and the user is a moderator, the list
+    of holds will be limited to just the submissions that are relevant
+    to the moderator. That is submissions in the mods categories and
+    archives, or with proposals to the mod's categories and archives.
+    """
     query_options = [
-        # Could deferre all of submission?
         joinedload(Submissions.hold_reasons),
     ]
-    # TODO the admin query doesn't need any joins
     stmt = (select(Submissions)
-            .outerjoin(Submissions.submission_category)
-            .outerjoin(Submissions.proposals)
-            .outerjoin(Submissions.hold_reasons)
             .options(*query_options)
-            .filter(Submissions.status == ON_HOLD)
-            )
-    if user.is_moderator and not user.is_admin:
+            .filter(Submissions.status == ON_HOLD))
+    if submission_id is None and user.is_moderator and not user.is_admin:
+        stmt = (stmt
+                .outerjoin(Submissions.submission_category)
+                .outerjoin(Submissions.proposals)
+                .outerjoin(Submissions.hold_reasons))
         cats = user.moderated_categories
         mod_ors = [
             SubmissionCategory.category.in_(cats),
