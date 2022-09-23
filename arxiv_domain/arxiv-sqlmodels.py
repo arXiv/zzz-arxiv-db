@@ -1,9 +1,24 @@
+"""Database models for use with arXiv.
+
+Generated from the production DB 2022-09-23 using sqlacodegen 3.0.0rc1
+
+2022-09-23 Convert the mysql specific types to generic types
+
+CHAR -> generic CHAR
+DECIMAL -> Numeric()
+INTEGER, MEDIUMINT -> Integer
+SMALLINT -> SmallInteger
+VARCHAR -> String()
+MEDIUMTEXT -> Text
+TINYINT -> Some to SmallInteger and any with "is_somehting" to Boolean
+
+"""
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
-from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
+from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text, Numeric, Boolean
+from sqlalchemy.types import SmallInteger
 from sqlmodel import Field, Relationship, SQLModel
 
 metadata = SQLModel.metadata
@@ -43,9 +58,9 @@ class ArXivAdminLog(SQLModel, table=True):
     program: Optional[str] = Field(default=None, sa_column=Column('program', String(20)))
     command: Optional[str] = Field(default=None, sa_column=Column('command', String(20)))
     logtext: Optional[str] = Field(default=None, sa_column=Column('logtext', Text))
-    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', MEDIUMINT))
+    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', Integer))
     submission_id: Optional[int] = Field(default=None, sa_column=Column('submission_id', Integer))
-    notify: Optional[int] = Field(default=None, sa_column=Column('notify', TINYINT(1), server_default=text("'0'")))
+    notify: Optional[int] = Field(default=None, sa_column=Column('notify', Boolean(), server_default=text("'0'")))
 
     arXiv_submission_category_proposal: List['ArXivSubmissionCategoryProposal'] = Relationship(back_populates='proposal_comment')
     arXiv_submission_category_proposal_: List['ArXivSubmissionCategoryProposal'] = Relationship(back_populates='response_comment')
@@ -105,10 +120,10 @@ class ArXivAwsFiles(SQLModel, table=True):
 
 
 class ArXivBibFeeds(SQLModel, table=True):
-    bib_id: Optional[int] = Field(default=None, sa_column=Column('bib_id', MEDIUMINT, primary_key=True))
+    bib_id: Optional[int] = Field(default=None, sa_column=Column('bib_id', Integer, primary_key=True))
     name: str = Field(sa_column=Column('name', String(64), nullable=False, server_default=text("''")))
-    priority: int = Field(sa_column=Column('priority', TINYINT(1), nullable=False, server_default=text("'0'")))
-    strip_journal_ref: int = Field(sa_column=Column('strip_journal_ref', TINYINT(1), nullable=False, server_default=text("'0'")))
+    priority: int = Field(sa_column=Column('priority', SmallInteger, nullable=False, server_default=text("'0'")))
+    strip_journal_ref: int = Field(sa_column=Column('strip_journal_ref', Boolean(), nullable=False, server_default=text("'0'")))
     uri: Optional[str] = Field(default=None, sa_column=Column('uri', String(255)))
     identifier: Optional[str] = Field(default=None, sa_column=Column('identifier', String(255)))
     version: Optional[str] = Field(default=None, sa_column=Column('version', String(255)))
@@ -117,13 +132,13 @@ class ArXivBibFeeds(SQLModel, table=True):
     email_errors: Optional[str] = Field(default=None, sa_column=Column('email_errors', String(255)))
     prune_ids: Optional[str] = Field(default=None, sa_column=Column('prune_ids', Text))
     prune_regex: Optional[str] = Field(default=None, sa_column=Column('prune_regex', Text))
-    enabled: Optional[int] = Field(default=None, sa_column=Column('enabled', TINYINT(1), server_default=text("'0'")))
+    enabled: Optional[int] = Field(default=None, sa_column=Column('enabled', Boolean(), server_default=text("'0'")))
 
 
 class ArXivBibUpdates(SQLModel, table=True):
-    update_id: Optional[int] = Field(default=None, sa_column=Column('update_id', MEDIUMINT, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    bib_id: int = Field(sa_column=Column('bib_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    update_id: Optional[int] = Field(default=None, sa_column=Column('update_id', Integer, primary_key=True))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    bib_id: int = Field(sa_column=Column('bib_id', Integer, nullable=False, server_default=text("'0'")))
     updated: datetime = Field(sa_column=Column('updated', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
     journal_ref: Optional[str] = Field(default=None, sa_column=Column('journal_ref', Text))
     doi: Optional[str] = Field(default=None, sa_column=Column('doi', Text))
@@ -142,14 +157,14 @@ t_arXiv_block_email = Table(
 
 
 class ArXivBogusCountries(SQLModel, table=True):
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
     country_name: str = Field(sa_column=Column('country_name', String(255), nullable=False, server_default=text("''")))
 
 
 class ArXivCategoryDef(SQLModel, table=True):
     category: Optional[str] = Field(default=None, sa_column=Column('category', String(32), primary_key=True))
     name: Optional[str] = Field(default=None, sa_column=Column('name', String(255)))
-    active: Optional[int] = Field(default=None, sa_column=Column('active', TINYINT(1), server_default=text("'1'")))
+    active: Optional[int] = Field(default=None, sa_column=Column('active', Boolean(), server_default=text("'1'")))
 
     arXiv_document_category: List['ArXivDocumentCategory'] = Relationship(back_populates='arXiv_category_def')
     arXiv_submission_category: List['ArXivSubmissionCategory'] = Relationship(back_populates='arXiv_category_def')
@@ -162,7 +177,7 @@ class ArXivDblpAuthors(SQLModel, table=True):
         Index('name', 'name', unique=True)
     )
 
-    author_id: Optional[int] = Field(default=None, sa_column=Column('author_id', MEDIUMINT, primary_key=True))
+    author_id: Optional[int] = Field(default=None, sa_column=Column('author_id', Integer, primary_key=True))
     name: Optional[str] = Field(default=None, sa_column=Column('name', String(40)))
 
     arXiv_dblp_document_authors: List['ArXivDblpDocumentAuthors'] = Relationship(back_populates='author')
@@ -173,13 +188,13 @@ class ArXivEndorsementDomains(SQLModel, table=True):
     endorse_all: str = Field(sa_column=Column('endorse_all', Enum('y', 'n'), nullable=False, server_default=text("'n'")))
     mods_endorse_all: str = Field(sa_column=Column('mods_endorse_all', Enum('y', 'n'), nullable=False, server_default=text("'n'")))
     endorse_email: str = Field(sa_column=Column('endorse_email', Enum('y', 'n'), nullable=False, server_default=text("'y'")))
-    papers_to_endorse: int = Field(sa_column=Column('papers_to_endorse', SMALLINT, nullable=False, server_default=text("'4'")))
+    papers_to_endorse: int = Field(sa_column=Column('papers_to_endorse', SmallInteger, nullable=False, server_default=text("'4'")))
 
     arXiv_categories: List['ArXivCategories'] = Relationship(back_populates='arXiv_endorsement_domains')
 
 
 class ArXivFreezeLog(SQLModel, table=True):
-    date_: int = Field(sa_column=Column('date', INTEGER, primary_key=True, server_default=text("'0'")))
+    date_: int = Field(sa_column=Column('date', Integer, primary_key=True, server_default=text("'0'")))
 
 
 class ArXivGroupDef(SQLModel, table=True):
@@ -198,9 +213,9 @@ class ArXivGroups(SQLModel, table=True):
 class ArXivLicenses(SQLModel, table=True):
     name: Optional[str] = Field(default=None, sa_column=Column('name', String(255), primary_key=True))
     label: Optional[str] = Field(default=None, sa_column=Column('label', String(255)))
-    active: Optional[int] = Field(default=None, sa_column=Column('active', TINYINT(1), server_default=text("'1'")))
+    active: Optional[int] = Field(default=None, sa_column=Column('active', Boolean(), server_default=text("'1'")))
     note: Optional[str] = Field(default=None, sa_column=Column('note', String(400)))
-    sequence: Optional[int] = Field(default=None, sa_column=Column('sequence', TINYINT))
+    sequence: Optional[int] = Field(default=None, sa_column=Column('sequence', SmallInteger))
 
     arXiv_metadata: List['ArXivMetadata'] = Relationship(back_populates='arXiv_licenses')
     arXiv_submissions: List['ArXivSubmissions'] = Relationship(back_populates='arXiv_licenses')
@@ -208,28 +223,28 @@ class ArXivLicenses(SQLModel, table=True):
 
 class ArXivLogPositions(SQLModel, table=True):
     id: Optional[str] = Field(default=None, sa_column=Column('id', String(255), primary_key=True, server_default=text("''")))
-    position: Optional[int] = Field(default=None, sa_column=Column('position', INTEGER))
-    date_: Optional[int] = Field(default=None, sa_column=Column('date', INTEGER))
+    position: Optional[int] = Field(default=None, sa_column=Column('position', Integer))
+    date_: Optional[int] = Field(default=None, sa_column=Column('date', Integer))
 
 
 class ArXivMonitorKlog(SQLModel, table=True):
-    t: int = Field(sa_column=Column('t', INTEGER, primary_key=True, server_default=text("'0'")))
-    sent: Optional[int] = Field(default=None, sa_column=Column('sent', INTEGER))
+    t: int = Field(sa_column=Column('t', Integer, primary_key=True, server_default=text("'0'")))
+    sent: Optional[int] = Field(default=None, sa_column=Column('sent', Integer))
 
 
 class ArXivMonitorMailq(SQLModel, table=True):
-    t: int = Field(sa_column=Column('t', INTEGER, primary_key=True, server_default=text("'0'")))
-    main_q: int = Field(sa_column=Column('main_q', INTEGER, nullable=False, server_default=text("'0'")))
-    local_q: int = Field(sa_column=Column('local_q', INTEGER, nullable=False, server_default=text("'0'")))
-    local_host_map: int = Field(sa_column=Column('local_host_map', INTEGER, nullable=False, server_default=text("'0'")))
-    local_timeout: int = Field(sa_column=Column('local_timeout', INTEGER, nullable=False, server_default=text("'0'")))
-    local_refused: int = Field(sa_column=Column('local_refused', INTEGER, nullable=False, server_default=text("'0'")))
-    local_in_flight: int = Field(sa_column=Column('local_in_flight', INTEGER, nullable=False, server_default=text("'0'")))
+    t: int = Field(sa_column=Column('t', Integer, primary_key=True, server_default=text("'0'")))
+    main_q: int = Field(sa_column=Column('main_q', Integer, nullable=False, server_default=text("'0'")))
+    local_q: int = Field(sa_column=Column('local_q', Integer, nullable=False, server_default=text("'0'")))
+    local_host_map: int = Field(sa_column=Column('local_host_map', Integer, nullable=False, server_default=text("'0'")))
+    local_timeout: int = Field(sa_column=Column('local_timeout', Integer, nullable=False, server_default=text("'0'")))
+    local_refused: int = Field(sa_column=Column('local_refused', Integer, nullable=False, server_default=text("'0'")))
+    local_in_flight: int = Field(sa_column=Column('local_in_flight', Integer, nullable=False, server_default=text("'0'")))
 
 
 class ArXivMonitorMailsent(SQLModel, table=True):
-    t: int = Field(sa_column=Column('t', INTEGER, primary_key=True, server_default=text("'0'")))
-    sent: Optional[int] = Field(default=None, sa_column=Column('sent', INTEGER))
+    t: int = Field(sa_column=Column('t', Integer, primary_key=True, server_default=text("'0'")))
+    sent: Optional[int] = Field(default=None, sa_column=Column('sent', Integer))
 
 
 class ArXivNextMail(SQLModel, table=True):
@@ -240,10 +255,10 @@ class ArXivNextMail(SQLModel, table=True):
 
     next_mail_id: Optional[int] = Field(default=None, sa_column=Column('next_mail_id', Integer, primary_key=True))
     submission_id: int = Field(sa_column=Column('submission_id', Integer, nullable=False))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
     version: int = Field(sa_column=Column('version', Integer, nullable=False, server_default=text("'1'")))
     type: str = Field(sa_column=Column('type', String(255), nullable=False, server_default=text("'new'")))
-    is_written: int = Field(sa_column=Column('is_written', TINYINT(1), nullable=False, server_default=text("'0'")))
+    is_written: int = Field(sa_column=Column('is_written', Boolean(), nullable=False, server_default=text("'0'")))
     paper_id: Optional[str] = Field(default=None, sa_column=Column('paper_id', String(20)))
     extra: Optional[str] = Field(default=None, sa_column=Column('extra', String(255)))
     mail_id: Optional[str] = Field(default=None, sa_column=Column('mail_id', CHAR(6)))
@@ -257,29 +272,29 @@ class ArXivOrcidConfig(SQLModel, table=True):
 
 t_arXiv_ownership_requests_papers = Table(
     'arXiv_ownership_requests_papers', metadata,
-    Column('request_id', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('document_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('request_id', Integer, nullable=False, server_default=text("'0'")),
+    Column('document_id', Integer, nullable=False, server_default=text("'0'")),
     Index('document_id', 'document_id'),
     Index('request_id', 'request_id', 'document_id', unique=True)
 )
 
 
 class ArXivPaperSessions(SQLModel, table=True):
-    paper_session_id: Optional[int] = Field(default=None, sa_column=Column('paper_session_id', INTEGER, primary_key=True))
+    paper_session_id: Optional[int] = Field(default=None, sa_column=Column('paper_session_id', Integer, primary_key=True))
     paper_id: str = Field(sa_column=Column('paper_id', String(16), nullable=False, server_default=text("''")))
-    start_time: int = Field(sa_column=Column('start_time', INTEGER, nullable=False, server_default=text("'0'")))
-    end_time: int = Field(sa_column=Column('end_time', INTEGER, nullable=False, server_default=text("'0'")))
+    start_time: int = Field(sa_column=Column('start_time', Integer, nullable=False, server_default=text("'0'")))
+    end_time: int = Field(sa_column=Column('end_time', Integer, nullable=False, server_default=text("'0'")))
     ip_name: str = Field(sa_column=Column('ip_name', String(16), nullable=False, server_default=text("''")))
 
 
 class ArXivPublishLog(SQLModel, table=True):
-    date_: int = Field(sa_column=Column('date', INTEGER, primary_key=True, server_default=text("'0'")))
+    date_: int = Field(sa_column=Column('date', Integer, primary_key=True, server_default=text("'0'")))
 
 
 t_arXiv_refresh_list = Table(
     'arXiv_refresh_list', metadata,
     Column('filename', String(255)),
-    Column('mtime', INTEGER),
+    Column('mtime', Integer),
     Index('arXiv_refresh_list_mtime', 'mtime')
 )
 
@@ -302,10 +317,10 @@ class ArXivState(SQLModel, table=True):
 t_arXiv_stats_hourly = Table(
     'arXiv_stats_hourly', metadata,
     Column('ymd', Date, nullable=False),
-    Column('hour', TINYINT, nullable=False),
-    Column('node_num', TINYINT, nullable=False),
+    Column('hour', SmallInteger, nullable=False),
+    Column('node_num', SmallInteger, nullable=False),
     Column('access_type', CHAR(1), nullable=False),
-    Column('connections', INTEGER, nullable=False),
+    Column('connections', Integer, nullable=False),
     Index('arXiv_stats_hourly_idx_access_type', 'access_type'),
     Index('arXiv_stats_hourly_idx_hour', 'hour'),
     Index('arXiv_stats_hourly_idx_node_num', 'node_num'),
@@ -315,17 +330,17 @@ t_arXiv_stats_hourly = Table(
 
 class ArXivStatsMonthlyDownloads(SQLModel, table=True):
     ym: Optional[date] = Field(default=None, sa_column=Column('ym', Date, primary_key=True))
-    downloads: int = Field(sa_column=Column('downloads', INTEGER, nullable=False))
+    downloads: int = Field(sa_column=Column('downloads', Integer, nullable=False))
 
 
 class ArXivStatsMonthlySubmissions(SQLModel, table=True):
     ym: Optional[date] = Field(default=None, sa_column=Column('ym', Date, primary_key=True, server_default=text("'0000-00-00'")))
-    num_submissions: int = Field(sa_column=Column('num_submissions', SMALLINT, nullable=False))
-    historical_delta: int = Field(sa_column=Column('historical_delta', TINYINT, nullable=False, server_default=text("'0'")))
+    num_submissions: int = Field(sa_column=Column('num_submissions', SmallInteger, nullable=False))
+    historical_delta: int = Field(sa_column=Column('historical_delta', SmallInteger, nullable=False, server_default=text("'0'")))
 
 
 class ArXivSubmissionAgreements(SQLModel, table=True):
-    agreement_id: Optional[int] = Field(default=None, sa_column=Column('agreement_id', SMALLINT, primary_key=True))
+    agreement_id: Optional[int] = Field(default=None, sa_column=Column('agreement_id', SmallInteger, primary_key=True))
     commit_ref: str = Field(sa_column=Column('commit_ref', String(255), nullable=False))
     effective_date: Optional[datetime] = Field(default=None, sa_column=Column('effective_date', DateTime, server_default=text('CURRENT_TIMESTAMP')))
     content: Optional[str] = Field(default=None, sa_column=Column('content', Text))
@@ -367,20 +382,20 @@ class ArXivTrackbackPings(SQLModel, table=True):
         Index('arXiv_trackback_pings__url', 'url')
     )
 
-    trackback_id: Optional[int] = Field(default=None, sa_column=Column('trackback_id', MEDIUMINT, primary_key=True))
+    trackback_id: Optional[int] = Field(default=None, sa_column=Column('trackback_id', Integer, primary_key=True))
     title: str = Field(sa_column=Column('title', String(255), nullable=False, server_default=text("''")))
     excerpt: str = Field(sa_column=Column('excerpt', String(255), nullable=False, server_default=text("''")))
     url: str = Field(sa_column=Column('url', String(255), nullable=False, server_default=text("''")))
     blog_name: str = Field(sa_column=Column('blog_name', String(255), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     remote_addr: str = Field(sa_column=Column('remote_addr', String(16), nullable=False, server_default=text("''")))
-    posted_date: int = Field(sa_column=Column('posted_date', INTEGER, nullable=False, server_default=text("'0'")))
-    is_stale: int = Field(sa_column=Column('is_stale', TINYINT, nullable=False, server_default=text("'0'")))
-    approved_by_user: int = Field(sa_column=Column('approved_by_user', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    posted_date: int = Field(sa_column=Column('posted_date', Integer, nullable=False, server_default=text("'0'")))
+    is_stale: int = Field(sa_column=Column('is_stale', Boolean!, nullable=False, server_default=text("'0'")))
+    approved_by_user: int = Field(sa_column=Column('approved_by_user', Integer, nullable=False, server_default=text("'0'")))
     approved_time: int = Field(sa_column=Column('approved_time', Integer, nullable=False, server_default=text("'0'")))
     status: str = Field(sa_column=Column('status', Enum('pending', 'pending2', 'accepted', 'rejected', 'spam'), nullable=False, server_default=text("'pending'")))
-    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', MEDIUMINT))
-    site_id: Optional[int] = Field(default=None, sa_column=Column('site_id', INTEGER))
+    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', Integer))
+    site_id: Optional[int] = Field(default=None, sa_column=Column('site_id', Integer))
 
 
 class ArXivTrackbackSites(SQLModel, table=True):
@@ -389,7 +404,7 @@ class ArXivTrackbackSites(SQLModel, table=True):
     )
 
     pattern: str = Field(sa_column=Column('pattern', String(255), nullable=False, server_default=text("''")))
-    site_id: Optional[int] = Field(default=None, sa_column=Column('site_id', INTEGER, primary_key=True))
+    site_id: Optional[int] = Field(default=None, sa_column=Column('site_id', Integer, primary_key=True))
     action: str = Field(sa_column=Column('action', Enum('neutral', 'accept', 'reject', 'spam'), nullable=False, server_default=text("'neutral'")))
 
 
@@ -399,7 +414,7 @@ class ArXivTracking(SQLModel, table=True):
     )
 
     tracking_id: Optional[int] = Field(default=None, sa_column=Column('tracking_id', Integer, primary_key=True))
-    sword_id: int = Field(sa_column=Column('sword_id', INTEGER(8), nullable=False, server_default=text("'00000000'")))
+    sword_id: int = Field(sa_column=Column('sword_id', Integer(8), nullable=False, server_default=text("'00000000'")))
     paper_id: str = Field(sa_column=Column('paper_id', String(32), nullable=False))
     timestamp: datetime = Field(sa_column=Column('timestamp', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
     submission_errors: Optional[str] = Field(default=None, sa_column=Column('submission_errors', Text))
@@ -442,10 +457,10 @@ t_arXiv_white_email = Table(
 
 t_arXiv_xml_notifications = Table(
     'arXiv_xml_notifications', metadata,
-    Column('control_id', INTEGER),
+    Column('control_id', Integer),
     Column('type', Enum('submission', 'cross', 'jref')),
-    Column('queued_date', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('sent_date', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('queued_date', Integer, nullable=False, server_default=text("'0'")),
+    Column('sent_date', Integer, nullable=False, server_default=text("'0'")),
     Column('status', Enum('unsent', 'sent', 'failed')),
     Index('control_id', 'control_id'),
     Index('status', 'status')
@@ -459,28 +474,28 @@ class DbixClassSchemaVersions(SQLModel, table=True):
 
 t_demographics_backup = Table(
     'demographics_backup', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     Column('country', CHAR(2), nullable=False, server_default=text("''")),
     Column('affiliation', String(255), nullable=False, server_default=text("''")),
     Column('url', String(255), nullable=False, server_default=text("''")),
-    Column('type', SMALLINT),
-    Column('os', SMALLINT),
+    Column('type', SmallInteger),
+    Column('os', SmallInteger),
     Column('archive', String(16)),
     Column('subject_class', String(16)),
     Column('original_subject_classes', String(255), nullable=False, server_default=text("''")),
-    Column('flag_group_physics', INTEGER),
-    Column('flag_group_math', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_group_cs', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_group_nlin', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_proxy', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_journal', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_xml', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('dirty', INTEGER, nullable=False, server_default=text("'2'")),
-    Column('flag_group_test', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_suspect', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_group_q_bio', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_no_upload', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_no_endorse', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('flag_group_physics', Integer),
+    Column('flag_group_math', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_group_cs', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_group_nlin', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_proxy', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_journal', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_xml', Integer, nullable=False, server_default=text("'0'")),
+    Column('dirty', Integer, nullable=False, server_default=text("'2'")),
+    Column('flag_group_test', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_suspect', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_group_q_bio', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_no_upload', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_no_endorse', Integer, nullable=False, server_default=text("'0'")),
     Column('veto_status', Enum('ok', 'no-endorse', 'no-upload'), server_default=text("'ok'"))
 )
 
@@ -494,7 +509,7 @@ class Sessions(SQLModel, table=True):
 class TapirCountries(SQLModel, table=True):
     digraph: Optional[str] = Field(default=None, sa_column=Column('digraph', CHAR(2), primary_key=True, server_default=text("''")))
     country_name: str = Field(sa_column=Column('country_name', String(255), nullable=False, server_default=text("''")))
-    rank: int = Field(sa_column=Column('rank', INTEGER, nullable=False, server_default=text("'255'")))
+    rank: int = Field(sa_column=Column('rank', Integer, nullable=False, server_default=text("'255'")))
 
     tapir_address: List['TapirAddress'] = Relationship(back_populates='tapir_countries')
     tapir_demographics: List['TapirDemographics'] = Relationship(back_populates='tapir_countries')
@@ -505,21 +520,21 @@ class TapirEmailLog(SQLModel, table=True):
         Index('mailing_id', 'mailing_id'),
     )
 
-    mail_id: Optional[int] = Field(default=None, sa_column=Column('mail_id', INTEGER, primary_key=True))
-    sent_date: int = Field(sa_column=Column('sent_date', INTEGER, nullable=False, server_default=text("'0'")))
-    template_id: int = Field(sa_column=Column('template_id', INTEGER, nullable=False, server_default=text("'0'")))
+    mail_id: Optional[int] = Field(default=None, sa_column=Column('mail_id', Integer, primary_key=True))
+    sent_date: int = Field(sa_column=Column('sent_date', Integer, nullable=False, server_default=text("'0'")))
+    template_id: int = Field(sa_column=Column('template_id', Integer, nullable=False, server_default=text("'0'")))
     reference_type: Optional[str] = Field(default=None, sa_column=Column('reference_type', CHAR(1)))
-    reference_id: Optional[int] = Field(default=None, sa_column=Column('reference_id', INTEGER))
+    reference_id: Optional[int] = Field(default=None, sa_column=Column('reference_id', Integer))
     email: Optional[str] = Field(default=None, sa_column=Column('email', String(255)))
-    flag_bounced: Optional[int] = Field(default=None, sa_column=Column('flag_bounced', INTEGER))
-    mailing_id: Optional[int] = Field(default=None, sa_column=Column('mailing_id', INTEGER))
+    flag_bounced: Optional[int] = Field(default=None, sa_column=Column('flag_bounced', Integer))
+    mailing_id: Optional[int] = Field(default=None, sa_column=Column('mailing_id', Integer))
 
 
 t_tapir_error_log = Table(
     'tapir_error_log', metadata,
-    Column('error_date', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('user_id', INTEGER),
-    Column('session_id', INTEGER),
+    Column('error_date', Integer, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer),
+    Column('session_id', Integer),
     Column('ip_addr', String(16), nullable=False, server_default=text("''")),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
     Column('tracking_cookie', String(32), nullable=False, server_default=text("''")),
@@ -537,7 +552,7 @@ t_tapir_error_log = Table(
 
 class TapirIntegerVariables(SQLModel, table=True):
     variable_id: Optional[str] = Field(default=None, sa_column=Column('variable_id', String(32), primary_key=True, server_default=text("''")))
-    value: int = Field(sa_column=Column('value', INTEGER, nullable=False, server_default=text("'0'")))
+    value: int = Field(sa_column=Column('value', Integer, nullable=False, server_default=text("'0'")))
 
 
 class TapirNicknamesAudit(SQLModel, table=True):
@@ -547,8 +562,8 @@ class TapirNicknamesAudit(SQLModel, table=True):
         Index('tracking_cookie', 'tracking_cookie')
     )
 
-    nick_id: int = Field(sa_column=Column('nick_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    creation_date: int = Field(sa_column=Column('creation_date', INTEGER, nullable=False, server_default=text("'0'")))
+    nick_id: int = Field(sa_column=Column('nick_id', Integer, primary_key=True, server_default=text("'0'")))
+    creation_date: int = Field(sa_column=Column('creation_date', Integer, nullable=False, server_default=text("'0'")))
     creation_ip_num: str = Field(sa_column=Column('creation_ip_num', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
@@ -556,7 +571,7 @@ class TapirNicknamesAudit(SQLModel, table=True):
 
 t_tapir_no_cookies = Table(
     'tapir_no_cookies', metadata,
-    Column('log_date', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('log_date', Integer, nullable=False, server_default=text("'0'")),
     Column('ip_addr', String(16), nullable=False, server_default=text("''")),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
     Column('tracking_cookie', String(255), nullable=False, server_default=text("''")),
@@ -567,29 +582,29 @@ t_tapir_no_cookies = Table(
 
 t_tapir_periodic_tasks_log = Table(
     'tapir_periodic_tasks_log', metadata,
-    Column('t', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('t', Integer, nullable=False, server_default=text("'0'")),
     Column('entry', Text),
     Index('tapir_periodic_tasks_log_1', 't')
 )
 
 
 class TapirPolicyClasses(SQLModel, table=True):
-    class_id: Optional[int] = Field(default=None, sa_column=Column('class_id', SMALLINT, primary_key=True))
+    class_id: Optional[int] = Field(default=None, sa_column=Column('class_id', SmallInteger, primary_key=True))
     name: str = Field(sa_column=Column('name', String(64), nullable=False, server_default=text("''")))
     description: str = Field(sa_column=Column('description', Text, nullable=False))
-    password_storage: int = Field(sa_column=Column('password_storage', INTEGER, nullable=False, server_default=text("'0'")))
-    recovery_policy: int = Field(sa_column=Column('recovery_policy', INTEGER, nullable=False, server_default=text("'0'")))
+    password_storage: int = Field(sa_column=Column('password_storage', Integer, nullable=False, server_default=text("'0'")))
+    recovery_policy: int = Field(sa_column=Column('recovery_policy', Integer, nullable=False, server_default=text("'0'")))
     permanent_login: int = Field(sa_column=Column('permanent_login', Integer, nullable=False, server_default=text("'0'")))
 
     tapir_users: List['TapirUsers'] = Relationship(back_populates='tapir_policy_classes')
 
 
 class TapirPresessions(SQLModel, table=True):
-    presession_id: Optional[int] = Field(default=None, sa_column=Column('presession_id', INTEGER, primary_key=True))
+    presession_id: Optional[int] = Field(default=None, sa_column=Column('presession_id', Integer, primary_key=True))
     ip_num: str = Field(sa_column=Column('ip_num', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    created_at: int = Field(sa_column=Column('created_at', INTEGER, nullable=False, server_default=text("'0'")))
+    created_at: int = Field(sa_column=Column('created_at', Integer, nullable=False, server_default=text("'0'")))
 
 
 class TapirStringVariables(SQLModel, table=True):
@@ -613,7 +628,7 @@ class SubscriptionUniversalInstitutionContact(SQLModel, table=True):
     sid: int = Field(sa_column=Column('sid', Integer, nullable=False))
     id: Optional[int] = Field(default=None, sa_column=Column('id', Integer, primary_key=True))
     email: Optional[str] = Field(default=None, sa_column=Column('email', String(255)))
-    active: Optional[int] = Field(default=None, sa_column=Column('active', TINYINT, server_default=text("'0'")))
+    active: Optional[int] = Field(default=None, sa_column=Column('active', Boolean!, server_default=text("'0'")))
     contact_name: Optional[str] = Field(default=None, sa_column=Column('contact_name', String(255)))
     phone: Optional[str] = Field(default=None, sa_column=Column('phone', String(255)))
     note: Optional[str] = Field(default=None, sa_column=Column('note', String(2048)))
@@ -634,7 +649,7 @@ class SubscriptionUniversalInstitutionIP(SQLModel, table=True):
     id: Optional[int] = Field(default=None, sa_column=Column('id', Integer, primary_key=True))
     end: int = Field(sa_column=Column('end', BigInteger, nullable=False))
     start: int = Field(sa_column=Column('start', BigInteger, nullable=False))
-    exclude: Optional[int] = Field(default=None, sa_column=Column('exclude', TINYINT, server_default=text("'0'")))
+    exclude: Optional[int] = Field(default=None, sa_column=Column('exclude', Boolean!, server_default=text("'0'")))
 
     Subscription_UniversalInstitution: Optional['SubscriptionUniversalInstitution'] = Relationship(back_populates='Subscription_UniversalInstitutionIP')
 
@@ -650,7 +665,7 @@ class ArXivArchives(SQLModel, table=True):
     archive_name: str = Field(sa_column=Column('archive_name', String(255), nullable=False, server_default=text("''")))
     start_date: str = Field(sa_column=Column('start_date', String(4), nullable=False, server_default=text("''")))
     end_date: str = Field(sa_column=Column('end_date', String(4), nullable=False, server_default=text("''")))
-    subdivided: int = Field(sa_column=Column('subdivided', INTEGER, nullable=False, server_default=text("'0'")))
+    subdivided: int = Field(sa_column=Column('subdivided', Integer, nullable=False, server_default=text("'0'")))
 
     arXiv_groups: Optional['ArXivGroups'] = Relationship(back_populates='arXiv_archives')
     arXiv_categories: List['ArXivCategories'] = Relationship(back_populates='arXiv_archives')
@@ -658,10 +673,10 @@ class ArXivArchives(SQLModel, table=True):
 
 t_tapir_save_post_variables = Table(
     'tapir_save_post_variables', metadata,
-    Column('presession_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('presession_id', Integer, nullable=False, server_default=text("'0'")),
     Column('name', String(255)),
-    Column('value', MEDIUMTEXT, nullable=False),
-    Column('seq', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('value', Text, nullable=False),
+    Column('seq', Integer, nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['presession_id'], ['tapir_presessions.presession_id'], name='0_558'),
     Index('presession_id', 'presession_id')
 )
@@ -685,27 +700,27 @@ class TapirUsers(SQLModel, table=True):
         Index('tracking_cookie', 'tracking_cookie')
     )
 
-    user_id: Optional[int] = Field(default=None, sa_column=Column('user_id', INTEGER, primary_key=True))
-    share_first_name: int = Field(sa_column=Column('share_first_name', INTEGER, nullable=False, server_default=text("'1'")))
-    share_last_name: int = Field(sa_column=Column('share_last_name', INTEGER, nullable=False, server_default=text("'1'")))
+    user_id: Optional[int] = Field(default=None, sa_column=Column('user_id', Integer, primary_key=True))
+    share_first_name: int = Field(sa_column=Column('share_first_name', Integer, nullable=False, server_default=text("'1'")))
+    share_last_name: int = Field(sa_column=Column('share_last_name', Integer, nullable=False, server_default=text("'1'")))
     email: str = Field(sa_column=Column('email', String(255), nullable=False, server_default=text("''")))
-    share_email: int = Field(sa_column=Column('share_email', INTEGER, nullable=False, server_default=text("'8'")))
-    email_bouncing: int = Field(sa_column=Column('email_bouncing', INTEGER, nullable=False, server_default=text("'0'")))
-    policy_class: int = Field(sa_column=Column('policy_class', SMALLINT, nullable=False, server_default=text("'0'")))
-    joined_date: int = Field(sa_column=Column('joined_date', INTEGER, nullable=False, server_default=text("'0'")))
+    share_email: int = Field(sa_column=Column('share_email', Integer, nullable=False, server_default=text("'8'")))
+    email_bouncing: int = Field(sa_column=Column('email_bouncing', Integer, nullable=False, server_default=text("'0'")))
+    policy_class: int = Field(sa_column=Column('policy_class', SmallInteger, nullable=False, server_default=text("'0'")))
+    joined_date: int = Field(sa_column=Column('joined_date', Integer, nullable=False, server_default=text("'0'")))
     joined_remote_host: str = Field(sa_column=Column('joined_remote_host', String(255), nullable=False, server_default=text("''")))
-    flag_internal: int = Field(sa_column=Column('flag_internal', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_edit_users: int = Field(sa_column=Column('flag_edit_users', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_edit_system: int = Field(sa_column=Column('flag_edit_system', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_email_verified: int = Field(sa_column=Column('flag_email_verified', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_approved: int = Field(sa_column=Column('flag_approved', INTEGER, nullable=False, server_default=text("'1'")))
-    flag_deleted: int = Field(sa_column=Column('flag_deleted', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_banned: int = Field(sa_column=Column('flag_banned', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_wants_email: int = Field(sa_column=Column('flag_wants_email', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_html_email: int = Field(sa_column=Column('flag_html_email', INTEGER, nullable=False, server_default=text("'0'")))
+    flag_internal: int = Field(sa_column=Column('flag_internal', Integer, nullable=False, server_default=text("'0'")))
+    flag_edit_users: int = Field(sa_column=Column('flag_edit_users', Integer, nullable=False, server_default=text("'0'")))
+    flag_edit_system: int = Field(sa_column=Column('flag_edit_system', Integer, nullable=False, server_default=text("'0'")))
+    flag_email_verified: int = Field(sa_column=Column('flag_email_verified', Integer, nullable=False, server_default=text("'0'")))
+    flag_approved: int = Field(sa_column=Column('flag_approved', Integer, nullable=False, server_default=text("'1'")))
+    flag_deleted: int = Field(sa_column=Column('flag_deleted', Integer, nullable=False, server_default=text("'0'")))
+    flag_banned: int = Field(sa_column=Column('flag_banned', Integer, nullable=False, server_default=text("'0'")))
+    flag_wants_email: int = Field(sa_column=Column('flag_wants_email', Integer, nullable=False, server_default=text("'0'")))
+    flag_html_email: int = Field(sa_column=Column('flag_html_email', Integer, nullable=False, server_default=text("'0'")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    flag_allow_tex_produced: int = Field(sa_column=Column('flag_allow_tex_produced', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_can_lock: int = Field(sa_column=Column('flag_can_lock', INTEGER, nullable=False, server_default=text("'0'")))
+    flag_allow_tex_produced: int = Field(sa_column=Column('flag_allow_tex_produced', Integer, nullable=False, server_default=text("'0'")))
+    flag_can_lock: int = Field(sa_column=Column('flag_can_lock', Integer, nullable=False, server_default=text("'0'")))
     first_name: Optional[str] = Field(default=None, sa_column=Column('first_name', String(50)))
     last_name: Optional[str] = Field(default=None, sa_column=Column('last_name', String(50)))
     suffix_name: Optional[str] = Field(default=None, sa_column=Column('suffix_name', String(50)))
@@ -753,14 +768,14 @@ class ArXivAuthorIds(TapirUsers, table=True):
         Index('author_id', 'author_id')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True))
     author_id: str = Field(sa_column=Column('author_id', String(50), nullable=False))
     updated: datetime = Field(sa_column=Column('updated', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
 
 
 t_arXiv_bad_pw = Table(
     'arXiv_bad_pw', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_601'),
     Index('user_id', 'user_id')
 )
@@ -779,7 +794,7 @@ class ArXivCategories(SQLModel, table=True):
     active: int = Field(sa_column=Column('active', Integer, nullable=False, server_default=text("'0'")))
     endorse_all: str = Field(sa_column=Column('endorse_all', Enum('y', 'n', 'd'), nullable=False, server_default=text("'d'")))
     endorse_email: str = Field(sa_column=Column('endorse_email', Enum('y', 'n', 'd'), nullable=False, server_default=text("'d'")))
-    papers_to_endorse: int = Field(sa_column=Column('papers_to_endorse', SMALLINT, nullable=False, server_default=text("'0'")))
+    papers_to_endorse: int = Field(sa_column=Column('papers_to_endorse', SmallInteger, nullable=False, server_default=text("'0'")))
     category_name: Optional[str] = Field(default=None, sa_column=Column('category_name', String(255)))
     endorsement_domain: Optional[str] = Field(default=None, sa_column=Column('endorsement_domain', String(32)))
 
@@ -804,15 +819,15 @@ class ArXivControlHolds(SQLModel, table=True):
         Index('placed_by', 'placed_by')
     )
 
-    hold_id: Optional[int] = Field(default=None, sa_column=Column('hold_id', INTEGER, primary_key=True))
-    control_id: int = Field(sa_column=Column('control_id', INTEGER, nullable=False, server_default=text("'0'")))
+    hold_id: Optional[int] = Field(default=None, sa_column=Column('hold_id', Integer, primary_key=True))
+    control_id: int = Field(sa_column=Column('control_id', Integer, nullable=False, server_default=text("'0'")))
     hold_type: str = Field(sa_column=Column('hold_type', Enum('submission', 'cross', 'jref'), nullable=False, server_default=text("'submission'")))
     hold_status: str = Field(sa_column=Column('hold_status', Enum('held', 'extended', 'accepted', 'rejected'), nullable=False, server_default=text("'held'")))
     hold_reason: str = Field(sa_column=Column('hold_reason', String(255), nullable=False, server_default=text("''")))
     hold_data: str = Field(sa_column=Column('hold_data', String(255), nullable=False, server_default=text("''")))
     origin: str = Field(sa_column=Column('origin', Enum('auto', 'user', 'admin', 'moderator'), nullable=False, server_default=text("'auto'")))
-    placed_by: Optional[int] = Field(default=None, sa_column=Column('placed_by', INTEGER))
-    last_changed_by: Optional[int] = Field(default=None, sa_column=Column('last_changed_by', INTEGER))
+    placed_by: Optional[int] = Field(default=None, sa_column=Column('placed_by', Integer))
+    last_changed_by: Optional[int] = Field(default=None, sa_column=Column('last_changed_by', Integer))
 
     tapir_users: Optional['TapirUsers'] = Relationship(back_populates='arXiv_control_holds')
     tapir_users_: Optional['TapirUsers'] = Relationship(back_populates='arXiv_control_holds_')
@@ -828,13 +843,13 @@ class ArXivDocuments(SQLModel, table=True):
         Index('title', 'title')
     )
 
-    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', MEDIUMINT, primary_key=True))
+    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', Integer, primary_key=True))
     paper_id: str = Field(sa_column=Column('paper_id', String(20), nullable=False, server_default=text("''")))
     title: str = Field(sa_column=Column('title', String(255), nullable=False, server_default=text("''")))
     submitter_email: str = Field(sa_column=Column('submitter_email', String(64), nullable=False, server_default=text("''")))
-    dated: int = Field(sa_column=Column('dated', INTEGER, nullable=False, server_default=text("'0'")))
+    dated: int = Field(sa_column=Column('dated', Integer, nullable=False, server_default=text("'0'")))
     authors: Optional[str] = Field(default=None, sa_column=Column('authors', Text))
-    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', INTEGER))
+    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', Integer))
     primary_subject_class: Optional[str] = Field(default=None, sa_column=Column('primary_subject_class', String(16)))
     created: Optional[datetime] = Field(default=None, sa_column=Column('created', DateTime))
 
@@ -855,7 +870,7 @@ class ArXivDocuments(SQLModel, table=True):
 
 t_arXiv_duplicates = Table(
     'arXiv_duplicates', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     Column('email', String(255)),
     Column('username', String(255)),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_599'),
@@ -868,10 +883,10 @@ class ArXivModeratorApiKey(SQLModel, table=True):
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='arXiv_moderator_api_key_ibfk_1'),
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     valid: int = Field(sa_column=Column('valid', Integer, nullable=False, server_default=text("'1'")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
     issued_to: str = Field(sa_column=Column('issued_to', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
 
@@ -884,9 +899,9 @@ class ArXivOrcidIds(TapirUsers, table=True):
         Index('orcid', 'orcid')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True))
     orcid: str = Field(sa_column=Column('orcid', String(19), nullable=False))
-    authenticated: int = Field(sa_column=Column('authenticated', TINYINT(1), nullable=False, server_default=text("'0'")))
+    authenticated: int = Field(sa_column=Column('authenticated', Boolean(), nullable=False, server_default=text("'0'")))
     updated: datetime = Field(sa_column=Column('updated', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP')))
 
 
@@ -895,8 +910,8 @@ class ArXivQueueView(TapirUsers, table=True):
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], ondelete='CASCADE', name='arXiv_queue_view_ibfk_1'),
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    total_views: int = Field(sa_column=Column('total_views', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
+    total_views: int = Field(sa_column=Column('total_views', Integer, nullable=False, server_default=text("'0'")))
     last_view: Optional[datetime] = Field(default=None, sa_column=Column('last_view', DateTime))
     second_last_view: Optional[datetime] = Field(default=None, sa_column=Column('second_last_view', DateTime))
 
@@ -906,7 +921,7 @@ class ArXivSuspiciousNames(TapirUsers, table=True):
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_606'),
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
     full_name: str = Field(sa_column=Column('full_name', String(255), nullable=False, server_default=text("''")))
 
 
@@ -915,7 +930,7 @@ class ArXivSwordLicenses(TapirUsers, table=True):
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='user_id_fk'),
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True))
     updated: datetime = Field(sa_column=Column('updated', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
     license: Optional[str] = Field(default=None, sa_column=Column('license', String(127)))
 
@@ -930,7 +945,7 @@ class TapirAddress(SQLModel, table=True):
         Index('postal_code', 'postal_code')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     address_type: int = Field(sa_column=Column('address_type', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     company: str = Field(sa_column=Column('company', String(80), nullable=False, server_default=text("''")))
     line1: str = Field(sa_column=Column('line1', String(80), nullable=False, server_default=text("''")))
@@ -939,7 +954,7 @@ class TapirAddress(SQLModel, table=True):
     state: str = Field(sa_column=Column('state', String(50), nullable=False, server_default=text("''")))
     postal_code: str = Field(sa_column=Column('postal_code', String(16), nullable=False, server_default=text("''")))
     country: str = Field(sa_column=Column('country', CHAR(2), nullable=False, server_default=text("''")))
-    share_addr: int = Field(sa_column=Column('share_addr', INTEGER, nullable=False, server_default=text("'0'")))
+    share_addr: int = Field(sa_column=Column('share_addr', Integer, nullable=False, server_default=text("'0'")))
 
     tapir_countries: Optional['TapirCountries'] = Relationship(back_populates='tapir_address')
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_address')
@@ -954,12 +969,12 @@ class TapirDemographics(TapirUsers, table=True):
         Index('postal_code', 'postal_code')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
     gender: int = Field(sa_column=Column('gender', Integer, nullable=False, server_default=text("'0'")))
-    share_gender: int = Field(sa_column=Column('share_gender', INTEGER, nullable=False, server_default=text("'16'")))
-    share_birthday: int = Field(sa_column=Column('share_birthday', INTEGER, nullable=False, server_default=text("'16'")))
+    share_gender: int = Field(sa_column=Column('share_gender', Integer, nullable=False, server_default=text("'16'")))
+    share_birthday: int = Field(sa_column=Column('share_birthday', Integer, nullable=False, server_default=text("'16'")))
     country: str = Field(sa_column=Column('country', CHAR(2), nullable=False, server_default=text("''")))
-    share_country: int = Field(sa_column=Column('share_country', INTEGER, nullable=False, server_default=text("'16'")))
+    share_country: int = Field(sa_column=Column('share_country', Integer, nullable=False, server_default=text("'16'")))
     postal_code: str = Field(sa_column=Column('postal_code', String(16), nullable=False, server_default=text("''")))
     birthday: Optional[date] = Field(default=None, sa_column=Column('birthday', Date))
 
@@ -972,18 +987,18 @@ class TapirEmailChangeTokens(SQLModel, table=True):
         Index('secret', 'secret')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     tapir_dest: str = Field(sa_column=Column('tapir_dest', String(255), nullable=False, server_default=text("''")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
     issued_to: str = Field(sa_column=Column('issued_to', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(16), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    used: int = Field(sa_column=Column('used', INTEGER, nullable=False, server_default=text("'0'")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
+    used: int = Field(sa_column=Column('used', Integer, nullable=False, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
     old_email: Optional[str] = Field(default=None, sa_column=Column('old_email', String(255)))
     new_email: Optional[str] = Field(default=None, sa_column=Column('new_email', String(255)))
-    consumed_when: Optional[int] = Field(default=None, sa_column=Column('consumed_when', INTEGER))
+    consumed_when: Optional[int] = Field(default=None, sa_column=Column('consumed_when', Integer))
     consumed_from: Optional[str] = Field(default=None, sa_column=Column('consumed_from', String(16)))
 
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_email_change_tokens')
@@ -999,17 +1014,17 @@ class TapirEmailTemplates(SQLModel, table=True):
         Index('updated_by', 'updated_by')
     )
 
-    template_id: Optional[int] = Field(default=None, sa_column=Column('template_id', INTEGER, primary_key=True))
+    template_id: Optional[int] = Field(default=None, sa_column=Column('template_id', Integer, primary_key=True))
     short_name: str = Field(sa_column=Column('short_name', String(32), nullable=False, server_default=text("''")))
     lang: str = Field(sa_column=Column('lang', CHAR(2), nullable=False, server_default=text("'en'")))
     long_name: str = Field(sa_column=Column('long_name', String(255), nullable=False, server_default=text("''")))
     data: str = Field(sa_column=Column('data', Text, nullable=False))
     sql_statement: str = Field(sa_column=Column('sql_statement', Text, nullable=False))
-    update_date: int = Field(sa_column=Column('update_date', INTEGER, nullable=False, server_default=text("'0'")))
-    created_by: int = Field(sa_column=Column('created_by', INTEGER, nullable=False, server_default=text("'0'")))
-    updated_by: int = Field(sa_column=Column('updated_by', INTEGER, nullable=False, server_default=text("'0'")))
-    workflow_status: int = Field(sa_column=Column('workflow_status', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_system: int = Field(sa_column=Column('flag_system', INTEGER, nullable=False, server_default=text("'0'")))
+    update_date: int = Field(sa_column=Column('update_date', Integer, nullable=False, server_default=text("'0'")))
+    created_by: int = Field(sa_column=Column('created_by', Integer, nullable=False, server_default=text("'0'")))
+    updated_by: int = Field(sa_column=Column('updated_by', Integer, nullable=False, server_default=text("'0'")))
+    workflow_status: int = Field(sa_column=Column('workflow_status', Integer, nullable=False, server_default=text("'0'")))
+    flag_system: int = Field(sa_column=Column('flag_system', Integer, nullable=False, server_default=text("'0'")))
 
     tapir_users: Optional['TapirUsers'] = Relationship(back_populates='tapir_email_templates')
     tapir_users_: Optional['TapirUsers'] = Relationship(back_populates='tapir_email_templates_')
@@ -1023,10 +1038,10 @@ class TapirEmailTokens(SQLModel, table=True):
         Index('secret', 'secret')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     tapir_dest: str = Field(sa_column=Column('tapir_dest', String(255), nullable=False, server_default=text("''")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
     issued_to: str = Field(sa_column=Column('issued_to', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
@@ -1045,14 +1060,14 @@ class TapirNicknames(SQLModel, table=True):
         Index('user_id', 'user_id', 'user_seq', unique=True)
     )
 
-    nick_id: Optional[int] = Field(default=None, sa_column=Column('nick_id', INTEGER, primary_key=True))
+    nick_id: Optional[int] = Field(default=None, sa_column=Column('nick_id', Integer, primary_key=True))
     nickname: str = Field(sa_column=Column('nickname', String(20), nullable=False, server_default=text("''")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
-    user_seq: int = Field(sa_column=Column('user_seq', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_valid: int = Field(sa_column=Column('flag_valid', INTEGER, nullable=False, server_default=text("'0'")))
-    role: int = Field(sa_column=Column('role', INTEGER, nullable=False, server_default=text("'0'")))
-    policy: int = Field(sa_column=Column('policy', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_primary: int = Field(sa_column=Column('flag_primary', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
+    user_seq: int = Field(sa_column=Column('user_seq', Integer, nullable=False, server_default=text("'0'")))
+    flag_valid: int = Field(sa_column=Column('flag_valid', Integer, nullable=False, server_default=text("'0'")))
+    role: int = Field(sa_column=Column('role', Integer, nullable=False, server_default=text("'0'")))
+    policy: int = Field(sa_column=Column('policy', Integer, nullable=False, server_default=text("'0'")))
+    flag_primary: int = Field(sa_column=Column('flag_primary', Integer, nullable=False, server_default=text("'0'")))
 
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_nicknames')
 
@@ -1064,9 +1079,9 @@ class TapirPhone(SQLModel, table=True):
         Index('phone_type', 'phone_type')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     phone_type: int = Field(sa_column=Column('phone_type', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
-    share_phone: int = Field(sa_column=Column('share_phone', INTEGER, nullable=False, server_default=text("'16'")))
+    share_phone: int = Field(sa_column=Column('share_phone', Integer, nullable=False, server_default=text("'16'")))
     phone_number: Optional[str] = Field(default=None, sa_column=Column('phone_number', String(32)))
 
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_phone')
@@ -1078,11 +1093,11 @@ class TapirRecoveryTokens(SQLModel, table=True):
         Index('secret', 'secret')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     valid: int = Field(sa_column=Column('valid', Integer, nullable=False, server_default=text("'1'")))
     tapir_dest: str = Field(sa_column=Column('tapir_dest', String(255), nullable=False, server_default=text("''")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
     issued_to: str = Field(sa_column=Column('issued_to', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
@@ -1098,8 +1113,8 @@ class TapirSessions(SQLModel, table=True):
         Index('user_id', 'user_id')
     )
 
-    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', INTEGER, primary_key=True))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', Integer, primary_key=True))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     last_reissue: int = Field(sa_column=Column('last_reissue', Integer, nullable=False, server_default=text("'0'")))
     start_time: int = Field(sa_column=Column('start_time', Integer, nullable=False, server_default=text("'0'")))
     end_time: int = Field(sa_column=Column('end_time', Integer, nullable=False, server_default=text("'0'")))
@@ -1118,9 +1133,9 @@ class TapirUsersHot(TapirUsers, table=True):
         Index('second_last_login', 'second_last_login')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    last_login: int = Field(sa_column=Column('last_login', INTEGER, nullable=False, server_default=text("'0'")))
-    second_last_login: int = Field(sa_column=Column('second_last_login', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
+    last_login: int = Field(sa_column=Column('last_login', Integer, nullable=False, server_default=text("'0'")))
+    second_last_login: int = Field(sa_column=Column('second_last_login', Integer, nullable=False, server_default=text("'0'")))
     number_sessions: int = Field(sa_column=Column('number_sessions', Integer, nullable=False, server_default=text("'0'")))
 
 
@@ -1129,8 +1144,8 @@ class TapirUsersPassword(TapirUsers, table=True):
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_512'),
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    password_storage: int = Field(sa_column=Column('password_storage', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
+    password_storage: int = Field(sa_column=Column('password_storage', Integer, nullable=False, server_default=text("'0'")))
     password_enc: str = Field(sa_column=Column('password_enc', String(50), nullable=False, server_default=text("''")))
 
 
@@ -1144,7 +1159,7 @@ class ArXivAdminMetadata(SQLModel, table=True):
 
     metadata_id: Optional[int] = Field(default=None, sa_column=Column('metadata_id', Integer, primary_key=True))
     version: int = Field(sa_column=Column('version', Integer, nullable=False, server_default=text("'1'")))
-    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', MEDIUMINT))
+    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', Integer))
     paper_id: Optional[str] = Field(default=None, sa_column=Column('paper_id', String(64)))
     created: Optional[datetime] = Field(default=None, sa_column=Column('created', DateTime))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
@@ -1166,14 +1181,14 @@ class ArXivAdminMetadata(SQLModel, table=True):
     abstract: Optional[str] = Field(default=None, sa_column=Column('abstract', Text))
     license: Optional[str] = Field(default=None, sa_column=Column('license', String(255)))
     modtime: Optional[int] = Field(default=None, sa_column=Column('modtime', Integer))
-    is_current: Optional[int] = Field(default=None, sa_column=Column('is_current', TINYINT(1), server_default=text("'0'")))
+    is_current: Optional[int] = Field(default=None, sa_column=Column('is_current', Boolean(), server_default=text("'0'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_admin_metadata')
 
 
 t_arXiv_bogus_subject_class = Table(
     'arXiv_bogus_subject_class', metadata,
-    Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")),
+    Column('document_id', Integer, nullable=False, server_default=text("'0'")),
     Column('category_name', String(255), nullable=False, server_default=text("''")),
     ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_604'),
     Index('document_id', 'document_id')
@@ -1192,17 +1207,17 @@ class ArXivCrossControl(SQLModel, table=True):
         Index('user_id', 'user_id')
     )
 
-    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', INTEGER, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    version: int = Field(sa_column=Column('version', TINYINT, nullable=False, server_default=text("'0'")))
-    desired_order: int = Field(sa_column=Column('desired_order', TINYINT, nullable=False, server_default=text("'0'")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', Integer, primary_key=True))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    version: int = Field(sa_column=Column('version', SmallInteger, nullable=False, server_default=text("'0'")))
+    desired_order: int = Field(sa_column=Column('desired_order', SmallInteger, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     status: str = Field(sa_column=Column('status', Enum('new', 'frozen', 'published', 'rejected'), nullable=False, server_default=text("'new'")))
     archive: str = Field(sa_column=Column('archive', String(16), nullable=False, server_default=text("''")))
     subject_class: str = Field(sa_column=Column('subject_class', String(16), nullable=False, server_default=text("''")))
-    request_date: int = Field(sa_column=Column('request_date', INTEGER, nullable=False, server_default=text("'0'")))
-    freeze_date: int = Field(sa_column=Column('freeze_date', INTEGER, nullable=False, server_default=text("'0'")))
-    publish_date: int = Field(sa_column=Column('publish_date', INTEGER, nullable=False, server_default=text("'0'")))
+    request_date: int = Field(sa_column=Column('request_date', Integer, nullable=False, server_default=text("'0'")))
+    freeze_date: int = Field(sa_column=Column('freeze_date', Integer, nullable=False, server_default=text("'0'")))
+    publish_date: int = Field(sa_column=Column('publish_date', Integer, nullable=False, server_default=text("'0'")))
     flag_must_notify: Optional[str] = Field(default=None, sa_column=Column('flag_must_notify', Enum('0', '1'), server_default=text("'1'")))
 
     arXiv_categories: Optional['ArXivCategories'] = Relationship(back_populates='arXiv_cross_control')
@@ -1215,7 +1230,7 @@ class ArXivDblp(ArXivDocuments, table=True):
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_DBLP_cdfk1'),
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, server_default=text("'0'")))
     url: Optional[str] = Field(default=None, sa_column=Column('url', String(80)))
 
 
@@ -1227,9 +1242,9 @@ class ArXivDblpDocumentAuthors(SQLModel, table=True):
         Index('document_id', 'document_id')
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, nullable=False))
-    author_id: int = Field(sa_column=Column('author_id', MEDIUMINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    position: int = Field(sa_column=Column('position', TINYINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, nullable=False))
+    author_id: int = Field(sa_column=Column('author_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
+    position: int = Field(sa_column=Column('position', SmallInteger, nullable=False, server_default=text("'0'")))
 
     author: Optional['ArXivDblpAuthors'] = Relationship(back_populates='arXiv_dblp_document_authors')
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_dblp_document_authors')
@@ -1257,30 +1272,30 @@ class ArXivDemographics(TapirUsers, table=True):
         Index('type', 'type')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, server_default=text("'0'")))
     country: str = Field(sa_column=Column('country', CHAR(2), nullable=False, server_default=text("''")))
     affiliation: str = Field(sa_column=Column('affiliation', String(255), nullable=False, server_default=text("''")))
     url: str = Field(sa_column=Column('url', String(255), nullable=False, server_default=text("''")))
     original_subject_classes: str = Field(sa_column=Column('original_subject_classes', String(255), nullable=False, server_default=text("''")))
-    flag_group_math: int = Field(sa_column=Column('flag_group_math', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_cs: int = Field(sa_column=Column('flag_group_cs', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_nlin: int = Field(sa_column=Column('flag_group_nlin', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_proxy: int = Field(sa_column=Column('flag_proxy', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_journal: int = Field(sa_column=Column('flag_journal', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_xml: int = Field(sa_column=Column('flag_xml', INTEGER, nullable=False, server_default=text("'0'")))
-    dirty: int = Field(sa_column=Column('dirty', INTEGER, nullable=False, server_default=text("'2'")))
-    flag_group_test: int = Field(sa_column=Column('flag_group_test', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_suspect: int = Field(sa_column=Column('flag_suspect', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_q_bio: int = Field(sa_column=Column('flag_group_q_bio', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_q_fin: int = Field(sa_column=Column('flag_group_q_fin', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_stat: int = Field(sa_column=Column('flag_group_stat', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_eess: int = Field(sa_column=Column('flag_group_eess', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_group_econ: int = Field(sa_column=Column('flag_group_econ', INTEGER, nullable=False, server_default=text("'0'")))
+    flag_group_math: int = Field(sa_column=Column('flag_group_math', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_cs: int = Field(sa_column=Column('flag_group_cs', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_nlin: int = Field(sa_column=Column('flag_group_nlin', Integer, nullable=False, server_default=text("'0'")))
+    flag_proxy: int = Field(sa_column=Column('flag_proxy', Integer, nullable=False, server_default=text("'0'")))
+    flag_journal: int = Field(sa_column=Column('flag_journal', Integer, nullable=False, server_default=text("'0'")))
+    flag_xml: int = Field(sa_column=Column('flag_xml', Integer, nullable=False, server_default=text("'0'")))
+    dirty: int = Field(sa_column=Column('dirty', Integer, nullable=False, server_default=text("'2'")))
+    flag_group_test: int = Field(sa_column=Column('flag_group_test', Integer, nullable=False, server_default=text("'0'")))
+    flag_suspect: int = Field(sa_column=Column('flag_suspect', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_q_bio: int = Field(sa_column=Column('flag_group_q_bio', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_q_fin: int = Field(sa_column=Column('flag_group_q_fin', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_stat: int = Field(sa_column=Column('flag_group_stat', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_eess: int = Field(sa_column=Column('flag_group_eess', Integer, nullable=False, server_default=text("'0'")))
+    flag_group_econ: int = Field(sa_column=Column('flag_group_econ', Integer, nullable=False, server_default=text("'0'")))
     veto_status: str = Field(sa_column=Column('veto_status', Enum('ok', 'no-endorse', 'no-upload', 'no-replace'), nullable=False, server_default=text("'ok'")))
-    type: Optional[int] = Field(default=None, sa_column=Column('type', SMALLINT))
+    type: Optional[int] = Field(default=None, sa_column=Column('type', SmallInteger))
     archive: Optional[str] = Field(default=None, sa_column=Column('archive', String(16)))
     subject_class: Optional[str] = Field(default=None, sa_column=Column('subject_class', String(16)))
-    flag_group_physics: Optional[int] = Field(default=None, sa_column=Column('flag_group_physics', INTEGER))
+    flag_group_physics: Optional[int] = Field(default=None, sa_column=Column('flag_group_physics', Integer))
 
     arXiv_categories: Optional['ArXivCategories'] = Relationship(back_populates='arXiv_demographics')
 
@@ -1293,9 +1308,9 @@ class ArXivDocumentCategory(SQLModel, table=True):
         Index('document_id', 'document_id')
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     category: Optional[str] = Field(default=None, sa_column=Column('category', String(32), primary_key=True, nullable=False))
-    is_primary: int = Field(sa_column=Column('is_primary', TINYINT(1), nullable=False, server_default=text("'0'")))
+    is_primary: int = Field(sa_column=Column('is_primary', Boolean(), nullable=False, server_default=text("'0'")))
 
     arXiv_category_def: Optional['ArXivCategoryDef'] = Relationship(back_populates='arXiv_document_category')
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_document_category')
@@ -1311,14 +1326,14 @@ class ArXivEndorsementRequests(SQLModel, table=True):
         Index('secret', 'secret', unique=True)
     )
 
-    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', INTEGER, primary_key=True))
-    endorsee_id: int = Field(sa_column=Column('endorsee_id', INTEGER, nullable=False, server_default=text("'0'")))
+    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', Integer, primary_key=True))
+    endorsee_id: int = Field(sa_column=Column('endorsee_id', Integer, nullable=False, server_default=text("'0'")))
     archive: str = Field(sa_column=Column('archive', String(16), nullable=False, server_default=text("''")))
     subject_class: str = Field(sa_column=Column('subject_class', String(16), nullable=False, server_default=text("''")))
     secret: str = Field(sa_column=Column('secret', String(16), nullable=False, server_default=text("''")))
-    flag_valid: int = Field(sa_column=Column('flag_valid', INTEGER, nullable=False, server_default=text("'0'")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
-    point_value: int = Field(sa_column=Column('point_value', INTEGER, nullable=False, server_default=text("'0'")))
+    flag_valid: int = Field(sa_column=Column('flag_valid', Integer, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
+    point_value: int = Field(sa_column=Column('point_value', Integer, nullable=False, server_default=text("'0'")))
 
     arXiv_categories: Optional['ArXivCategories'] = Relationship(back_populates='arXiv_endorsement_requests')
     endorsee: Optional['TapirUsers'] = Relationship(back_populates='arXiv_endorsement_requests')
@@ -1328,10 +1343,10 @@ class ArXivEndorsementRequests(SQLModel, table=True):
 
 t_arXiv_in_category = Table(
     'arXiv_in_category', metadata,
-    Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")),
+    Column('document_id', Integer, nullable=False, server_default=text("'0'")),
     Column('archive', String(16), nullable=False, server_default=text("''")),
     Column('subject_class', String(16), nullable=False, server_default=text("''")),
-    Column('is_primary', TINYINT(1), nullable=False, server_default=text("'0'")),
+    Column('is_primary', Boolean(), nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_583'),
     ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_582'),
     Index('arXiv_in_category_mp', 'archive', 'subject_class'),
@@ -1350,15 +1365,15 @@ class ArXivJrefControl(SQLModel, table=True):
         Index('user_id', 'user_id')
     )
 
-    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', INTEGER, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    version: int = Field(sa_column=Column('version', TINYINT, nullable=False, server_default=text("'0'")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', Integer, primary_key=True))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    version: int = Field(sa_column=Column('version', SmallInteger, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     status: str = Field(sa_column=Column('status', Enum('new', 'frozen', 'published', 'rejected'), nullable=False, server_default=text("'new'")))
     jref: str = Field(sa_column=Column('jref', String(255), nullable=False, server_default=text("''")))
-    request_date: int = Field(sa_column=Column('request_date', INTEGER, nullable=False, server_default=text("'0'")))
-    freeze_date: int = Field(sa_column=Column('freeze_date', INTEGER, nullable=False, server_default=text("'0'")))
-    publish_date: int = Field(sa_column=Column('publish_date', INTEGER, nullable=False, server_default=text("'0'")))
+    request_date: int = Field(sa_column=Column('request_date', Integer, nullable=False, server_default=text("'0'")))
+    freeze_date: int = Field(sa_column=Column('freeze_date', Integer, nullable=False, server_default=text("'0'")))
+    publish_date: int = Field(sa_column=Column('publish_date', Integer, nullable=False, server_default=text("'0'")))
     flag_must_notify: Optional[str] = Field(default=None, sa_column=Column('flag_must_notify', Enum('0', '1'), server_default=text("'1'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_jref_control')
@@ -1377,15 +1392,15 @@ class ArXivMetadata(SQLModel, table=True):
     )
 
     metadata_id: Optional[int] = Field(default=None, sa_column=Column('metadata_id', Integer, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
     paper_id: str = Field(sa_column=Column('paper_id', String(64), nullable=False))
     submitter_name: str = Field(sa_column=Column('submitter_name', String(64), nullable=False))
     submitter_email: str = Field(sa_column=Column('submitter_email', String(64), nullable=False))
     version: int = Field(sa_column=Column('version', Integer, nullable=False, server_default=text("'1'")))
-    is_withdrawn: int = Field(sa_column=Column('is_withdrawn', TINYINT(1), nullable=False, server_default=text("'0'")))
+    is_withdrawn: int = Field(sa_column=Column('is_withdrawn', Boolean(), nullable=False, server_default=text("'0'")))
     created: Optional[datetime] = Field(default=None, sa_column=Column('created', DateTime))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
-    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', INTEGER))
+    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', Integer))
     source_size: Optional[int] = Field(default=None, sa_column=Column('source_size', Integer))
     source_format: Optional[str] = Field(default=None, sa_column=Column('source_format', String(12)))
     source_flags: Optional[str] = Field(default=None, sa_column=Column('source_flags', String(12)))
@@ -1402,7 +1417,7 @@ class ArXivMetadata(SQLModel, table=True):
     abstract: Optional[str] = Field(default=None, sa_column=Column('abstract', Text))
     license: Optional[str] = Field(default=None, sa_column=Column('license', String(255)))
     modtime: Optional[int] = Field(default=None, sa_column=Column('modtime', Integer))
-    is_current: Optional[int] = Field(default=None, sa_column=Column('is_current', TINYINT(1), server_default=text("'1'")))
+    is_current: Optional[int] = Field(default=None, sa_column=Column('is_current', Boolean(), server_default=text("'1'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_metadata')
     arXiv_licenses: Optional['ArXivLicenses'] = Relationship(back_populates='arXiv_metadata')
@@ -1417,11 +1432,11 @@ class ArXivMirrorList(SQLModel, table=True):
     )
 
     mirror_list_id: Optional[int] = Field(default=None, sa_column=Column('mirror_list_id', Integer, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
     version: int = Field(sa_column=Column('version', Integer, nullable=False, server_default=text("'1'")))
-    write_source: int = Field(sa_column=Column('write_source', TINYINT(1), nullable=False, server_default=text("'0'")))
-    write_abs: int = Field(sa_column=Column('write_abs', TINYINT(1), nullable=False, server_default=text("'0'")))
-    is_written: int = Field(sa_column=Column('is_written', TINYINT(1), nullable=False, server_default=text("'0'")))
+    write_source: int = Field(sa_column=Column('write_source', Boolean(), nullable=False, server_default=text("'0'")))
+    write_abs: int = Field(sa_column=Column('write_abs', Boolean(), nullable=False, server_default=text("'0'")))
+    is_written: int = Field(sa_column=Column('is_written', Boolean(), nullable=False, server_default=text("'0'")))
     created: Optional[datetime] = Field(default=None, sa_column=Column('created', DateTime))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
 
@@ -1430,14 +1445,14 @@ class ArXivMirrorList(SQLModel, table=True):
 
 t_arXiv_moderators = Table(
     'arXiv_moderators', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     Column('archive', String(16), nullable=False, server_default=text("''")),
     Column('subject_class', String(16), nullable=False, server_default=text("''")),
-    Column('is_public', TINYINT, nullable=False, server_default=text("'0'")),
-    Column('no_email', TINYINT(1), server_default=text("'0'")),
-    Column('no_web_email', TINYINT(1), server_default=text("'0'")),
-    Column('no_reply_to', TINYINT(1), server_default=text("'0'")),
-    Column('daily_update', TINYINT(1), server_default=text("'0'")),
+    Column('is_public', Boolean!, nullable=False, server_default=text("'0'")),
+    Column('no_email', Boolean(), server_default=text("'0'")),
+    Column('no_web_email', Boolean(), server_default=text("'0'")),
+    Column('no_reply_to', Boolean(), server_default=text("'0'")),
+    Column('daily_update', Boolean(), server_default=text("'0'")),
     ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_591'),
     ForeignKeyConstraint(['archive'], ['arXiv_archive_group.archive_id'], name='fk_archive_id'),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_590'),
@@ -1451,16 +1466,16 @@ t_arXiv_moderators = Table(
 
 t_arXiv_paper_owners = Table(
     'arXiv_paper_owners', metadata,
-    Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")),
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('date', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('added_by', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('document_id', Integer, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
+    Column('date', Integer, nullable=False, server_default=text("'0'")),
+    Column('added_by', Integer, nullable=False, server_default=text("'0'")),
     Column('remote_addr', String(16), nullable=False, server_default=text("''")),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
     Column('tracking_cookie', String(32), nullable=False, server_default=text("''")),
-    Column('valid', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_author', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_auto', INTEGER, nullable=False, server_default=text("'1'")),
+    Column('valid', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_author', Integer, nullable=False, server_default=text("'0'")),
+    Column('flag_auto', Integer, nullable=False, server_default=text("'1'")),
     ForeignKeyConstraint(['added_by'], ['tapir_users.user_id'], name='0_595'),
     ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_593'),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_594'),
@@ -1475,8 +1490,8 @@ class ArXivPaperPw(ArXivDocuments, table=True):
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_585'),
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, server_default=text("'0'")))
-    password_storage: Optional[int] = Field(default=None, sa_column=Column('password_storage', INTEGER))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, server_default=text("'0'")))
+    password_storage: Optional[int] = Field(default=None, sa_column=Column('password_storage', Integer))
     password_enc: Optional[str] = Field(default=None, sa_column=Column('password_enc', String(50)))
 
 
@@ -1499,15 +1514,15 @@ class ArXivShowEmailRequests(SQLModel, table=True):
         Index('user_id', 'user_id', 'dated')
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
-    dated: int = Field(sa_column=Column('dated', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_allowed: int = Field(sa_column=Column('flag_allowed', TINYINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
+    dated: int = Field(sa_column=Column('dated', Integer, nullable=False, server_default=text("'0'")))
+    flag_allowed: int = Field(sa_column=Column('flag_allowed', Boolean!, nullable=False, server_default=text("'0'")))
     remote_addr: str = Field(sa_column=Column('remote_addr', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', INTEGER, primary_key=True))
+    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', Integer, primary_key=True))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_show_email_requests')
     user: Optional['TapirUsers'] = Relationship(back_populates='arXiv_show_email_requests')
@@ -1525,15 +1540,15 @@ class ArXivSubmissionControl(SQLModel, table=True):
         Index('user_id', 'user_id')
     )
 
-    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', INTEGER, primary_key=True))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    version: int = Field(sa_column=Column('version', TINYINT, nullable=False, server_default=text("'0'")))
+    control_id: Optional[int] = Field(default=None, sa_column=Column('control_id', Integer, primary_key=True))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    version: int = Field(sa_column=Column('version', SmallInteger, nullable=False, server_default=text("'0'")))
     pending_paper_id: str = Field(sa_column=Column('pending_paper_id', String(20), nullable=False, server_default=text("''")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     status: str = Field(sa_column=Column('status', Enum('new', 'frozen', 'published', 'rejected'), nullable=False, server_default=text("'new'")))
-    request_date: int = Field(sa_column=Column('request_date', INTEGER, nullable=False, server_default=text("'0'")))
-    freeze_date: int = Field(sa_column=Column('freeze_date', INTEGER, nullable=False, server_default=text("'0'")))
-    publish_date: int = Field(sa_column=Column('publish_date', INTEGER, nullable=False, server_default=text("'0'")))
+    request_date: int = Field(sa_column=Column('request_date', Integer, nullable=False, server_default=text("'0'")))
+    freeze_date: int = Field(sa_column=Column('freeze_date', Integer, nullable=False, server_default=text("'0'")))
+    publish_date: int = Field(sa_column=Column('publish_date', Integer, nullable=False, server_default=text("'0'")))
     flag_must_notify: Optional[str] = Field(default=None, sa_column=Column('flag_must_notify', Enum('0', '1'), server_default=text("'1'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_submission_control')
@@ -1561,34 +1576,34 @@ class ArXivSubmissions(SQLModel, table=True):
     )
 
     submission_id: Optional[int] = Field(default=None, sa_column=Column('submission_id', Integer, primary_key=True))
-    is_author: int = Field(sa_column=Column('is_author', TINYINT(1), nullable=False, server_default=text("'0'")))
+    is_author: int = Field(sa_column=Column('is_author', Boolean(), nullable=False, server_default=text("'0'")))
     status: int = Field(sa_column=Column('status', Integer, nullable=False, server_default=text("'0'")))
-    is_withdrawn: int = Field(sa_column=Column('is_withdrawn', TINYINT(1), nullable=False, server_default=text("'0'")))
+    is_withdrawn: int = Field(sa_column=Column('is_withdrawn', Boolean(), nullable=False, server_default=text("'0'")))
     version: int = Field(sa_column=Column('version', Integer, nullable=False, server_default=text("'1'")))
-    remote_addr: str = Field(sa_column=Column('remote_addr', VARCHAR(16), nullable=False, server_default=text("''")))
-    remote_host: str = Field(sa_column=Column('remote_host', VARCHAR(255), nullable=False, server_default=text("''")))
-    package: str = Field(sa_column=Column('package', VARCHAR(255), nullable=False, server_default=text("''")))
-    is_locked: int = Field(sa_column=Column('is_locked', INTEGER, nullable=False, server_default=text("'0'")))
-    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', MEDIUMINT))
-    doc_paper_id: Optional[str] = Field(default=None, sa_column=Column('doc_paper_id', VARCHAR(20)))
-    sword_id: Optional[int] = Field(default=None, sa_column=Column('sword_id', INTEGER))
-    userinfo: Optional[int] = Field(default=None, sa_column=Column('userinfo', TINYINT, server_default=text("'0'")))
-    agree_policy: Optional[int] = Field(default=None, sa_column=Column('agree_policy', TINYINT(1), server_default=text("'0'")))
-    viewed: Optional[int] = Field(default=None, sa_column=Column('viewed', TINYINT(1), server_default=text("'0'")))
+    remote_addr: str = Field(sa_column=Column('remote_addr', String(16), nullable=False, server_default=text("''")))
+    remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
+    package: str = Field(sa_column=Column('package', String(255), nullable=False, server_default=text("''")))
+    is_locked: int = Field(sa_column=Column('is_locked', Integer, nullable=False, server_default=text("'0'")))
+    document_id: Optional[int] = Field(default=None, sa_column=Column('document_id', Integer))
+    doc_paper_id: Optional[str] = Field(default=None, sa_column=Column('doc_paper_id', String(20)))
+    sword_id: Optional[int] = Field(default=None, sa_column=Column('sword_id', Integer))
+    userinfo: Optional[int] = Field(default=None, sa_column=Column('userinfo', SmallInteger, server_default=text("'0'")))
+    agree_policy: Optional[int] = Field(default=None, sa_column=Column('agree_policy', Boolean(), server_default=text("'0'")))
+    viewed: Optional[int] = Field(default=None, sa_column=Column('viewed', Boolean(), server_default=text("'0'")))
     stage: Optional[int] = Field(default=None, sa_column=Column('stage', Integer, server_default=text("'0'")))
-    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', INTEGER))
+    submitter_id: Optional[int] = Field(default=None, sa_column=Column('submitter_id', Integer))
     submitter_name: Optional[str] = Field(default=None, sa_column=Column('submitter_name', String(64)))
     submitter_email: Optional[str] = Field(default=None, sa_column=Column('submitter_email', String(64)))
     created: Optional[datetime] = Field(default=None, sa_column=Column('created', DateTime))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
     sticky_status: Optional[int] = Field(default=None, sa_column=Column('sticky_status', Integer))
-    must_process: Optional[int] = Field(default=None, sa_column=Column('must_process', TINYINT(1), server_default=text("'1'")))
+    must_process: Optional[int] = Field(default=None, sa_column=Column('must_process', Boolean(), server_default=text("'1'")))
     submit_time: Optional[datetime] = Field(default=None, sa_column=Column('submit_time', DateTime))
     release_time: Optional[datetime] = Field(default=None, sa_column=Column('release_time', DateTime))
     source_size: Optional[int] = Field(default=None, sa_column=Column('source_size', Integer, server_default=text("'0'")))
-    source_format: Optional[str] = Field(default=None, sa_column=Column('source_format', VARCHAR(12)))
-    source_flags: Optional[str] = Field(default=None, sa_column=Column('source_flags', VARCHAR(12)))
-    has_pilot_data: Optional[int] = Field(default=None, sa_column=Column('has_pilot_data', TINYINT(1)))
+    source_format: Optional[str] = Field(default=None, sa_column=Column('source_format', String(12)))
+    source_flags: Optional[str] = Field(default=None, sa_column=Column('source_flags', String(12)))
+    has_pilot_data: Optional[int] = Field(default=None, sa_column=Column('has_pilot_data', Boolean()))
     title: Optional[str] = Field(default=None, sa_column=Column('title', Text))
     authors: Optional[str] = Field(default=None, sa_column=Column('authors', Text))
     comments: Optional[str] = Field(default=None, sa_column=Column('comments', Text))
@@ -1599,15 +1614,15 @@ class ArXivSubmissions(SQLModel, table=True):
     journal_ref: Optional[str] = Field(default=None, sa_column=Column('journal_ref', Text))
     doi: Optional[str] = Field(default=None, sa_column=Column('doi', String(255)))
     abstract: Optional[str] = Field(default=None, sa_column=Column('abstract', Text))
-    license: Optional[str] = Field(default=None, sa_column=Column('license', VARCHAR(255)))
+    license: Optional[str] = Field(default=None, sa_column=Column('license', String(255)))
     type: Optional[str] = Field(default=None, sa_column=Column('type', CHAR(8)))
-    is_ok: Optional[int] = Field(default=None, sa_column=Column('is_ok', TINYINT(1)))
-    admin_ok: Optional[int] = Field(default=None, sa_column=Column('admin_ok', TINYINT(1)))
-    allow_tex_produced: Optional[int] = Field(default=None, sa_column=Column('allow_tex_produced', TINYINT(1), server_default=text("'0'")))
-    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', TINYINT(1), server_default=text("'0'")))
-    rt_ticket_id: Optional[int] = Field(default=None, sa_column=Column('rt_ticket_id', INTEGER))
-    auto_hold: Optional[int] = Field(default=None, sa_column=Column('auto_hold', TINYINT(1), server_default=text("'0'")))
-    agreement_id: Optional[int] = Field(default=None, sa_column=Column('agreement_id', SMALLINT))
+    is_ok: Optional[int] = Field(default=None, sa_column=Column('is_ok', Boolean()))
+    admin_ok: Optional[int] = Field(default=None, sa_column=Column('admin_ok', Boolean()))
+    allow_tex_produced: Optional[int] = Field(default=None, sa_column=Column('allow_tex_produced', Boolean(), server_default=text("'0'")))
+    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', Boolean(), server_default=text("'0'")))
+    rt_ticket_id: Optional[int] = Field(default=None, sa_column=Column('rt_ticket_id', Integer))
+    auto_hold: Optional[int] = Field(default=None, sa_column=Column('auto_hold', Boolean(), server_default=text("'0'")))
+    agreement_id: Optional[int] = Field(default=None, sa_column=Column('agreement_id', SmallInteger))
 
     agreement: Optional['ArXivSubmissionAgreements'] = Relationship(back_populates='arXiv_submissions')
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_submissions')
@@ -1632,9 +1647,9 @@ class ArXivTopPapers(SQLModel, table=True):
 
     from_week: Optional[date] = Field(default=None, sa_column=Column('from_week', Date, primary_key=True, nullable=False, server_default=text("'0000-00-00'")))
     class_: Optional[str] = Field(default=None, sa_column=Column('class', CHAR(1), primary_key=True, nullable=False, server_default=text("''")))
-    rank: int = Field(sa_column=Column('rank', SMALLINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")))
-    viewers: int = Field(sa_column=Column('viewers', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    rank: int = Field(sa_column=Column('rank', SmallInteger, primary_key=True, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, nullable=False, server_default=text("'0'")))
+    viewers: int = Field(sa_column=Column('viewers', Integer, nullable=False, server_default=text("'0'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_top_papers')
 
@@ -1647,12 +1662,12 @@ class ArXivVersions(SQLModel, table=True):
         Index('request_date', 'request_date')
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    version: int = Field(sa_column=Column('version', TINYINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    request_date: int = Field(sa_column=Column('request_date', INTEGER, nullable=False, server_default=text("'0'")))
-    freeze_date: int = Field(sa_column=Column('freeze_date', INTEGER, nullable=False, server_default=text("'0'")))
-    publish_date: int = Field(sa_column=Column('publish_date', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_current: int = Field(sa_column=Column('flag_current', MEDIUMINT, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
+    version: int = Field(sa_column=Column('version', SmallInteger, primary_key=True, nullable=False, server_default=text("'0'")))
+    request_date: int = Field(sa_column=Column('request_date', Integer, nullable=False, server_default=text("'0'")))
+    freeze_date: int = Field(sa_column=Column('freeze_date', Integer, nullable=False, server_default=text("'0'")))
+    publish_date: int = Field(sa_column=Column('publish_date', Integer, nullable=False, server_default=text("'0'")))
+    flag_current: int = Field(sa_column=Column('flag_current', Integer, nullable=False, server_default=text("'0'")))
 
     document: Optional['ArXivDocuments'] = Relationship(back_populates='arXiv_versions')
 
@@ -1672,17 +1687,17 @@ class TapirAdminAudit(SQLModel, table=True):
         Index('session_id', 'session_id')
     )
 
-    log_date: int = Field(sa_column=Column('log_date', INTEGER, nullable=False, server_default=text("'0'")))
+    log_date: int = Field(sa_column=Column('log_date', Integer, nullable=False, server_default=text("'0'")))
     ip_addr: str = Field(sa_column=Column('ip_addr', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
-    affected_user: int = Field(sa_column=Column('affected_user', INTEGER, nullable=False, server_default=text("'0'")))
+    affected_user: int = Field(sa_column=Column('affected_user', Integer, nullable=False, server_default=text("'0'")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
     action: str = Field(sa_column=Column('action', String(32), nullable=False, server_default=text("''")))
     data: str = Field(sa_column=Column('data', Text, nullable=False))
     comment: str = Field(sa_column=Column('comment', Text, nullable=False))
-    entry_id: Optional[int] = Field(default=None, sa_column=Column('entry_id', INTEGER, primary_key=True))
-    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', INTEGER))
-    admin_user: Optional[int] = Field(default=None, sa_column=Column('admin_user', INTEGER))
+    entry_id: Optional[int] = Field(default=None, sa_column=Column('entry_id', Integer, primary_key=True))
+    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', Integer))
+    admin_user: Optional[int] = Field(default=None, sa_column=Column('admin_user', Integer))
 
     tapir_users: Optional['TapirUsers'] = Relationship(back_populates='tapir_admin_audit')
     tapir_users_: Optional['TapirUsers'] = Relationship(back_populates='tapir_admin_audit_')
@@ -1691,12 +1706,12 @@ class TapirAdminAudit(SQLModel, table=True):
 
 t_tapir_email_change_tokens_used = Table(
     'tapir_email_change_tokens_used', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     Column('secret', String(32), nullable=False, server_default=text("''")),
-    Column('used_when', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('used_when', Integer, nullable=False, server_default=text("'0'")),
     Column('used_from', String(16), nullable=False, server_default=text("''")),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
-    Column('session_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('session_id', Integer, nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['session_id'], ['tapir_sessions.session_id'], name='0_538'),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_537'),
     Index('session_id', 'session_id'),
@@ -1709,7 +1724,7 @@ class TapirEmailHeaders(SQLModel, table=True):
         ForeignKeyConstraint(['template_id'], ['tapir_email_templates.template_id'], name='0_563'),
     )
 
-    template_id: int = Field(sa_column=Column('template_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    template_id: int = Field(sa_column=Column('template_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     header_name: Optional[str] = Field(default=None, sa_column=Column('header_name', String(32), primary_key=True, nullable=False, server_default=text("''")))
     header_content: str = Field(sa_column=Column('header_content', String(255), nullable=False, server_default=text("''")))
 
@@ -1726,13 +1741,13 @@ class TapirEmailMailings(SQLModel, table=True):
         Index('template_id', 'template_id')
     )
 
-    mailing_id: Optional[int] = Field(default=None, sa_column=Column('mailing_id', INTEGER, primary_key=True))
-    template_id: Optional[int] = Field(default=None, sa_column=Column('template_id', INTEGER))
-    created_by: Optional[int] = Field(default=None, sa_column=Column('created_by', INTEGER))
-    sent_by: Optional[int] = Field(default=None, sa_column=Column('sent_by', INTEGER))
-    created_date: Optional[int] = Field(default=None, sa_column=Column('created_date', INTEGER))
-    sent_date: Optional[int] = Field(default=None, sa_column=Column('sent_date', INTEGER))
-    complete_date: Optional[int] = Field(default=None, sa_column=Column('complete_date', INTEGER))
+    mailing_id: Optional[int] = Field(default=None, sa_column=Column('mailing_id', Integer, primary_key=True))
+    template_id: Optional[int] = Field(default=None, sa_column=Column('template_id', Integer))
+    created_by: Optional[int] = Field(default=None, sa_column=Column('created_by', Integer))
+    sent_by: Optional[int] = Field(default=None, sa_column=Column('sent_by', Integer))
+    created_date: Optional[int] = Field(default=None, sa_column=Column('created_date', Integer))
+    sent_date: Optional[int] = Field(default=None, sa_column=Column('sent_date', Integer))
+    complete_date: Optional[int] = Field(default=None, sa_column=Column('complete_date', Integer))
     mailing_name: Optional[str] = Field(default=None, sa_column=Column('mailing_name', String(255)))
     comment: Optional[str] = Field(default=None, sa_column=Column('comment', Text))
 
@@ -1743,12 +1758,12 @@ class TapirEmailMailings(SQLModel, table=True):
 
 t_tapir_email_tokens_used = Table(
     'tapir_email_tokens_used', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('user_id', Integer, nullable=False, server_default=text("'0'")),
     Column('secret', String(32), nullable=False, server_default=text("''")),
-    Column('used_when', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('used_when', Integer, nullable=False, server_default=text("'0'")),
     Column('used_from', String(16), nullable=False, server_default=text("''")),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
-    Column('session_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('session_id', Integer, nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['session_id'], ['tapir_sessions.session_id'], name='0_533'),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_532'),
     Index('session_id', 'session_id'),
@@ -1763,13 +1778,13 @@ class TapirPermanentTokens(SQLModel, table=True):
         Index('session_id', 'session_id')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     valid: int = Field(sa_column=Column('valid', Integer, nullable=False, server_default=text("'1'")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
     issued_to: str = Field(sa_column=Column('issued_to', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
 
     session: Optional['TapirSessions'] = Relationship(back_populates='tapir_permanent_tokens')
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_permanent_tokens')
@@ -1777,12 +1792,12 @@ class TapirPermanentTokens(SQLModel, table=True):
 
 t_tapir_permanent_tokens_used = Table(
     'tapir_permanent_tokens_used', metadata,
-    Column('user_id', INTEGER),
+    Column('user_id', Integer),
     Column('secret', String(32), nullable=False, server_default=text("''")),
-    Column('used_when', INTEGER),
+    Column('used_when', Integer),
     Column('used_from', String(16)),
     Column('remote_host', String(255), nullable=False, server_default=text("''")),
-    Column('session_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('session_id', Integer, nullable=False, server_default=text("'0'")),
     ForeignKeyConstraint(['session_id'], ['tapir_sessions.session_id'], name='0_544'),
     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_543'),
     Index('session_id', 'session_id'),
@@ -1797,12 +1812,12 @@ class TapirRecoveryTokensUsed(SQLModel, table=True):
         Index('session_id', 'session_id')
     )
 
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     secret: Optional[str] = Field(default=None, sa_column=Column('secret', String(32), primary_key=True, nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
-    used_when: Optional[int] = Field(default=None, sa_column=Column('used_when', INTEGER))
+    used_when: Optional[int] = Field(default=None, sa_column=Column('used_when', Integer))
     used_from: Optional[str] = Field(default=None, sa_column=Column('used_from', String(16)))
-    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', INTEGER))
+    session_id: Optional[int] = Field(default=None, sa_column=Column('session_id', Integer))
 
     session: Optional['TapirSessions'] = Relationship(back_populates='tapir_recovery_tokens_used')
     user: Optional['TapirUsers'] = Relationship(back_populates='tapir_recovery_tokens_used')
@@ -1815,7 +1830,7 @@ class TapirSessionsAudit(TapirSessions, table=True):
         Index('tracking_cookie', 'tracking_cookie')
     )
 
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, primary_key=True, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, primary_key=True, server_default=text("'0'")))
     ip_addr: str = Field(sa_column=Column('ip_addr', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
@@ -1843,8 +1858,8 @@ class ArXivEndorsementRequestsAudit(ArXivEndorsementRequests, table=True):
         ForeignKeyConstraint(['request_id'], ['arXiv_endorsement_requests.request_id'], name='0_725'),
     )
 
-    request_id: int = Field(sa_column=Column('request_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
+    request_id: int = Field(sa_column=Column('request_id', Integer, primary_key=True, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
     remote_addr: Optional[str] = Field(default=None, sa_column=Column('remote_addr', String(16)))
     remote_host: Optional[str] = Field(default=None, sa_column=Column('remote_host', String(255)))
     tracking_cookie: Optional[str] = Field(default=None, sa_column=Column('tracking_cookie', String(255)))
@@ -1863,16 +1878,16 @@ class ArXivEndorsements(SQLModel, table=True):
         Index('request_id', 'request_id')
     )
 
-    endorsement_id: Optional[int] = Field(default=None, sa_column=Column('endorsement_id', INTEGER, primary_key=True))
-    endorsee_id: int = Field(sa_column=Column('endorsee_id', INTEGER, nullable=False, server_default=text("'0'")))
+    endorsement_id: Optional[int] = Field(default=None, sa_column=Column('endorsement_id', Integer, primary_key=True))
+    endorsee_id: int = Field(sa_column=Column('endorsee_id', Integer, nullable=False, server_default=text("'0'")))
     archive: str = Field(sa_column=Column('archive', String(16), nullable=False, server_default=text("''")))
     subject_class: str = Field(sa_column=Column('subject_class', String(16), nullable=False, server_default=text("''")))
-    flag_valid: int = Field(sa_column=Column('flag_valid', INTEGER, nullable=False, server_default=text("'0'")))
-    point_value: int = Field(sa_column=Column('point_value', INTEGER, nullable=False, server_default=text("'0'")))
-    issued_when: int = Field(sa_column=Column('issued_when', INTEGER, nullable=False, server_default=text("'0'")))
-    endorser_id: Optional[int] = Field(default=None, sa_column=Column('endorser_id', INTEGER))
+    flag_valid: int = Field(sa_column=Column('flag_valid', Integer, nullable=False, server_default=text("'0'")))
+    point_value: int = Field(sa_column=Column('point_value', Integer, nullable=False, server_default=text("'0'")))
+    issued_when: int = Field(sa_column=Column('issued_when', Integer, nullable=False, server_default=text("'0'")))
+    endorser_id: Optional[int] = Field(default=None, sa_column=Column('endorser_id', Integer))
     type: Optional[str] = Field(default=None, sa_column=Column('type', Enum('user', 'admin', 'auto')))
-    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', INTEGER))
+    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', Integer))
 
     arXiv_categories: Optional['ArXivCategories'] = Relationship(back_populates='arXiv_endorsements')
     endorsee: Optional['TapirUsers'] = Relationship(back_populates='arXiv_endorsements')
@@ -1888,10 +1903,10 @@ class ArXivOwnershipRequests(SQLModel, table=True):
         Index('user_id', 'user_id')
     )
 
-    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', INTEGER, primary_key=True))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    request_id: Optional[int] = Field(default=None, sa_column=Column('request_id', Integer, primary_key=True))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     workflow_status: str = Field(sa_column=Column('workflow_status', Enum('pending', 'accepted', 'rejected'), nullable=False, server_default=text("'pending'")))
-    endorsement_request_id: Optional[int] = Field(default=None, sa_column=Column('endorsement_request_id', INTEGER))
+    endorsement_request_id: Optional[int] = Field(default=None, sa_column=Column('endorsement_request_id', Integer))
 
     endorsement_request: Optional['ArXivEndorsementRequests'] = Relationship(back_populates='arXiv_ownership_requests')
     user: Optional['TapirUsers'] = Relationship(back_populates='arXiv_ownership_requests')
@@ -1905,10 +1920,10 @@ class ArXivPilotDatasets(ArXivSubmissions, table=True):
     submission_id: int = Field(sa_column=Column('submission_id', Integer, primary_key=True))
     created: datetime = Field(sa_column=Column('created', DateTime, nullable=False))
     last_checked: datetime = Field(sa_column=Column('last_checked', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
-    numfiles: Optional[int] = Field(default=None, sa_column=Column('numfiles', SMALLINT, server_default=text("'0'")))
+    numfiles: Optional[int] = Field(default=None, sa_column=Column('numfiles', SmallInteger, server_default=text("'0'")))
     feed_url: Optional[str] = Field(default=None, sa_column=Column('feed_url', String(256)))
     manifestation: Optional[str] = Field(default=None, sa_column=Column('manifestation', String(256)))
-    published: Optional[int] = Field(default=None, sa_column=Column('published', TINYINT(1), server_default=text("'0'")))
+    published: Optional[int] = Field(default=None, sa_column=Column('published', Boolean(), server_default=text("'0'")))
 
 
 class ArXivPilotFiles(SQLModel, table=True):
@@ -1917,12 +1932,12 @@ class ArXivPilotFiles(SQLModel, table=True):
         Index('arXiv_pilot_files_cdfk3', 'submission_id')
     )
 
-    file_id: Optional[int] = Field(default=None, sa_column=Column('file_id', INTEGER, primary_key=True))
+    file_id: Optional[int] = Field(default=None, sa_column=Column('file_id', Integer, primary_key=True))
     submission_id: int = Field(sa_column=Column('submission_id', Integer, nullable=False))
     filename: Optional[str] = Field(default=None, sa_column=Column('filename', String(256), server_default=text("''")))
     entity_url: Optional[str] = Field(default=None, sa_column=Column('entity_url', String(256)))
     description: Optional[str] = Field(default=None, sa_column=Column('description', String(80)))
-    byRef: Optional[int] = Field(default=None, sa_column=Column('byRef', TINYINT(1), server_default=text("'1'")))
+    byRef: Optional[int] = Field(default=None, sa_column=Column('byRef', Boolean(), server_default=text("'1'")))
 
     submission: Optional['ArXivSubmissions'] = Relationship(back_populates='arXiv_pilot_files')
 
@@ -1937,7 +1952,7 @@ class ArXivSubmissionAbsClassifierData(ArXivSubmissions, table=True):
     json: Optional[str] = Field(default=None, sa_column=Column('json', Text))
     status: Optional[str] = Field(default=None, sa_column=Column('status', Enum('processing', 'success', 'failed', 'no connection')))
     message: Optional[str] = Field(default=None, sa_column=Column('message', Text))
-    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', TINYINT(1), server_default=text("'0'")))
+    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', Boolean(), server_default=text("'0'")))
     suggested_primary: Optional[str] = Field(default=None, sa_column=Column('suggested_primary', Text))
     suggested_reason: Optional[str] = Field(default=None, sa_column=Column('suggested_reason', Text))
     autoproposal_primary: Optional[str] = Field(default=None, sa_column=Column('autoproposal_primary', Text))
@@ -1958,8 +1973,8 @@ class ArXivSubmissionCategory(SQLModel, table=True):
 
     submission_id: int = Field(sa_column=Column('submission_id', Integer, primary_key=True, nullable=False))
     category: Optional[str] = Field(default=None, sa_column=Column('category', String(32), primary_key=True, nullable=False, server_default=text("''")))
-    is_primary: int = Field(sa_column=Column('is_primary', TINYINT(1), nullable=False, server_default=text("'0'")))
-    is_published: Optional[int] = Field(default=None, sa_column=Column('is_published', TINYINT(1), server_default=text("'0'")))
+    is_primary: int = Field(sa_column=Column('is_primary', Boolean(), nullable=False, server_default=text("'0'")))
+    is_published: Optional[int] = Field(default=None, sa_column=Column('is_published', Boolean(), server_default=text("'0'")))
 
     arXiv_category_def: Optional['ArXivCategoryDef'] = Relationship(back_populates='arXiv_submission_category')
     submission: Optional['ArXivSubmissions'] = Relationship(back_populates='arXiv_submission_category')
@@ -1983,9 +1998,9 @@ class ArXivSubmissionCategoryProposal(SQLModel, table=True):
 
     proposal_id: Optional[int] = Field(default=None, sa_column=Column('proposal_id', Integer, primary_key=True, nullable=False))
     submission_id: int = Field(sa_column=Column('submission_id', Integer, primary_key=True, nullable=False))
-    category: Optional[str] = Field(default=None, sa_column=Column('category', VARCHAR(32), primary_key=True, nullable=False))
-    is_primary: int = Field(sa_column=Column('is_primary', TINYINT(1), primary_key=True, nullable=False, server_default=text("'0'")))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False))
+    category: Optional[str] = Field(default=None, sa_column=Column('category', String(32), primary_key=True, nullable=False))
+    is_primary: int = Field(sa_column=Column('is_primary', Boolean(), primary_key=True, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False))
     proposal_status: Optional[int] = Field(default=None, sa_column=Column('proposal_status', Integer, server_default=text("'0'")))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
     proposal_comment_id: Optional[int] = Field(default=None, sa_column=Column('proposal_comment_id', Integer))
@@ -2008,7 +2023,7 @@ class ArXivSubmissionClassifierData(ArXivSubmissions, table=True):
     json: Optional[str] = Field(default=None, sa_column=Column('json', Text))
     status: Optional[str] = Field(default=None, sa_column=Column('status', Enum('processing', 'success', 'failed', 'no connection')))
     message: Optional[str] = Field(default=None, sa_column=Column('message', Text))
-    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', TINYINT(1), server_default=text("'0'")))
+    is_oversize: Optional[int] = Field(default=None, sa_column=Column('is_oversize', Boolean(), server_default=text("'0'")))
 
 
 class ArXivSubmissionFlag(SQLModel, table=True):
@@ -2020,9 +2035,9 @@ class ArXivSubmissionFlag(SQLModel, table=True):
     )
 
     flag_id: Optional[int] = Field(default=None, sa_column=Column('flag_id', Integer, primary_key=True))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, nullable=False, server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, nullable=False, server_default=text("'0'")))
     submission_id: int = Field(sa_column=Column('submission_id', Integer, nullable=False))
-    flag: int = Field(sa_column=Column('flag', TINYINT, nullable=False, server_default=text("'0'")))
+    flag: int = Field(sa_column=Column('flag', SmallInteger, nullable=False, server_default=text("'0'")))
     updated: datetime = Field(sa_column=Column('updated', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
 
     submission: Optional['ArXivSubmissions'] = Relationship(back_populates='arXiv_submission_flag')
@@ -2041,7 +2056,7 @@ class ArXivSubmissionHoldReason(SQLModel, table=True):
 
     reason_id: Optional[int] = Field(default=None, sa_column=Column('reason_id', Integer, primary_key=True, nullable=False))
     submission_id: int = Field(sa_column=Column('submission_id', Integer, nullable=False))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False))
     reason: Optional[str] = Field(default=None, sa_column=Column('reason', String(30)))
     type: Optional[str] = Field(default=None, sa_column=Column('type', String(30)))
     comment_id: Optional[int] = Field(default=None, sa_column=Column('comment_id', Integer))
@@ -2059,7 +2074,7 @@ class ArXivSubmissionNearDuplicates(SQLModel, table=True):
 
     submission_id: int = Field(sa_column=Column('submission_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
     matching_id: int = Field(sa_column=Column('matching_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
-    similarity: Decimal = Field(sa_column=Column('similarity', DECIMAL(2, 1), nullable=False))
+    similarity: Decimal = Field(sa_column=Column('similarity', Numeric(precision=2, scale=1), nullable=False))
     last_update: datetime = Field(sa_column=Column('last_update', TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')))
 
     submission: Optional['ArXivSubmissions'] = Relationship(back_populates='arXiv_submission_near_duplicates')
@@ -2091,8 +2106,8 @@ class ArXivSubmissionViewFlag(SQLModel, table=True):
     )
 
     submission_id: int = Field(sa_column=Column('submission_id', Integer, primary_key=True, nullable=False))
-    user_id: int = Field(sa_column=Column('user_id', INTEGER, primary_key=True, nullable=False))
-    flag: Optional[int] = Field(default=None, sa_column=Column('flag', TINYINT(1), server_default=text("'0'")))
+    user_id: int = Field(sa_column=Column('user_id', Integer, primary_key=True, nullable=False))
+    flag: Optional[int] = Field(default=None, sa_column=Column('flag', SmallInteger, server_default=text("'0'")))
     updated: Optional[datetime] = Field(default=None, sa_column=Column('updated', DateTime))
 
     submission: Optional['ArXivSubmissions'] = Relationship(back_populates='arXiv_submission_view_flag')
@@ -2108,12 +2123,12 @@ class ArXivVersionsChecksum(ArXivVersions, table=True):
         Index('src_size', 'src_size')
     )
 
-    document_id: int = Field(sa_column=Column('document_id', MEDIUMINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    version: int = Field(sa_column=Column('version', TINYINT, primary_key=True, nullable=False, server_default=text("'0'")))
-    flag_abs_present: int = Field(sa_column=Column('flag_abs_present', INTEGER, nullable=False, server_default=text("'0'")))
-    abs_size: int = Field(sa_column=Column('abs_size', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_src_present: int = Field(sa_column=Column('flag_src_present', TINYINT, nullable=False, server_default=text("'0'")))
-    src_size: int = Field(sa_column=Column('src_size', INTEGER, nullable=False, server_default=text("'0'")))
+    document_id: int = Field(sa_column=Column('document_id', Integer, primary_key=True, nullable=False, server_default=text("'0'")))
+    version: int = Field(sa_column=Column('version', SmallInteger, primary_key=True, nullable=False, server_default=text("'0'")))
+    flag_abs_present: int = Field(sa_column=Column('flag_abs_present', Integer, nullable=False, server_default=text("'0'")))
+    abs_size: int = Field(sa_column=Column('abs_size', Integer, nullable=False, server_default=text("'0'")))
+    flag_src_present: int = Field(sa_column=Column('flag_src_present', Boolean(), nullable=False, server_default=text("'0'")))
+    src_size: int = Field(sa_column=Column('src_size', Integer, nullable=False, server_default=text("'0'")))
     abs_md5sum: Optional[bytes] = Field(default=None, sa_column=Column('abs_md5sum', BINARY(16)))
     src_md5sum: Optional[bytes] = Field(default=None, sa_column=Column('src_md5sum', BINARY(16)))
 
@@ -2123,13 +2138,13 @@ class ArXivEndorsementsAudit(ArXivEndorsements, table=True):
         ForeignKeyConstraint(['endorsement_id'], ['arXiv_endorsements.endorsement_id'], name='0_732'),
     )
 
-    endorsement_id: int = Field(sa_column=Column('endorsement_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
+    endorsement_id: int = Field(sa_column=Column('endorsement_id', Integer, primary_key=True, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
     remote_addr: str = Field(sa_column=Column('remote_addr', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    flag_knows_personally: int = Field(sa_column=Column('flag_knows_personally', INTEGER, nullable=False, server_default=text("'0'")))
-    flag_seen_paper: int = Field(sa_column=Column('flag_seen_paper', INTEGER, nullable=False, server_default=text("'0'")))
+    flag_knows_personally: int = Field(sa_column=Column('flag_knows_personally', Integer, nullable=False, server_default=text("'0'")))
+    flag_seen_paper: int = Field(sa_column=Column('flag_seen_paper', Integer, nullable=False, server_default=text("'0'")))
     comment: Optional[str] = Field(default=None, sa_column=Column('comment', Text))
 
 
@@ -2138,9 +2153,9 @@ class ArXivOwnershipRequestsAudit(ArXivOwnershipRequests, table=True):
         ForeignKeyConstraint(['request_id'], ['arXiv_ownership_requests.request_id'], name='0_737'),
     )
 
-    request_id: int = Field(sa_column=Column('request_id', INTEGER, primary_key=True, server_default=text("'0'")))
-    session_id: int = Field(sa_column=Column('session_id', INTEGER, nullable=False, server_default=text("'0'")))
+    request_id: int = Field(sa_column=Column('request_id', Integer, primary_key=True, server_default=text("'0'")))
+    session_id: int = Field(sa_column=Column('session_id', Integer, nullable=False, server_default=text("'0'")))
     remote_addr: str = Field(sa_column=Column('remote_addr', String(16), nullable=False, server_default=text("''")))
     remote_host: str = Field(sa_column=Column('remote_host', String(255), nullable=False, server_default=text("''")))
     tracking_cookie: str = Field(sa_column=Column('tracking_cookie', String(255), nullable=False, server_default=text("''")))
-    date_: int = Field(sa_column=Column('date', INTEGER, nullable=False, server_default=text("'0'")))
+    date_: int = Field(sa_column=Column('date', Integer, nullable=False, server_default=text("'0'")))
