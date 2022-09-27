@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "modapi"
+version = "0.1.0"
+description = ""
+authors = ["Brian D. Caruso <bdc34@cornell.edu>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+fastapi = "^0.63.0"
+uvicorn = "^0.13.3"
+python-socketio = {extras = ["client"], version = "^5.0.4"}
+websockets = "^8.1"
+mysqlclient = "^2.0.3"
+PyJWT = "^2.0.1"
+sqlalchemy = "^1.4"
+pytz = "^2021.1"
+pydantic = {extras = ["dotenv"], version = "^1.8.2"}
+arxiv-base = "0.17.2.1"
+google-auth = "^2.6.0"
+CacheControl = "^0.12.10"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+asynctest = "^0.13.0"
+asyncio = "^3.4.3"
+aiohttp = "^3.7.3"
+pytest-asyncio = "^0.14.0"
+mypy = "^0.812"
+pylint = "^2.7.2"
+"testing.mysqld" = "^1.4.0"
+pytest-mock = "^3.5.1"
+pytest-depends = "^1.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
