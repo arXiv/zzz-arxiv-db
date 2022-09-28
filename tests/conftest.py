@@ -21,8 +21,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
-from fastapi.testclient import TestClient
-
 from pathlib import Path
 
 DB_FILE = "./pytest.db"
@@ -43,7 +41,7 @@ def escape_bind(stmt):
 
 @pytest.fixture(scope='session')
 def engine():
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=CONNECT_ARGS)        
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=CONNECT_ARGS)
     return engine
 
 
@@ -51,12 +49,12 @@ def engine():
 def create_and_load_db_tables(engine):
     print("Making tables...")
     try:
-        import modapi.tables.arxiv_tables as arxiv_tables
+        from arxiv_db.tables import arxiv_tables
         arxiv_tables.metadata.create_all(bind=engine)
         print("Done making tables.")
         test_load_db_file(engine, SQL_DATA_FILE)
         yield engine
-    finally: # cleanup        
+    finally: # cleanup
         if DELETE_DB_FILE_ON_EXIT:
             Path(DB_FILE).unlink(missing_ok=True)
             print(f"Deleted {DB_FILE}. Set DELETE_DB_FILE_ON_EXIT to control.")
@@ -102,61 +100,3 @@ def test_load_db_file(engine, test_data: str):
         else:
             print(f"Done loading test data. Ran {cmd_count} commands.")
 
-
-@pytest.fixture(scope='session')
-def get_test_db(create_and_load_db_tables):
-    # See https://fastapi.tiangolo.com/advanced/testing-database
-    engine = create_and_load_db_tables
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    def override_get_db():
-        try:
-            db = TestingSessionLocal()
-            yield db
-        finally:
-            db.close()
-
-    return override_get_db
-
-
-@pytest.fixture
-def client(get_test_db):
-    """Returns fast-api app. This does not include the websocket collab app."""
-    fastapi_app = super_fresh_app()
-    from modapi.db import get_db
-    fastapi_app.dependency_overrides[get_db] = get_test_db
-    client = TestClient(fastapi_app)
-
-    def add_override(dep_target, override):
-        """Allows app dep overrides to be defined on test client.
-        See  https://fastapi.tiangolo.com/advanced/testing-database"""
-        fastapi_app.dependency_overrides[dep_target] = override
-
-    client.add_override = add_override
-    return client
-
-
-@pytest.fixture
-def no_db_client():
-    from modapi.rest.rest_app import fast_app as fastapi_app
-    client = TestClient(fastapi_app)
-
-    def add_override(dep_target, override):
-        """Allows app dep overrides to be defined on test client.
-        See https://fastapi.tiangolo.com/advanced/testing-dependencies"""
-        fastapi_app.dependency_overrides[dep_target] = override
-
-    client.add_override = add_override
-    return client
-    
-
-def super_fresh_app():
-    """Forces reload of modapi.rest.rest_app using importlib.
-
-    Since python normally loads a module once, and rest_app is defined on
-    the module, any changes to dependency_overrides will persist
-    between runs of tests even though the pytest fixture
-    conftest.client is run once for each pytest test function."""
-    import modapi.rest.rest_app
-    importlib.reload(modapi.rest.rest_app)
-    return modapi.rest.rest_app.fast_app
