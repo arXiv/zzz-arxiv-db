@@ -32,3 +32,25 @@ Here is an example of using SQLAlchemy ORM:
         for item in result:
             print(f"{item.first_name} {item.last_name}")
 
+# How to use with Flask?
+
+TODO
+
+# What about models that inherit?
+
+Some models inherit from other models instead of Base. This is because
+the represent tables that lack primary key. Use them as you would any
+other table:
+
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session
+    import declartive_nooptions as models  # TODO rename this import
+    
+    engine = create_engine("mysql+pymysql://bob:passwd@localhost/arXiv")
+
+    with Session(engine) as session:
+        statement = select(models.ArXivOrcidIds).where(models.ArXivOrcidIds.orcid != None) .limit(10)
+        result = session.execute(statement).scalars().all()
+        for item in result:
+            print(f"last:{item.last_name} email: {item.email} orcid:{item.orcid}")
+    

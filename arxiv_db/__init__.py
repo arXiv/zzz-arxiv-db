@@ -22,6 +22,15 @@ def create_engine(db_uri:str, echo:bool, args:dict):
 
     return _create_engine(db_uri, echo=echo, connect_args=args)
 
+def init_with_flask_sqlalchemy(db):
+    """Takes a flask_sqlalchemy.SQLAlchemy object and uses that as Base.
+
+    This allows the models and tables in this package to be used with
+    flask_sqlalchemy.
+    """
+    global Base
+    Base = db
+
 
 def create_tables(engine: Engine):
     """Create any missing tables."""
