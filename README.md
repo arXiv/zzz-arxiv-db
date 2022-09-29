@@ -53,4 +53,22 @@ other table:
         result = session.execute(statement).scalars().all()
         for item in result:
             print(f"last:{item.last_name} email: {item.email} orcid:{item.orcid}")
+            
+            
+# I'd like better IDE completion
+The result set returned from SQLalchemy isn't typed in a way that supports this.
+Try:
+
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session
+    import declartive_nooptions as models  # TODO rename this import
     
+    engine = create_engine("mysql+pymysql://bob:passwd@localhost/arXiv")
+
+    with Session(engine) as session:
+        statement = select(models.OrcidIds).where(models.OrcidIds.orcid != None) .limit(10)
+        result = session.execute(statement).scalars().all()
+        for item in result:
+            item: models.OrcidIds  # <----------- Add this to get IDE completion
+            print(f"last:{item.last_name} email: {item.email} orcid:{item.orcid}") 
+   

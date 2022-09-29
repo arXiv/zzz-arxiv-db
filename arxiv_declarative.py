@@ -6,7 +6,7 @@ generator against a copy of the production database.
 Some of the tables are represented with sqlalchemy tables since the
 lack primary keys.
 
-The class names were changed to remove the '' prefix.
+The class names were changed to remove the 'ArXiv' prefix.
 
 """
 
