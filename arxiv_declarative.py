@@ -1,3 +1,15 @@
+"""arXiv database SQLAlchemy models.
+
+This was generated with sqlacodegen on 2022-09-29 with the declarative
+generator against a copy of the production database.
+
+Some of the tables are represented with sqlalchemy tables since the
+lack primary keys.
+
+The class names were changed to remove the '' prefix.
+
+"""
+
 from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import declarative_base, relationship
@@ -24,7 +36,7 @@ class SubscriptionUniversalInstitution(Base):
     Subscription_UniversalInstitutionIP = relationship('SubscriptionUniversalInstitutionIP', back_populates='Subscription_UniversalInstitution')
 
 
-class ArXivAdminLog(Base):
+class AdminLog(Base):
     __tablename__ = 'arXiv_admin_log'
     __table_args__ = (
         Index('arXiv_admin_log_idx_command', 'command'),
@@ -46,9 +58,9 @@ class ArXivAdminLog(Base):
     submission_id = Column(Integer)
     notify = Column(TINYINT(1), server_default=text("'0'"))
 
-    arXiv_submission_category_proposal = relationship('ArXivSubmissionCategoryProposal', foreign_keys='[ArXivSubmissionCategoryProposal.proposal_comment_id]', back_populates='proposal_comment')
-    arXiv_submission_category_proposal_ = relationship('ArXivSubmissionCategoryProposal', foreign_keys='[ArXivSubmissionCategoryProposal.response_comment_id]', back_populates='response_comment')
-    arXiv_submission_hold_reason = relationship('ArXivSubmissionHoldReason', back_populates='comment')
+    arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', foreign_keys='[SubmissionCategoryProposal.proposal_comment_id]', back_populates='proposal_comment')
+    arXiv_submission_category_proposal_ = relationship('SubmissionCategoryProposal', foreign_keys='[SubmissionCategoryProposal.response_comment_id]', back_populates='response_comment')
+    arXiv_submission_hold_reason = relationship('SubmissionHoldReason', back_populates='comment')
 
 
 t_arXiv_admin_state = Table(
@@ -64,28 +76,28 @@ t_arXiv_admin_state = Table(
 )
 
 
-class ArXivArchiveCategory(Base):
+class ArchiveCategory(Base):
     __tablename__ = 'arXiv_archive_category'
 
     archive_id = Column(String(16), primary_key=True, nullable=False, server_default=text("''"))
     category_id = Column(String(32), primary_key=True, nullable=False)
 
 
-class ArXivArchiveDef(Base):
+class ArchiveDef(Base):
     __tablename__ = 'arXiv_archive_def'
 
     archive = Column(String(16), primary_key=True, server_default=text("''"))
     name = Column(String(255))
 
 
-class ArXivArchiveGroup(Base):
+class ArchiveGroup(Base):
     __tablename__ = 'arXiv_archive_group'
 
     archive_id = Column(String(16), primary_key=True, nullable=False, server_default=text("''"))
     group_id = Column(String(16), primary_key=True, nullable=False, server_default=text("''"))
 
 
-class ArXivAwsConfig(Base):
+class AwsConfig(Base):
     __tablename__ = 'arXiv_aws_config'
 
     domain = Column(String(75), primary_key=True, nullable=False)
@@ -93,7 +105,7 @@ class ArXivAwsConfig(Base):
     value = Column(String(150))
 
 
-class ArXivAwsFiles(Base):
+class AwsFiles(Base):
     __tablename__ = 'arXiv_aws_files'
     __table_args__ = (
         Index('type', 'type'),
@@ -112,7 +124,7 @@ class ArXivAwsFiles(Base):
     num_items = Column(Integer)
 
 
-class ArXivBibFeeds(Base):
+class BibFeeds(Base):
     __tablename__ = 'arXiv_bib_feeds'
 
     bib_id = Column(MEDIUMINT, primary_key=True)
@@ -130,7 +142,7 @@ class ArXivBibFeeds(Base):
     enabled = Column(TINYINT(1), server_default=text("'0'"))
 
 
-class ArXivBibUpdates(Base):
+class BibUpdates(Base):
     __tablename__ = 'arXiv_bib_updates'
 
     update_id = Column(MEDIUMINT, primary_key=True)
@@ -153,26 +165,26 @@ t_arXiv_block_email = Table(
 )
 
 
-class ArXivBogusCountries(Base):
+class BogusCountries(Base):
     __tablename__ = 'arXiv_bogus_countries'
 
     user_id = Column(INTEGER, primary_key=True, server_default=text("'0'"))
     country_name = Column(String(255), nullable=False, server_default=text("''"))
 
 
-class ArXivCategoryDef(Base):
+class CategoryDef(Base):
     __tablename__ = 'arXiv_category_def'
 
     category = Column(String(32), primary_key=True)
     name = Column(String(255))
     active = Column(TINYINT(1), server_default=text("'1'"))
 
-    arXiv_document_category = relationship('ArXivDocumentCategory', back_populates='arXiv_category_def')
-    arXiv_submission_category = relationship('ArXivSubmissionCategory', back_populates='arXiv_category_def')
-    arXiv_submission_category_proposal = relationship('ArXivSubmissionCategoryProposal', back_populates='arXiv_category_def')
+    arXiv_document_category = relationship('DocumentCategory', back_populates='arXiv_category_def')
+    arXiv_submission_category = relationship('SubmissionCategory', back_populates='arXiv_category_def')
+    arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', back_populates='arXiv_category_def')
 
 
-class ArXivDblpAuthors(Base):
+class DblpAuthors(Base):
     __tablename__ = 'arXiv_dblp_authors'
     __table_args__ = (
         Index('author_id', 'author_id', unique=True),
@@ -182,10 +194,10 @@ class ArXivDblpAuthors(Base):
     author_id = Column(MEDIUMINT, primary_key=True)
     name = Column(String(40))
 
-    arXiv_dblp_document_authors = relationship('ArXivDblpDocumentAuthors', back_populates='author')
+    arXiv_dblp_document_authors = relationship('DblpDocumentAuthors', back_populates='author')
 
 
-class ArXivEndorsementDomains(Base):
+class EndorsementDomains(Base):
     __tablename__ = 'arXiv_endorsement_domains'
 
     endorsement_domain = Column(String(32), primary_key=True, server_default=text("''"))
@@ -194,33 +206,33 @@ class ArXivEndorsementDomains(Base):
     endorse_email = Column(Enum('y', 'n'), nullable=False, server_default=text("'y'"))
     papers_to_endorse = Column(SMALLINT, nullable=False, server_default=text("'4'"))
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_endorsement_domains')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_endorsement_domains')
 
 
-class ArXivFreezeLog(Base):
+class FreezeLog(Base):
     __tablename__ = 'arXiv_freeze_log'
 
     date = Column(INTEGER, primary_key=True, server_default=text("'0'"))
 
 
-class ArXivGroupDef(Base):
+class GroupDef(Base):
     __tablename__ = 'arXiv_group_def'
 
     archive_group = Column(String(16), primary_key=True, server_default=text("''"))
     name = Column(String(255))
 
 
-class ArXivGroups(Base):
+class Groups(Base):
     __tablename__ = 'arXiv_groups'
 
     group_id = Column(String(16), primary_key=True, server_default=text("''"))
     group_name = Column(String(255), nullable=False, server_default=text("''"))
     start_year = Column(String(4), nullable=False, server_default=text("''"))
 
-    arXiv_archives = relationship('ArXivArchives', back_populates='arXiv_groups')
+    arXiv_archives = relationship('Archives', back_populates='arXiv_groups')
 
 
-class ArXivLicenses(Base):
+class Licenses(Base):
     __tablename__ = 'arXiv_licenses'
 
     name = Column(String(255), primary_key=True)
@@ -229,11 +241,11 @@ class ArXivLicenses(Base):
     note = Column(String(400))
     sequence = Column(TINYINT)
 
-    arXiv_metadata = relationship('ArXivMetadata', back_populates='arXiv_licenses')
-    arXiv_submissions = relationship('ArXivSubmissions', back_populates='arXiv_licenses')
+    arXiv_metadata = relationship('Metadata', back_populates='arXiv_licenses')
+    arXiv_submissions = relationship('Submissions', back_populates='arXiv_licenses')
 
 
-class ArXivLogPositions(Base):
+class LogPositions(Base):
     __tablename__ = 'arXiv_log_positions'
 
     id = Column(String(255), primary_key=True, server_default=text("''"))
@@ -241,14 +253,14 @@ class ArXivLogPositions(Base):
     date = Column(INTEGER)
 
 
-class ArXivMonitorKlog(Base):
+class MonitorKlog(Base):
     __tablename__ = 'arXiv_monitor_klog'
 
     t = Column(INTEGER, primary_key=True, server_default=text("'0'"))
     sent = Column(INTEGER)
 
 
-class ArXivMonitorMailq(Base):
+class MonitorMailq(Base):
     __tablename__ = 'arXiv_monitor_mailq'
 
     t = Column(INTEGER, primary_key=True, server_default=text("'0'"))
@@ -260,14 +272,14 @@ class ArXivMonitorMailq(Base):
     local_in_flight = Column(INTEGER, nullable=False, server_default=text("'0'"))
 
 
-class ArXivMonitorMailsent(Base):
+class MonitorMailsent(Base):
     __tablename__ = 'arXiv_monitor_mailsent'
 
     t = Column(INTEGER, primary_key=True, server_default=text("'0'"))
     sent = Column(INTEGER)
 
 
-class ArXivNextMail(Base):
+class NextMail(Base):
     __tablename__ = 'arXiv_next_mail'
     __table_args__ = (
         Index('arXiv_next_mail_idx_document_id', 'document_id'),
@@ -285,7 +297,7 @@ class ArXivNextMail(Base):
     mail_id = Column(CHAR(6))
 
 
-class ArXivOrcidConfig(Base):
+class OrcidConfig(Base):
     __tablename__ = 'arXiv_orcid_config'
 
     domain = Column(String(75), primary_key=True, nullable=False)
@@ -302,7 +314,7 @@ t_arXiv_ownership_requests_papers = Table(
 )
 
 
-class ArXivPaperSessions(Base):
+class PaperSessions(Base):
     __tablename__ = 'arXiv_paper_sessions'
 
     paper_session_id = Column(INTEGER, primary_key=True)
@@ -312,7 +324,7 @@ class ArXivPaperSessions(Base):
     ip_name = Column(String(16), nullable=False, server_default=text("''"))
 
 
-class ArXivPublishLog(Base):
+class PublishLog(Base):
     __tablename__ = 'arXiv_publish_log'
 
     date = Column(INTEGER, primary_key=True, server_default=text("'0'"))
@@ -326,20 +338,20 @@ t_arXiv_refresh_list = Table(
 )
 
 
-class ArXivRejectSessionUsernames(Base):
+class RejectSessionUsernames(Base):
     __tablename__ = 'arXiv_reject_session_usernames'
 
     username = Column(String(64), primary_key=True, server_default=text("''"))
 
 
-class ArXivSciencewisePings(Base):
+class SciencewisePings(Base):
     __tablename__ = 'arXiv_sciencewise_pings'
 
     paper_id_v = Column(String(32), primary_key=True)
     updated = Column(DateTime)
 
 
-class ArXivState(Base):
+class State(Base):
     __tablename__ = 'arXiv_state'
 
     id = Column(Integer, primary_key=True)
@@ -361,14 +373,14 @@ t_arXiv_stats_hourly = Table(
 )
 
 
-class ArXivStatsMonthlyDownloads(Base):
+class StatsMonthlyDownloads(Base):
     __tablename__ = 'arXiv_stats_monthly_downloads'
 
     ym = Column(Date, primary_key=True)
     downloads = Column(INTEGER, nullable=False)
 
 
-class ArXivStatsMonthlySubmissions(Base):
+class StatsMonthlySubmissions(Base):
     __tablename__ = 'arXiv_stats_monthly_submissions'
 
     ym = Column(Date, primary_key=True, server_default=text("'0000-00-00'"))
@@ -376,7 +388,7 @@ class ArXivStatsMonthlySubmissions(Base):
     historical_delta = Column(TINYINT, nullable=False, server_default=text("'0'"))
 
 
-class ArXivSubmissionAgreements(Base):
+class SubmissionAgreements(Base):
     __tablename__ = 'arXiv_submission_agreements'
 
     agreement_id = Column(SMALLINT, primary_key=True)
@@ -384,10 +396,10 @@ class ArXivSubmissionAgreements(Base):
     effective_date = Column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     content = Column(Text)
 
-    arXiv_submissions = relationship('ArXivSubmissions', back_populates='agreement')
+    arXiv_submissions = relationship('Submissions', back_populates='agreement')
 
 
-class ArXivSubmitterFlags(Base):
+class SubmitterFlags(Base):
     __tablename__ = 'arXiv_submitter_flags'
 
     flag_id = Column(Integer, primary_key=True)
@@ -395,7 +407,7 @@ class ArXivSubmitterFlags(Base):
     pattern = Column(String(255))
 
 
-class ArXivSuspectEmails(Base):
+class SuspectEmails(Base):
     __tablename__ = 'arXiv_suspect_emails'
 
     id = Column(Integer, primary_key=True)
@@ -405,7 +417,7 @@ class ArXivSuspectEmails(Base):
     updated = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
 
-class ArXivTitles(Base):
+class Titles(Base):
     __tablename__ = 'arXiv_titles'
     __table_args__ = (
         Index('arXiv_repno_idx', 'report_num'),
@@ -418,7 +430,7 @@ class ArXivTitles(Base):
     date = Column(Date)
 
 
-class ArXivTrackbackPings(Base):
+class TrackbackPings(Base):
     __tablename__ = 'arXiv_trackback_pings'
     __table_args__ = (
         Index('arXiv_trackback_pings__document_id', 'document_id'),
@@ -443,7 +455,7 @@ class ArXivTrackbackPings(Base):
     site_id = Column(INTEGER)
 
 
-class ArXivTrackbackSites(Base):
+class TrackbackSites(Base):
     __tablename__ = 'arXiv_trackback_sites'
     __table_args__ = (
         Index('arXiv_trackback_sites__pattern', 'pattern'),
@@ -454,7 +466,7 @@ class ArXivTrackbackSites(Base):
     action = Column(Enum('neutral', 'accept', 'reject', 'spam'), nullable=False, server_default=text("'neutral'"))
 
 
-class ArXivTracking(Base):
+class Tracking(Base):
     __tablename__ = 'arXiv_tracking'
     __table_args__ = (
         Index('sword_id', 'sword_id', unique=True),
@@ -466,7 +478,7 @@ class ArXivTracking(Base):
     timestamp = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     submission_errors = Column(Text)
 
-    arXiv_submissions = relationship('ArXivSubmissions', back_populates='sword')
+    arXiv_submissions = relationship('Submissions', back_populates='sword')
 
 
 t_arXiv_updates = Table(
@@ -721,7 +733,7 @@ class SubscriptionUniversalInstitutionIP(Base):
     Subscription_UniversalInstitution = relationship('SubscriptionUniversalInstitution', back_populates='Subscription_UniversalInstitutionIP')
 
 
-class ArXivArchives(Base):
+class Archives(Base):
     __tablename__ = 'arXiv_archives'
     __table_args__ = (
         ForeignKeyConstraint(['in_group'], ['arXiv_groups.group_id'], name='0_576'),
@@ -735,8 +747,8 @@ class ArXivArchives(Base):
     end_date = Column(String(4), nullable=False, server_default=text("''"))
     subdivided = Column(INTEGER, nullable=False, server_default=text("'0'"))
 
-    arXiv_groups = relationship('ArXivGroups', back_populates='arXiv_archives')
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_archives')
+    arXiv_groups = relationship('Groups', back_populates='arXiv_archives')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_archives')
 
 
 t_tapir_save_post_variables = Table(
@@ -796,17 +808,11 @@ class TapirUsers(Base):
     joined_ip_num = Column(String(16))
 
     tapir_policy_classes = relationship('TapirPolicyClasses', back_populates='tapir_users')
-    arXiv_author_ids = relationship('ArXivAuthorIds', uselist=False, back_populates='user')
-    arXiv_control_holds = relationship('ArXivControlHolds', foreign_keys='[ArXivControlHolds.last_changed_by]', back_populates='tapir_users')
-    arXiv_control_holds_ = relationship('ArXivControlHolds', foreign_keys='[ArXivControlHolds.placed_by]', back_populates='tapir_users_')
-    arXiv_documents = relationship('ArXivDocuments', back_populates='submitter')
-    arXiv_moderator_api_key = relationship('ArXivModeratorApiKey', back_populates='user')
-    arXiv_orcid_ids = relationship('ArXivOrcidIds', uselist=False, back_populates='user')
-    arXiv_queue_view = relationship('ArXivQueueView', uselist=False, back_populates='user')
-    arXiv_suspicious_names = relationship('ArXivSuspiciousNames', uselist=False, back_populates='user')
-    arXiv_sword_licenses = relationship('ArXivSwordLicenses', uselist=False, back_populates='user')
+    arXiv_control_holds = relationship('ControlHolds', foreign_keys='[ControlHolds.last_changed_by]', back_populates='tapir_users')
+    arXiv_control_holds_ = relationship('ControlHolds', foreign_keys='[ControlHolds.placed_by]', back_populates='tapir_users_')
+    arXiv_documents = relationship('Documents', back_populates='submitter')
+    arXiv_moderator_api_key = relationship('ModeratorApiKey', back_populates='user')
     tapir_address = relationship('TapirAddress', back_populates='user')
-    tapir_demographics = relationship('TapirDemographics', uselist=False, back_populates='user')
     tapir_email_change_tokens = relationship('TapirEmailChangeTokens', back_populates='user')
     tapir_email_templates = relationship('TapirEmailTemplates', foreign_keys='[TapirEmailTemplates.created_by]', back_populates='tapir_users')
     tapir_email_templates_ = relationship('TapirEmailTemplates', foreign_keys='[TapirEmailTemplates.updated_by]', back_populates='tapir_users_')
@@ -815,32 +821,29 @@ class TapirUsers(Base):
     tapir_phone = relationship('TapirPhone', back_populates='user')
     tapir_recovery_tokens = relationship('TapirRecoveryTokens', back_populates='user')
     tapir_sessions = relationship('TapirSessions', back_populates='user')
-    tapir_users_hot = relationship('TapirUsersHot', uselist=False, back_populates='user')
-    tapir_users_password = relationship('TapirUsersPassword', uselist=False, back_populates='user')
-    arXiv_cross_control = relationship('ArXivCrossControl', back_populates='user')
-    arXiv_demographics = relationship('ArXivDemographics', uselist=False, back_populates='user')
-    arXiv_endorsement_requests = relationship('ArXivEndorsementRequests', back_populates='endorsee')
-    arXiv_jref_control = relationship('ArXivJrefControl', back_populates='user')
-    arXiv_metadata = relationship('ArXivMetadata', back_populates='submitter')
-    arXiv_show_email_requests = relationship('ArXivShowEmailRequests', back_populates='user')
-    arXiv_submission_control = relationship('ArXivSubmissionControl', back_populates='user')
-    arXiv_submissions = relationship('ArXivSubmissions', back_populates='submitter')
+    arXiv_cross_control = relationship('CrossControl', back_populates='user')
+    arXiv_endorsement_requests = relationship('EndorsementRequests', back_populates='endorsee')
+    arXiv_jref_control = relationship('JrefControl', back_populates='user')
+    arXiv_metadata = relationship('Metadata', back_populates='submitter')
+    arXiv_show_email_requests = relationship('ShowEmailRequests', back_populates='user')
+    arXiv_submission_control = relationship('SubmissionControl', back_populates='user')
+    arXiv_submissions = relationship('Submissions', back_populates='submitter')
     tapir_admin_audit = relationship('TapirAdminAudit', foreign_keys='[TapirAdminAudit.admin_user]', back_populates='tapir_users')
     tapir_admin_audit_ = relationship('TapirAdminAudit', foreign_keys='[TapirAdminAudit.affected_user]', back_populates='tapir_users_')
     tapir_email_mailings = relationship('TapirEmailMailings', foreign_keys='[TapirEmailMailings.created_by]', back_populates='tapir_users')
     tapir_email_mailings_ = relationship('TapirEmailMailings', foreign_keys='[TapirEmailMailings.sent_by]', back_populates='tapir_users_')
     tapir_permanent_tokens = relationship('TapirPermanentTokens', back_populates='user')
     tapir_recovery_tokens_used = relationship('TapirRecoveryTokensUsed', back_populates='user')
-    arXiv_endorsements = relationship('ArXivEndorsements', foreign_keys='[ArXivEndorsements.endorsee_id]', back_populates='endorsee')
-    arXiv_endorsements_ = relationship('ArXivEndorsements', foreign_keys='[ArXivEndorsements.endorser_id]', back_populates='endorser')
-    arXiv_ownership_requests = relationship('ArXivOwnershipRequests', back_populates='user')
-    arXiv_submission_category_proposal = relationship('ArXivSubmissionCategoryProposal', back_populates='user')
-    arXiv_submission_flag = relationship('ArXivSubmissionFlag', back_populates='user')
-    arXiv_submission_hold_reason = relationship('ArXivSubmissionHoldReason', back_populates='user')
-    arXiv_submission_view_flag = relationship('ArXivSubmissionViewFlag', back_populates='user')
+    arXiv_endorsements = relationship('Endorsements', foreign_keys='[Endorsements.endorsee_id]', back_populates='endorsee')
+    arXiv_endorsements_ = relationship('Endorsements', foreign_keys='[Endorsements.endorser_id]', back_populates='endorser')
+    arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='user')
+    arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', back_populates='user')
+    arXiv_submission_flag = relationship('SubmissionFlag', back_populates='user')
+    arXiv_submission_hold_reason = relationship('SubmissionHoldReason', back_populates='user')
+    arXiv_submission_view_flag = relationship('SubmissionViewFlag', back_populates='user')
 
 
-class ArXivAuthorIds(Base):
+class AuthorIds(TapirUsers):
     __tablename__ = 'arXiv_author_ids'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='arXiv_author_ids_ibfk_1'),
@@ -851,8 +854,6 @@ class ArXivAuthorIds(Base):
     author_id = Column(String(50), nullable=False)
     updated = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    user = relationship('TapirUsers', back_populates='arXiv_author_ids')
-
 
 t_arXiv_bad_pw = Table(
     'arXiv_bad_pw', metadata,
@@ -862,7 +863,7 @@ t_arXiv_bad_pw = Table(
 )
 
 
-class ArXivCategories(Base):
+class Categories(Base):
     __tablename__ = 'arXiv_categories'
     __table_args__ = (
         ForeignKeyConstraint(['archive'], ['arXiv_archives.archive_id'], name='0_578'),
@@ -880,16 +881,15 @@ class ArXivCategories(Base):
     category_name = Column(String(255))
     endorsement_domain = Column(String(32))
 
-    arXiv_archives = relationship('ArXivArchives', back_populates='arXiv_categories')
-    arXiv_endorsement_domains = relationship('ArXivEndorsementDomains', back_populates='arXiv_categories')
-    arXiv_cross_control = relationship('ArXivCrossControl', back_populates='arXiv_categories')
-    arXiv_demographics = relationship('ArXivDemographics', back_populates='arXiv_categories')
-    arXiv_endorsement_requests = relationship('ArXivEndorsementRequests', back_populates='arXiv_categories')
-    arXiv_questionable_categories = relationship('ArXivQuestionableCategories', uselist=False, back_populates='arXiv_categories')
-    arXiv_endorsements = relationship('ArXivEndorsements', back_populates='arXiv_categories')
+    arXiv_archives = relationship('Archives', back_populates='arXiv_categories')
+    arXiv_endorsement_domains = relationship('EndorsementDomains', back_populates='arXiv_categories')
+    arXiv_cross_control = relationship('CrossControl', back_populates='arXiv_categories')
+    arXiv_demographics = relationship('Demographics', back_populates='arXiv_categories')
+    arXiv_endorsement_requests = relationship('EndorsementRequests', back_populates='arXiv_categories')
+    arXiv_endorsements = relationship('Endorsements', back_populates='arXiv_categories')
 
 
-class ArXivControlHolds(Base):
+class ControlHolds(Base):
     __tablename__ = 'arXiv_control_holds'
     __table_args__ = (
         ForeignKeyConstraint(['last_changed_by'], ['tapir_users.user_id'], name='arXiv_control_holds_ibfk_2'),
@@ -917,7 +917,7 @@ class ArXivControlHolds(Base):
     tapir_users_ = relationship('TapirUsers', foreign_keys=[placed_by], back_populates='arXiv_control_holds_')
 
 
-class ArXivDocuments(Base):
+class Documents(Base):
     __tablename__ = 'arXiv_documents'
     __table_args__ = (
         ForeignKeyConstraint(['submitter_id'], ['tapir_users.user_id'], name='0_580'),
@@ -939,20 +939,18 @@ class ArXivDocuments(Base):
     created = Column(DateTime)
 
     submitter = relationship('TapirUsers', back_populates='arXiv_documents')
-    arXiv_admin_metadata = relationship('ArXivAdminMetadata', back_populates='document')
-    arXiv_cross_control = relationship('ArXivCrossControl', back_populates='document')
-    arXiv_dblp = relationship('ArXivDblp', uselist=False, back_populates='document')
-    arXiv_dblp_document_authors = relationship('ArXivDblpDocumentAuthors', back_populates='document')
-    arXiv_document_category = relationship('ArXivDocumentCategory', back_populates='document')
-    arXiv_jref_control = relationship('ArXivJrefControl', back_populates='document')
-    arXiv_metadata = relationship('ArXivMetadata', back_populates='document')
-    arXiv_mirror_list = relationship('ArXivMirrorList', back_populates='document')
-    arXiv_paper_pw = relationship('ArXivPaperPw', uselist=False, back_populates='document')
-    arXiv_show_email_requests = relationship('ArXivShowEmailRequests', back_populates='document')
-    arXiv_submission_control = relationship('ArXivSubmissionControl', back_populates='document')
-    arXiv_submissions = relationship('ArXivSubmissions', back_populates='document')
-    arXiv_top_papers = relationship('ArXivTopPapers', back_populates='document')
-    arXiv_versions = relationship('ArXivVersions', back_populates='document')
+    arXiv_admin_metadata = relationship('AdminMetadata', back_populates='document')
+    arXiv_cross_control = relationship('CrossControl', back_populates='document')
+    arXiv_dblp_document_authors = relationship('DblpDocumentAuthors', back_populates='document')
+    arXiv_document_category = relationship('DocumentCategory', back_populates='document')
+    arXiv_jref_control = relationship('JrefControl', back_populates='document')
+    arXiv_metadata = relationship('Metadata', back_populates='document')
+    arXiv_mirror_list = relationship('MirrorList', back_populates='document')
+    arXiv_show_email_requests = relationship('ShowEmailRequests', back_populates='document')
+    arXiv_submission_control = relationship('SubmissionControl', back_populates='document')
+    arXiv_submissions = relationship('Submissions', back_populates='document')
+    arXiv_top_papers = relationship('TopPapers', back_populates='document')
+    arXiv_versions = relationship('Versions', back_populates='document')
 
 
 t_arXiv_duplicates = Table(
@@ -965,7 +963,7 @@ t_arXiv_duplicates = Table(
 )
 
 
-class ArXivModeratorApiKey(Base):
+class ModeratorApiKey(Base):
     __tablename__ = 'arXiv_moderator_api_key'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='arXiv_moderator_api_key_ibfk_1'),
@@ -981,7 +979,7 @@ class ArXivModeratorApiKey(Base):
     user = relationship('TapirUsers', back_populates='arXiv_moderator_api_key')
 
 
-class ArXivOrcidIds(Base):
+class OrcidIds(TapirUsers):
     __tablename__ = 'arXiv_orcid_ids'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='arXiv_orcid_ids_ibfk_1'),
@@ -993,10 +991,8 @@ class ArXivOrcidIds(Base):
     authenticated = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
     updated = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
-    user = relationship('TapirUsers', back_populates='arXiv_orcid_ids')
 
-
-class ArXivQueueView(Base):
+class QueueView(TapirUsers):
     __tablename__ = 'arXiv_queue_view'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], ondelete='CASCADE', name='arXiv_queue_view_ibfk_1'),
@@ -1007,10 +1003,8 @@ class ArXivQueueView(Base):
     last_view = Column(DateTime)
     second_last_view = Column(DateTime)
 
-    user = relationship('TapirUsers', back_populates='arXiv_queue_view')
 
-
-class ArXivSuspiciousNames(Base):
+class SuspiciousNames(TapirUsers):
     __tablename__ = 'arXiv_suspicious_names'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_606'),
@@ -1019,10 +1013,8 @@ class ArXivSuspiciousNames(Base):
     user_id = Column(INTEGER, primary_key=True, server_default=text("'0'"))
     full_name = Column(String(255), nullable=False, server_default=text("''"))
 
-    user = relationship('TapirUsers', back_populates='arXiv_suspicious_names')
 
-
-class ArXivSwordLicenses(Base):
+class SwordLicenses(TapirUsers):
     __tablename__ = 'arXiv_sword_licenses'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='user_id_fk'),
@@ -1031,8 +1023,6 @@ class ArXivSwordLicenses(Base):
     user_id = Column(INTEGER, primary_key=True)
     updated = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     license = Column(String(127))
-
-    user = relationship('TapirUsers', back_populates='arXiv_sword_licenses')
 
 
 class TapirAddress(Base):
@@ -1061,7 +1051,7 @@ class TapirAddress(Base):
     user = relationship('TapirUsers', back_populates='tapir_address')
 
 
-class TapirDemographics(Base):
+class TapirDemographics(TapirUsers):
     __tablename__ = 'tapir_demographics'
     __table_args__ = (
         ForeignKeyConstraint(['country'], ['tapir_countries.digraph'], name='0_518'),
@@ -1081,7 +1071,6 @@ class TapirDemographics(Base):
     birthday = Column(Date)
 
     tapir_countries = relationship('TapirCountries', back_populates='tapir_demographics')
-    user = relationship('TapirUsers', back_populates='tapir_demographics')
 
 
 class TapirEmailChangeTokens(Base):
@@ -1233,10 +1222,9 @@ class TapirSessions(Base):
     tapir_admin_audit = relationship('TapirAdminAudit', back_populates='session')
     tapir_permanent_tokens = relationship('TapirPermanentTokens', back_populates='session')
     tapir_recovery_tokens_used = relationship('TapirRecoveryTokensUsed', back_populates='session')
-    tapir_sessions_audit = relationship('TapirSessionsAudit', uselist=False, back_populates='session')
 
 
-class TapirUsersHot(Base):
+class TapirUsersHot(TapirUsers):
     __tablename__ = 'tapir_users_hot'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_514'),
@@ -1250,10 +1238,8 @@ class TapirUsersHot(Base):
     second_last_login = Column(INTEGER, nullable=False, server_default=text("'0'"))
     number_sessions = Column(Integer, nullable=False, server_default=text("'0'"))
 
-    user = relationship('TapirUsers', back_populates='tapir_users_hot')
 
-
-class TapirUsersPassword(Base):
+class TapirUsersPassword(TapirUsers):
     __tablename__ = 'tapir_users_password'
     __table_args__ = (
         ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_512'),
@@ -1263,10 +1249,8 @@ class TapirUsersPassword(Base):
     password_storage = Column(INTEGER, nullable=False, server_default=text("'0'"))
     password_enc = Column(String(50), nullable=False, server_default=text("''"))
 
-    user = relationship('TapirUsers', back_populates='tapir_users_password')
 
-
-class ArXivAdminMetadata(Base):
+class AdminMetadata(Base):
     __tablename__ = 'arXiv_admin_metadata'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], ondelete='CASCADE', name='meta_doc_fk'),
@@ -1301,7 +1285,7 @@ class ArXivAdminMetadata(Base):
     modtime = Column(Integer)
     is_current = Column(TINYINT(1), server_default=text("'0'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_admin_metadata')
+    document = relationship('Documents', back_populates='arXiv_admin_metadata')
 
 
 t_arXiv_bogus_subject_class = Table(
@@ -1313,7 +1297,7 @@ t_arXiv_bogus_subject_class = Table(
 )
 
 
-class ArXivCrossControl(Base):
+class CrossControl(Base):
     __tablename__ = 'arXiv_cross_control'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='arXiv_cross_control_ibfk_2'),
@@ -1339,12 +1323,12 @@ class ArXivCrossControl(Base):
     publish_date = Column(INTEGER, nullable=False, server_default=text("'0'"))
     flag_must_notify = Column(Enum('0', '1'), server_default=text("'1'"))
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_cross_control')
-    document = relationship('ArXivDocuments', back_populates='arXiv_cross_control')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_cross_control')
+    document = relationship('Documents', back_populates='arXiv_cross_control')
     user = relationship('TapirUsers', back_populates='arXiv_cross_control')
 
 
-class ArXivDblp(Base):
+class Dblp(Documents):
     __tablename__ = 'arXiv_dblp'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_DBLP_cdfk1'),
@@ -1353,10 +1337,8 @@ class ArXivDblp(Base):
     document_id = Column(MEDIUMINT, primary_key=True, server_default=text("'0'"))
     url = Column(String(80))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_dblp')
 
-
-class ArXivDblpDocumentAuthors(Base):
+class DblpDocumentAuthors(Base):
     __tablename__ = 'arXiv_dblp_document_authors'
     __table_args__ = (
         ForeignKeyConstraint(['author_id'], ['arXiv_dblp_authors.author_id'], name='arXiv_DBLP_ibfk2'),
@@ -1369,11 +1351,11 @@ class ArXivDblpDocumentAuthors(Base):
     author_id = Column(MEDIUMINT, primary_key=True, nullable=False, server_default=text("'0'"))
     position = Column(TINYINT, nullable=False, server_default=text("'0'"))
 
-    author = relationship('ArXivDblpAuthors', back_populates='arXiv_dblp_document_authors')
-    document = relationship('ArXivDocuments', back_populates='arXiv_dblp_document_authors')
+    author = relationship('DblpAuthors', back_populates='arXiv_dblp_document_authors')
+    document = relationship('Documents', back_populates='arXiv_dblp_document_authors')
 
 
-class ArXivDemographics(Base):
+class Demographics(TapirUsers):
     __tablename__ = 'arXiv_demographics'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_588'),
@@ -1421,11 +1403,10 @@ class ArXivDemographics(Base):
     subject_class = Column(String(16))
     flag_group_physics = Column(INTEGER)
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_demographics')
-    user = relationship('TapirUsers', back_populates='arXiv_demographics')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_demographics')
 
 
-class ArXivDocumentCategory(Base):
+class DocumentCategory(Base):
     __tablename__ = 'arXiv_document_category'
     __table_args__ = (
         ForeignKeyConstraint(['category'], ['arXiv_category_def.category'], name='doc_cat_cat'),
@@ -1438,11 +1419,11 @@ class ArXivDocumentCategory(Base):
     category = Column(String(32), primary_key=True, nullable=False)
     is_primary = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
-    arXiv_category_def = relationship('ArXivCategoryDef', back_populates='arXiv_document_category')
-    document = relationship('ArXivDocuments', back_populates='arXiv_document_category')
+    arXiv_category_def = relationship('CategoryDef', back_populates='arXiv_document_category')
+    document = relationship('Documents', back_populates='arXiv_document_category')
 
 
-class ArXivEndorsementRequests(Base):
+class EndorsementRequests(Base):
     __tablename__ = 'arXiv_endorsement_requests'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_723'),
@@ -1462,11 +1443,10 @@ class ArXivEndorsementRequests(Base):
     issued_when = Column(INTEGER, nullable=False, server_default=text("'0'"))
     point_value = Column(INTEGER, nullable=False, server_default=text("'0'"))
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_endorsement_requests')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_endorsement_requests')
     endorsee = relationship('TapirUsers', back_populates='arXiv_endorsement_requests')
-    arXiv_endorsement_requests_audit = relationship('ArXivEndorsementRequestsAudit', uselist=False, back_populates='request')
-    arXiv_endorsements = relationship('ArXivEndorsements', back_populates='request')
-    arXiv_ownership_requests = relationship('ArXivOwnershipRequests', back_populates='endorsement_request')
+    arXiv_endorsements = relationship('Endorsements', back_populates='request')
+    arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='endorsement_request')
 
 
 t_arXiv_in_category = Table(
@@ -1483,7 +1463,7 @@ t_arXiv_in_category = Table(
 )
 
 
-class ArXivJrefControl(Base):
+class JrefControl(Base):
     __tablename__ = 'arXiv_jref_control'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_jref_control_ibfk_1'),
@@ -1505,11 +1485,11 @@ class ArXivJrefControl(Base):
     publish_date = Column(INTEGER, nullable=False, server_default=text("'0'"))
     flag_must_notify = Column(Enum('0', '1'), server_default=text("'1'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_jref_control')
+    document = relationship('Documents', back_populates='arXiv_jref_control')
     user = relationship('TapirUsers', back_populates='arXiv_jref_control')
 
 
-class ArXivMetadata(Base):
+class Metadata(Base):
     __tablename__ = 'arXiv_metadata'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], ondelete='CASCADE', onupdate='CASCADE', name='arXiv_metadata_fk_document_id'),
@@ -1549,13 +1529,13 @@ class ArXivMetadata(Base):
     modtime = Column(Integer)
     is_current = Column(TINYINT(1), server_default=text("'1'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_metadata')
-    arXiv_licenses = relationship('ArXivLicenses', back_populates='arXiv_metadata')
+    document = relationship('Documents', back_populates='arXiv_metadata')
+    arXiv_licenses = relationship('Licenses', back_populates='arXiv_metadata')
     submitter = relationship('TapirUsers', back_populates='arXiv_metadata')
-    arXiv_datacite_dois = relationship('ArXivDataciteDois', back_populates='metadata_')
+    arXiv_datacite_dois = relationship('DataciteDois', back_populates='metadata_')
 
 
-class ArXivMirrorList(Base):
+class MirrorList(Base):
     __tablename__ = 'arXiv_mirror_list'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_mirror_list_fk_document_id'),
@@ -1571,7 +1551,7 @@ class ArXivMirrorList(Base):
     created = Column(DateTime)
     updated = Column(DateTime)
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_mirror_list')
+    document = relationship('Documents', back_populates='arXiv_mirror_list')
 
 
 t_arXiv_moderators = Table(
@@ -1616,7 +1596,7 @@ t_arXiv_paper_owners = Table(
 )
 
 
-class ArXivPaperPw(Base):
+class PaperPw(Documents):
     __tablename__ = 'arXiv_paper_pw'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_585'),
@@ -1626,10 +1606,8 @@ class ArXivPaperPw(Base):
     password_storage = Column(INTEGER)
     password_enc = Column(String(50))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_paper_pw')
 
-
-class ArXivQuestionableCategories(Base):
+class QuestionableCategories(Categories):
     __tablename__ = 'arXiv_questionable_categories'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_756'),
@@ -1638,10 +1616,8 @@ class ArXivQuestionableCategories(Base):
     archive = Column(String(16), primary_key=True, nullable=False, server_default=text("''"))
     subject_class = Column(String(16), primary_key=True, nullable=False, server_default=text("''"))
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_questionable_categories')
 
-
-class ArXivShowEmailRequests(Base):
+class ShowEmailRequests(Base):
     __tablename__ = 'arXiv_show_email_requests'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_show_email_requests_ibfk_1'),
@@ -1662,11 +1638,11 @@ class ArXivShowEmailRequests(Base):
     tracking_cookie = Column(String(255), nullable=False, server_default=text("''"))
     request_id = Column(INTEGER, primary_key=True)
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_show_email_requests')
+    document = relationship('Documents', back_populates='arXiv_show_email_requests')
     user = relationship('TapirUsers', back_populates='arXiv_show_email_requests')
 
 
-class ArXivSubmissionControl(Base):
+class SubmissionControl(Base):
     __tablename__ = 'arXiv_submission_control'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_submission_control_ibfk_1'),
@@ -1690,11 +1666,11 @@ class ArXivSubmissionControl(Base):
     publish_date = Column(INTEGER, nullable=False, server_default=text("'0'"))
     flag_must_notify = Column(Enum('0', '1'), server_default=text("'1'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_submission_control')
+    document = relationship('Documents', back_populates='arXiv_submission_control')
     user = relationship('TapirUsers', back_populates='arXiv_submission_control')
 
 
-class ArXivSubmissions(Base):
+class Submissions(Base):
     __tablename__ = 'arXiv_submissions'
     __table_args__ = (
         ForeignKeyConstraint(['agreement_id'], ['arXiv_submission_agreements.agreement_id'], name='agreement_fk'),
@@ -1764,25 +1740,22 @@ class ArXivSubmissions(Base):
     auto_hold = Column(TINYINT(1), server_default=text("'0'"))
     agreement_id = Column(SMALLINT)
 
-    agreement = relationship('ArXivSubmissionAgreements', back_populates='arXiv_submissions')
-    document = relationship('ArXivDocuments', back_populates='arXiv_submissions')
-    arXiv_licenses = relationship('ArXivLicenses', back_populates='arXiv_submissions')
+    agreement = relationship('SubmissionAgreements', back_populates='arXiv_submissions')
+    document = relationship('Documents', back_populates='arXiv_submissions')
+    arXiv_licenses = relationship('Licenses', back_populates='arXiv_submissions')
     submitter = relationship('TapirUsers', back_populates='arXiv_submissions')
-    sword = relationship('ArXivTracking', back_populates='arXiv_submissions')
-    arXiv_pilot_datasets = relationship('ArXivPilotDatasets', uselist=False, back_populates='submission')
-    arXiv_pilot_files = relationship('ArXivPilotFiles', back_populates='submission')
-    arXiv_submission_abs_classifier_data = relationship('ArXivSubmissionAbsClassifierData', uselist=False, back_populates='submission')
-    arXiv_submission_category = relationship('ArXivSubmissionCategory', back_populates='submission')
-    arXiv_submission_category_proposal = relationship('ArXivSubmissionCategoryProposal', back_populates='submission')
-    arXiv_submission_classifier_data = relationship('ArXivSubmissionClassifierData', uselist=False, back_populates='submission')
-    arXiv_submission_flag = relationship('ArXivSubmissionFlag', back_populates='submission')
-    arXiv_submission_hold_reason = relationship('ArXivSubmissionHoldReason', back_populates='submission')
-    arXiv_submission_near_duplicates = relationship('ArXivSubmissionNearDuplicates', back_populates='submission')
-    arXiv_submission_qa_reports = relationship('ArXivSubmissionQaReports', back_populates='submission')
-    arXiv_submission_view_flag = relationship('ArXivSubmissionViewFlag', back_populates='submission')
+    sword = relationship('Tracking', back_populates='arXiv_submissions')
+    arXiv_pilot_files = relationship('PilotFiles', back_populates='submission')
+    arXiv_submission_category = relationship('SubmissionCategory', back_populates='submission')
+    arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', back_populates='submission')
+    arXiv_submission_flag = relationship('SubmissionFlag', back_populates='submission')
+    arXiv_submission_hold_reason = relationship('SubmissionHoldReason', back_populates='submission')
+    arXiv_submission_near_duplicates = relationship('SubmissionNearDuplicates', back_populates='submission')
+    arXiv_submission_qa_reports = relationship('SubmissionQaReports', back_populates='submission')
+    arXiv_submission_view_flag = relationship('SubmissionViewFlag', back_populates='submission')
 
 
-class ArXivTopPapers(Base):
+class TopPapers(Base):
     __tablename__ = 'arXiv_top_papers'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_top_papers_ibfk_1'),
@@ -1795,10 +1768,10 @@ class ArXivTopPapers(Base):
     document_id = Column(MEDIUMINT, nullable=False, server_default=text("'0'"))
     viewers = Column(MEDIUMINT, nullable=False, server_default=text("'0'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_top_papers')
+    document = relationship('Documents', back_populates='arXiv_top_papers')
 
 
-class ArXivVersions(Base):
+class Versions(Base):
     __tablename__ = 'arXiv_versions'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_versions_ibfk_1'),
@@ -1814,8 +1787,7 @@ class ArXivVersions(Base):
     publish_date = Column(INTEGER, nullable=False, server_default=text("'0'"))
     flag_current = Column(MEDIUMINT, nullable=False, server_default=text("'0'"))
 
-    document = relationship('ArXivDocuments', back_populates='arXiv_versions')
-    arXiv_versions_checksum = relationship('ArXivVersionsChecksum', uselist=False, back_populates='arXiv_versions')
+    document = relationship('Documents', back_populates='arXiv_versions')
 
 
 class TapirAdminAudit(Base):
@@ -1974,7 +1946,7 @@ class TapirRecoveryTokensUsed(Base):
     user = relationship('TapirUsers', back_populates='tapir_recovery_tokens_used')
 
 
-class TapirSessionsAudit(Base):
+class TapirSessionsAudit(TapirSessions):
     __tablename__ = 'tapir_sessions_audit'
     __table_args__ = (
         ForeignKeyConstraint(['session_id'], ['tapir_sessions.session_id'], name='0_527'),
@@ -1987,10 +1959,8 @@ class TapirSessionsAudit(Base):
     remote_host = Column(String(255), nullable=False, server_default=text("''"))
     tracking_cookie = Column(String(255), nullable=False, server_default=text("''"))
 
-    session = relationship('TapirSessions', back_populates='tapir_sessions_audit')
 
-
-class ArXivDataciteDois(Base):
+class DataciteDois(Base):
     __tablename__ = 'arXiv_datacite_dois'
     __table_args__ = (
         ForeignKeyConstraint(['metadata_id'], ['arXiv_metadata.metadata_id'], name='arXiv_datacite_dois_ibfk_1'),
@@ -2005,10 +1975,10 @@ class ArXivDataciteDois(Base):
     created = Column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     updated = Column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
-    metadata_ = relationship('ArXivMetadata', back_populates='arXiv_datacite_dois')
+    metadata_ = relationship('Metadata', back_populates='arXiv_datacite_dois')
 
 
-class ArXivEndorsementRequestsAudit(Base):
+class EndorsementRequestsAudit(EndorsementRequests):
     __tablename__ = 'arXiv_endorsement_requests_audit'
     __table_args__ = (
         ForeignKeyConstraint(['request_id'], ['arXiv_endorsement_requests.request_id'], name='0_725'),
@@ -2020,10 +1990,8 @@ class ArXivEndorsementRequestsAudit(Base):
     remote_host = Column(String(255))
     tracking_cookie = Column(String(255))
 
-    request = relationship('ArXivEndorsementRequests', back_populates='arXiv_endorsement_requests_audit')
 
-
-class ArXivEndorsements(Base):
+class Endorsements(Base):
     __tablename__ = 'arXiv_endorsements'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_729'),
@@ -2048,14 +2016,13 @@ class ArXivEndorsements(Base):
     type = Column(Enum('user', 'admin', 'auto'))
     request_id = Column(INTEGER)
 
-    arXiv_categories = relationship('ArXivCategories', back_populates='arXiv_endorsements')
+    arXiv_categories = relationship('Categories', back_populates='arXiv_endorsements')
     endorsee = relationship('TapirUsers', foreign_keys=[endorsee_id], back_populates='arXiv_endorsements')
     endorser = relationship('TapirUsers', foreign_keys=[endorser_id], back_populates='arXiv_endorsements_')
-    request = relationship('ArXivEndorsementRequests', back_populates='arXiv_endorsements')
-    arXiv_endorsements_audit = relationship('ArXivEndorsementsAudit', uselist=False, back_populates='endorsement')
+    request = relationship('EndorsementRequests', back_populates='arXiv_endorsements')
 
 
-class ArXivOwnershipRequests(Base):
+class OwnershipRequests(Base):
     __tablename__ = 'arXiv_ownership_requests'
     __table_args__ = (
         ForeignKeyConstraint(['endorsement_request_id'], ['arXiv_endorsement_requests.request_id'], name='0_735'),
@@ -2069,12 +2036,11 @@ class ArXivOwnershipRequests(Base):
     workflow_status = Column(Enum('pending', 'accepted', 'rejected'), nullable=False, server_default=text("'pending'"))
     endorsement_request_id = Column(INTEGER)
 
-    endorsement_request = relationship('ArXivEndorsementRequests', back_populates='arXiv_ownership_requests')
+    endorsement_request = relationship('EndorsementRequests', back_populates='arXiv_ownership_requests')
     user = relationship('TapirUsers', back_populates='arXiv_ownership_requests')
-    arXiv_ownership_requests_audit = relationship('ArXivOwnershipRequestsAudit', uselist=False, back_populates='request')
 
 
-class ArXivPilotDatasets(Base):
+class PilotDatasets(Submissions):
     __tablename__ = 'arXiv_pilot_datasets'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], name='arXiv_pilot_datasets_cdfk3'),
@@ -2088,10 +2054,8 @@ class ArXivPilotDatasets(Base):
     manifestation = Column(String(256))
     published = Column(TINYINT(1), server_default=text("'0'"))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_pilot_datasets')
 
-
-class ArXivPilotFiles(Base):
+class PilotFiles(Base):
     __tablename__ = 'arXiv_pilot_files'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], name='arXiv_pilot_files_cdfk3'),
@@ -2105,10 +2069,10 @@ class ArXivPilotFiles(Base):
     description = Column(String(80))
     byRef = Column(TINYINT(1), server_default=text("'1'"))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_pilot_files')
+    submission = relationship('Submissions', back_populates='arXiv_pilot_files')
 
 
-class ArXivSubmissionAbsClassifierData(Base):
+class SubmissionAbsClassifierData(Submissions):
     __tablename__ = 'arXiv_submission_abs_classifier_data'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_abs_classifier_data_ibfk_1'),
@@ -2127,10 +2091,8 @@ class ArXivSubmissionAbsClassifierData(Base):
     classifier_service_version = Column(Text)
     classifier_model_version = Column(Text)
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_abs_classifier_data')
 
-
-class ArXivSubmissionCategory(Base):
+class SubmissionCategory(Base):
     __tablename__ = 'arXiv_submission_category'
     __table_args__ = (
         ForeignKeyConstraint(['category'], ['arXiv_category_def.category'], name='arXiv_submission_category_fk_category'),
@@ -2146,11 +2108,11 @@ class ArXivSubmissionCategory(Base):
     is_primary = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
     is_published = Column(TINYINT(1), server_default=text("'0'"))
 
-    arXiv_category_def = relationship('ArXivCategoryDef', back_populates='arXiv_submission_category')
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_category')
+    arXiv_category_def = relationship('CategoryDef', back_populates='arXiv_submission_category')
+    submission = relationship('Submissions', back_populates='arXiv_submission_category')
 
 
-class ArXivSubmissionCategoryProposal(Base):
+class SubmissionCategoryProposal(Base):
     __tablename__ = 'arXiv_submission_category_proposal'
     __table_args__ = (
         ForeignKeyConstraint(['category'], ['arXiv_category_def.category'], name='arXiv_submission_category_proposal_fk_category'),
@@ -2177,14 +2139,14 @@ class ArXivSubmissionCategoryProposal(Base):
     proposal_comment_id = Column(Integer)
     response_comment_id = Column(Integer)
 
-    arXiv_category_def = relationship('ArXivCategoryDef', back_populates='arXiv_submission_category_proposal')
-    proposal_comment = relationship('ArXivAdminLog', foreign_keys=[proposal_comment_id], back_populates='arXiv_submission_category_proposal')
-    response_comment = relationship('ArXivAdminLog', foreign_keys=[response_comment_id], back_populates='arXiv_submission_category_proposal_')
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_category_proposal')
+    arXiv_category_def = relationship('CategoryDef', back_populates='arXiv_submission_category_proposal')
+    proposal_comment = relationship('AdminLog', foreign_keys=[proposal_comment_id], back_populates='arXiv_submission_category_proposal')
+    response_comment = relationship('AdminLog', foreign_keys=[response_comment_id], back_populates='arXiv_submission_category_proposal_')
+    submission = relationship('Submissions', back_populates='arXiv_submission_category_proposal')
     user = relationship('TapirUsers', back_populates='arXiv_submission_category_proposal')
 
 
-class ArXivSubmissionClassifierData(Base):
+class SubmissionClassifierData(Submissions):
     __tablename__ = 'arXiv_submission_classifier_data'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_classifier_data_ibfk_1'),
@@ -2197,10 +2159,8 @@ class ArXivSubmissionClassifierData(Base):
     message = Column(Text)
     is_oversize = Column(TINYINT(1), server_default=text("'0'"))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_classifier_data')
 
-
-class ArXivSubmissionFlag(Base):
+class SubmissionFlag(Base):
     __tablename__ = 'arXiv_submission_flag'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_flag_ibfk_2'),
@@ -2215,11 +2175,11 @@ class ArXivSubmissionFlag(Base):
     flag = Column(TINYINT, nullable=False, server_default=text("'0'"))
     updated = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_flag')
+    submission = relationship('Submissions', back_populates='arXiv_submission_flag')
     user = relationship('TapirUsers', back_populates='arXiv_submission_flag')
 
 
-class ArXivSubmissionHoldReason(Base):
+class SubmissionHoldReason(Base):
     __tablename__ = 'arXiv_submission_hold_reason'
     __table_args__ = (
         ForeignKeyConstraint(['comment_id'], ['arXiv_admin_log.id'], name='arXiv_submission_hold_reason_ibfk_3'),
@@ -2237,12 +2197,12 @@ class ArXivSubmissionHoldReason(Base):
     type = Column(String(30))
     comment_id = Column(Integer)
 
-    comment = relationship('ArXivAdminLog', back_populates='arXiv_submission_hold_reason')
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_hold_reason')
+    comment = relationship('AdminLog', back_populates='arXiv_submission_hold_reason')
+    submission = relationship('Submissions', back_populates='arXiv_submission_hold_reason')
     user = relationship('TapirUsers', back_populates='arXiv_submission_hold_reason')
 
 
-class ArXivSubmissionNearDuplicates(Base):
+class SubmissionNearDuplicates(Base):
     __tablename__ = 'arXiv_submission_near_duplicates'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_near_duplicates_ibfk_1'),
@@ -2254,10 +2214,10 @@ class ArXivSubmissionNearDuplicates(Base):
     similarity = Column(DECIMAL(2, 1), nullable=False)
     last_update = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_near_duplicates')
+    submission = relationship('Submissions', back_populates='arXiv_submission_near_duplicates')
 
 
-class ArXivSubmissionQaReports(Base):
+class SubmissionQaReports(Base):
     __tablename__ = 'arXiv_submission_qa_reports'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], name='arXiv_submission_qa_reports_ibfk_1'),
@@ -2273,10 +2233,10 @@ class ArXivSubmissionQaReports(Base):
     created = Column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     report_uri = Column(String(256))
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_qa_reports')
+    submission = relationship('Submissions', back_populates='arXiv_submission_qa_reports')
 
 
-class ArXivSubmissionViewFlag(Base):
+class SubmissionViewFlag(Base):
     __tablename__ = 'arXiv_submission_view_flag'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_view_flag_ibfk_1'),
@@ -2289,11 +2249,11 @@ class ArXivSubmissionViewFlag(Base):
     flag = Column(TINYINT(1), server_default=text("'0'"))
     updated = Column(DateTime)
 
-    submission = relationship('ArXivSubmissions', back_populates='arXiv_submission_view_flag')
+    submission = relationship('Submissions', back_populates='arXiv_submission_view_flag')
     user = relationship('TapirUsers', back_populates='arXiv_submission_view_flag')
 
 
-class ArXivVersionsChecksum(Base):
+class VersionsChecksum(Versions):
     __tablename__ = 'arXiv_versions_checksum'
     __table_args__ = (
         ForeignKeyConstraint(['document_id', 'version'], ['arXiv_versions.document_id', 'arXiv_versions.version'], name='arXiv_versions_checksum_ibfk_1'),
@@ -2312,10 +2272,8 @@ class ArXivVersionsChecksum(Base):
     abs_md5sum = Column(BINARY(16))
     src_md5sum = Column(BINARY(16))
 
-    arXiv_versions = relationship('ArXivVersions', back_populates='arXiv_versions_checksum')
 
-
-class ArXivEndorsementsAudit(Base):
+class EndorsementsAudit(Endorsements):
     __tablename__ = 'arXiv_endorsements_audit'
     __table_args__ = (
         ForeignKeyConstraint(['endorsement_id'], ['arXiv_endorsements.endorsement_id'], name='0_732'),
@@ -2330,10 +2288,8 @@ class ArXivEndorsementsAudit(Base):
     flag_seen_paper = Column(INTEGER, nullable=False, server_default=text("'0'"))
     comment = Column(Text)
 
-    endorsement = relationship('ArXivEndorsements', back_populates='arXiv_endorsements_audit')
 
-
-class ArXivOwnershipRequestsAudit(Base):
+class OwnershipRequestsAudit(OwnershipRequests):
     __tablename__ = 'arXiv_ownership_requests_audit'
     __table_args__ = (
         ForeignKeyConstraint(['request_id'], ['arXiv_ownership_requests.request_id'], name='0_737'),
@@ -2345,5 +2301,3 @@ class ArXivOwnershipRequestsAudit(Base):
     remote_host = Column(String(255), nullable=False, server_default=text("''"))
     tracking_cookie = Column(String(255), nullable=False, server_default=text("''"))
     date = Column(INTEGER, nullable=False, server_default=text("'0'"))
-
-    request = relationship('ArXivOwnershipRequests', back_populates='arXiv_ownership_requests_audit')
