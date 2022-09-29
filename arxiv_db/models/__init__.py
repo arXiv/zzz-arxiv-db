@@ -1,3 +1,21 @@
+"""arXiv database SQLAlchemy models.
+
+## Process to create:
+This was generated with sqlacodegen on 2022-09-29 with the declarative
+generator against a copy of the production database.
+
+Some of the tables are represented with sqlalchemy tables since the
+lack primary keys.
+
+The class names were changed to remove the 'ArXiv' prefix.
+
+Moved tables to associative_tables.py
+
+Split out classes to individual files.
+
+Added some needed imports.
+"""
+
 import importlib
 import sys
 

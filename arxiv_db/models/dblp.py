@@ -2,15 +2,20 @@ from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, F
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
+
 from .. import Base
 
 metadata = Base.metadata
 
-"""
-get name to reg n
-get class
-make file, paste name from n
-paste header from i
-paset body from kill
-back to file
-"""
+# arXiv_dblp
+
+from .documents import Documents
+
+class Dblp(Documents):
+    __tablename__ = 'arXiv_dblp'
+    __table_args__ = (
+        ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='arXiv_DBLP_cdfk1'),
+    )
+
+    document_id = Column(MEDIUMINT, primary_key=True, server_default=text("'0'"))
+    url = Column(String(80))

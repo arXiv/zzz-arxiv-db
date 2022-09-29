@@ -6,11 +6,12 @@ from .. import Base
 
 metadata = Base.metadata
 
-"""
-get name to reg n
-get class
-make file, paste name from n
-paste header from i
-paset body from kill
-back to file
-"""
+# arXiv_aws_config
+
+
+class AwsConfig(Base):
+    __tablename__ = 'arXiv_aws_config'
+
+    domain = Column(String(75), primary_key=True, nullable=False)
+    keyname = Column(String(60), primary_key=True, nullable=False)
+    value = Column(String(150))
