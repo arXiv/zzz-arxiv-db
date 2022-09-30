@@ -18,14 +18,9 @@ Here is an example of using SQLAlchemy ORM:
 
     from sqlalchemy import create_engine, select
     from sqlalchemy.orm import Session
-
-    from arxiv_db.models import add_all_models_to_sqlalchemy
-    add_all_models_to_sqlalchemy()
-
     from arxiv_db.models.tapir_users import TapirUsers
 
     engine = create_engine("mysql+pymysql://bdc34:onion@localhost/arXiv")
-
     with Session(engine) as session:
         statement = select(TapirUsers).limit(10)
         result = session.execute(statement).scalars().all()
@@ -34,27 +29,20 @@ Here is an example of using SQLAlchemy ORM:
 
 # How to use with Flask?
 
-There are two main things that are needed to use this with Flask.
-1. All the models need to be imported and registered with the
-   `arxiv_db.Base`
-2. The metadata from `arxiv_db.Base` needs to be passed during the
-   creation of the `SQLAlchemy` object.
+The main thing that is needed to use this with Flask is the metadata
+from `arxiv_db.Base` needs to be passed during the creation of the
+`SQLAlchemy` object.
 
     from flask import Flask, render_template
     from flask_sqlalchemy import SQLAlchemy
     import arxiv_db
-    from arxiv_db.models import add_all_models_to_sqlalchemy
-
-    # import all the model packages
-    add_all_models_to_sqlalchemy()
 
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://bob:passwd@localhost/arXiv"
-
     SQLAlchemy(app, metadata=arxiv_db.Base.metadata).init_app(app)
 
-    from arxiv_db.models.tapir_users import TapirUsers
-
+    # could be in some other file
+    from arxiv_db.models import TapirUsers
     @app.route("/users")
     def user_list():
         users = db.session.execute(db.select(TapirUsers).limit(10)).scalars()
