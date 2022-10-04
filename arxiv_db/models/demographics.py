@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
@@ -10,7 +12,7 @@ metadata = Base.metadata
 
 from .tapir_users import TapirUsers
 
-class Demographics(TapirUsers):
+class Demographics(Base):
     __tablename__ = 'arXiv_demographics'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_588'),
@@ -59,3 +61,30 @@ class Demographics(TapirUsers):
     flag_group_physics = Column(INTEGER)
 
     arXiv_categories = relationship('Categories', back_populates='arXiv_demographics')
+
+    TYPE_CHOICES = [
+        (1, 'Staff'),
+        (2, "Professor"),
+        (3, "Post Doc"),
+        (4, "Grad Student"),
+        (5, "Other")
+    ]
+    """Legacy ranks in arXiv user profiles."""
+
+
+    GROUP_FLAGS = [
+        ('grp_physics', 'flag_group_physics'),
+        ('grp_math', 'flag_group_math'),
+        ('grp_cs', 'flag_group_cs'),
+        ('grp_q-bio', 'flag_group_q_bio'),
+        ('grp_q-fin', 'flag_group_q_fin'),
+        ('grp_q-stat', 'flag_group_stat'),
+        ('grp_q-econ', 'flag_group_econ'),
+        ('grp_eess', 'flag_group_eess'),
+    ]
+
+    @property
+    def groups(self) -> List[str]:
+        """Active groups for this user profile."""
+        return [group for group, column in self.GROUP_FLAGS
+                if getattr(self, column) == 1]
