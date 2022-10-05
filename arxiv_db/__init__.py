@@ -2,6 +2,7 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.orm import Session, registry
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql import text
 
 from zoneinfo import ZoneInfo
 
