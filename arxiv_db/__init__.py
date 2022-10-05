@@ -2,9 +2,12 @@ from sqlalchemy.engine.base import Engine
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.orm import Session, registry
 from sqlalchemy.orm.decl_api import DeclarativeMeta
-from sqlalchemy.sql import text
+
+from zoneinfo import ZoneInfo
 
 mapper_registry = registry()
+
+arxiv_business_tz = ZoneInfo('America/New_York')
 
 class Base(metaclass=DeclarativeMeta):
     """Non-dynamic base for better types.

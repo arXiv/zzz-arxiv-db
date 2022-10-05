@@ -7,10 +7,11 @@ from .. import Base
 metadata = Base.metadata
 
 # arXiv_ownership_requests_audit
+from .sqa_types import EpochIntArxivTz
 
 from .ownership_requests import OwnershipRequests
 
-class OwnershipRequestsAudit(OwnershipRequests):
+class OwnershipRequestsAudit(Base):
     __tablename__ = 'arXiv_ownership_requests_audit'
     __table_args__ = (
         ForeignKeyConstraint(['request_id'], ['arXiv_ownership_requests.request_id'], name='0_737'),
@@ -21,4 +22,4 @@ class OwnershipRequestsAudit(OwnershipRequests):
     remote_addr = Column(String(16), nullable=False, server_default=text("''"))
     remote_host = Column(String(255), nullable=False, server_default=text("''"))
     tracking_cookie = Column(String(255), nullable=False, server_default=text("''"))
-    date = Column(INTEGER, nullable=False, server_default=text("'0'"))
+    date = Column(EpochIntArxivTz, nullable=False, server_default=text("'0'"))

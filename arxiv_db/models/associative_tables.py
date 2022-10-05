@@ -1,5 +1,4 @@
-
-from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
+from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
@@ -31,8 +30,8 @@ t_arXiv_block_email = Table(
 
 t_arXiv_ownership_requests_papers = Table(
     'arXiv_ownership_requests_papers', metadata,
-    Column('request_id', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('document_id', INTEGER, nullable=False, server_default=text("'0'")),
+    Column('request_id', INTEGER, ForeignKey("arXiv_ownership_requests.request_id"), nullable=False, server_default=text("'0'"), ),
+    Column('document_id', INTEGER, ForeignKey("arXiv_documents.document_id"), nullable=False, server_default=text("'0'"), ),
     Index('document_id', 'document_id'),
     Index('request_id', 'request_id', 'document_id', unique=True)
 )

@@ -1,8 +1,8 @@
-
 from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, ForeignKeyConstraint, Index, Integer, JSON, SmallInteger, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
+from .associative_tables import t_arXiv_ownership_requests_papers
 from .. import Base
 
 metadata = Base.metadata
@@ -24,5 +24,7 @@ class OwnershipRequests(Base):
     workflow_status = Column(Enum('pending', 'accepted', 'rejected'), nullable=False, server_default=text("'pending'"))
     endorsement_request_id = Column(INTEGER)
 
+    request_audit = relationship('OwnershipRequestsAudit')
     endorsement_request = relationship('EndorsementRequests', back_populates='arXiv_ownership_requests')
     user = relationship('TapirUsers', back_populates='arXiv_ownership_requests')
+    documents = relationship("Documents", secondary=t_arXiv_ownership_requests_papers)

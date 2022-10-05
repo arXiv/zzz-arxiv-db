@@ -6,6 +6,8 @@ from .. import Base
 
 metadata = Base.metadata
 
+from .associative_tables import t_arXiv_paper_owners
+from .sqa_types import EpochIntArxivTz
 # tapir_users
 
 
@@ -36,7 +38,7 @@ class TapirUsers(Base):
     share_email = Column(INTEGER, nullable=False, server_default=text("'8'"))
     email_bouncing = Column(INTEGER, nullable=False, server_default=text("'0'"))
     policy_class = Column(SMALLINT, nullable=False, server_default=text("'0'"))
-    joined_date = Column(INTEGER, nullable=False, server_default=text("'0'"))
+    joined_date = Column(EpochIntArxivTz, nullable=False, server_default=text("'0'"))
     joined_remote_host = Column(String(255), nullable=False, server_default=text("''"))
     flag_internal = Column(INTEGER, nullable=False, server_default=text("'0'"))
     flag_edit_users = Column(INTEGER, nullable=False, server_default=text("'0'"))
@@ -89,3 +91,8 @@ class TapirUsers(Base):
     arXiv_submission_flag = relationship('SubmissionFlag', back_populates='user')
     arXiv_submission_hold_reason = relationship('SubmissionHoldReason', back_populates='user')
     arXiv_submission_view_flag = relationship('SubmissionViewFlag', back_populates='user')
+
+    owned_papers = relationship("Documents",
+                                secondary=t_arXiv_paper_owners,
+                                primaryjoin="TapirUsers.user_id == arXiv_paper_owners.c.user_id",
+                                secondaryjoin  ="arXiv_paper_owners.c.document_id == Documents.document_id")
