@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arxiv-db"
-version = "0.5.0"
+version = "0.6.0"
 description = "SQLAlchemy models for arXiv DB tables"
 authors = ["Brian D. Caruso <bdc34@cornell.edu>"]
 
