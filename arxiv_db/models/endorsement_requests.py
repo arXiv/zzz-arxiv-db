@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 
 from .. import Base
 
+from .sqa_types import EpochIntArxivTz
 metadata = Base.metadata
 
 # arXiv_endorsement_requests
@@ -26,10 +27,11 @@ class EndorsementRequests(Base):
     subject_class = Column(String(16), nullable=False, server_default=text("''"))
     secret = Column(String(16), nullable=False, server_default=text("''"))
     flag_valid = Column(INTEGER, nullable=False, server_default=text("'0'"))
-    issued_when = Column(INTEGER, nullable=False, server_default=text("'0'"))
+    issued_when = Column(EpochIntArxivTz, nullable=False, server_default=text("'0'"))
     point_value = Column(INTEGER, nullable=False, server_default=text("'0'"))
 
     arXiv_categories = relationship('Categories', back_populates='arXiv_endorsement_requests')
     endorsee = relationship('TapirUsers', back_populates='arXiv_endorsement_requests')
     arXiv_endorsements = relationship('Endorsements', back_populates='request')
     arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='endorsement_request')
+    audit = relationship('EndorsementRequestsAudit', uselist=False)
