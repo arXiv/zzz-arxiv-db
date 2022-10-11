@@ -35,6 +35,6 @@ class Endorsements(Base):
     request_id = Column(INTEGER)
 
     arXiv_categories = relationship('Categories', back_populates='arXiv_endorsements')
-    endorsee = relationship('TapirUsers', foreign_keys=[endorsee_id], back_populates='arXiv_endorsements')
-    endorser = relationship('TapirUsers', foreign_keys=[endorser_id], back_populates='arXiv_endorsements_')
-    request = relationship('EndorsementRequests', back_populates='arXiv_endorsements')
+    endorsee = relationship('TapirUsers', foreign_keys=[endorsee_id], back_populates='endorsee_of', uselist=False)
+    endorser = relationship('TapirUsers', foreign_keys=[endorser_id], back_populates='endorses', uselist=False)
+    request = relationship('EndorsementRequests', back_populates='endorsement', uselist=False)

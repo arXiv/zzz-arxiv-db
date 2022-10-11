@@ -31,7 +31,7 @@ class EndorsementRequests(Base):
     point_value = Column(INTEGER, nullable=False, server_default=text("'0'"))
 
     arXiv_categories = relationship('Categories', back_populates='arXiv_endorsement_requests')
-    endorsee = relationship('TapirUsers', back_populates='arXiv_endorsement_requests')
-    arXiv_endorsements = relationship('Endorsements', back_populates='request')
-    arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='endorsement_request')
+    endorsee = relationship('TapirUsers', back_populates='arXiv_endorsement_requests', uselist=False)
+    endorsement = relationship('Endorsements', back_populates='request', uselist=False)
+    ownership_requests = relationship('OwnershipRequests', back_populates='endorsement_request')
     audit = relationship('EndorsementRequestsAudit', uselist=False)

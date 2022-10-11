@@ -25,6 +25,6 @@ class OwnershipRequests(Base):
     endorsement_request_id = Column(INTEGER)
 
     request_audit = relationship('OwnershipRequestsAudit')
-    endorsement_request = relationship('EndorsementRequests', back_populates='arXiv_ownership_requests')
+    endorsement_request = relationship('EndorsementRequests', back_populates='ownership_requests')
     user = relationship('TapirUsers', back_populates='arXiv_ownership_requests')
     documents = relationship("Documents", secondary=t_arXiv_ownership_requests_papers)

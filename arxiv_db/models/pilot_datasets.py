@@ -8,9 +8,7 @@ metadata = Base.metadata
 
 # arXiv_pilot_datasets
 
-from .submissions import Submissions
-
-class PilotDatasets(Submissions):
+class PilotDatasets(Base):
     __tablename__ = 'arXiv_pilot_datasets'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], name='arXiv_pilot_datasets_cdfk3'),

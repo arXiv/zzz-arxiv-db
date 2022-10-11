@@ -84,8 +84,8 @@ class TapirUsers(Base):
     tapir_email_mailings_ = relationship('TapirEmailMailings', foreign_keys='[TapirEmailMailings.sent_by]', back_populates='tapir_users_')
     tapir_permanent_tokens = relationship('TapirPermanentTokens', back_populates='user')
     tapir_recovery_tokens_used = relationship('TapirRecoveryTokensUsed', back_populates='user')
-    arXiv_endorsements = relationship('Endorsements', foreign_keys='[Endorsements.endorsee_id]', back_populates='endorsee')
-    arXiv_endorsements_ = relationship('Endorsements', foreign_keys='[Endorsements.endorser_id]', back_populates='endorser')
+    endorsee_of = relationship('Endorsements', foreign_keys='[Endorsements.endorsee_id]', back_populates='endorsee')
+    endorses = relationship('Endorsements', foreign_keys='[Endorsements.endorser_id]', back_populates='endorser')
     arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='user')
     arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', back_populates='user')
     arXiv_submission_flag = relationship('SubmissionFlag', back_populates='user')
@@ -96,3 +96,5 @@ class TapirUsers(Base):
                                 secondary=t_arXiv_paper_owners,
                                 primaryjoin="TapirUsers.user_id == arXiv_paper_owners.c.user_id",
                                 secondaryjoin  ="arXiv_paper_owners.c.document_id == Documents.document_id")
+
+    demographics = relationship('Demographics', foreign_keys="[Demographics.user_id]", uselist=False)

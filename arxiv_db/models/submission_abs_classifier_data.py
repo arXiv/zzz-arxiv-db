@@ -10,7 +10,7 @@ metadata = Base.metadata
 
 from .submissions import Submissions
 
-class SubmissionAbsClassifierData(Submissions):
+class SubmissionAbsClassifierData(Base):
     __tablename__ = 'arXiv_submission_abs_classifier_data'
     __table_args__ = (
         ForeignKeyConstraint(['submission_id'], ['arXiv_submissions.submission_id'], ondelete='CASCADE', name='arXiv_submission_abs_classifier_data_ibfk_1'),
