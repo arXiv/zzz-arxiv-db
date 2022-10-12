@@ -10,6 +10,8 @@ metadata = Base.metadata
 
 
 class Endorsements(Base):
+    """Represents a user endorsing another user."""
+
     __tablename__ = 'arXiv_endorsements'
     __table_args__ = (
         ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_729'),
@@ -37,4 +39,9 @@ class Endorsements(Base):
     arXiv_categories = relationship('Categories', back_populates='arXiv_endorsements')
     endorsee = relationship('TapirUsers', foreign_keys=[endorsee_id], back_populates='endorsee_of', uselist=False)
     endorser = relationship('TapirUsers', foreign_keys=[endorser_id], back_populates='endorses', uselist=False)
+
     request = relationship('EndorsementRequests', back_populates='endorsement', uselist=False)
+    """Request for the endorsement by the endorsee."""
+
+    audit = relationship('EndorsementsAudit', uselist=False)
+    """Record of response the endorser."""
