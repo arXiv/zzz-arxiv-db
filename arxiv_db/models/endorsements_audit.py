@@ -10,7 +10,7 @@ metadata = Base.metadata
 
 from .endorsements import Endorsements
 
-class EndorsementsAudit(Endorsements):
+class EndorsementsAudit(Base):
     __tablename__ = 'arXiv_endorsements_audit'
     __table_args__ = (
         ForeignKeyConstraint(['endorsement_id'], ['arXiv_endorsements.endorsement_id'], name='0_732'),
