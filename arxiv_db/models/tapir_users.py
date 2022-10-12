@@ -67,7 +67,7 @@ class TapirUsers(Base):
     tapir_email_templates = relationship('TapirEmailTemplates', foreign_keys='[TapirEmailTemplates.created_by]', back_populates='tapir_users')
     tapir_email_templates_ = relationship('TapirEmailTemplates', foreign_keys='[TapirEmailTemplates.updated_by]', back_populates='tapir_users_')
     tapir_email_tokens = relationship('TapirEmailTokens', back_populates='user')
-    tapir_nicknames = relationship('TapirNicknames', back_populates='user')
+    tapir_nicknames = relationship('TapirNicknames', back_populates='user', uselist=False)
     tapir_phone = relationship('TapirPhone', back_populates='user')
     tapir_recovery_tokens = relationship('TapirRecoveryTokens', back_populates='user')
     tapir_sessions = relationship('TapirSessions', back_populates='user')
@@ -98,3 +98,14 @@ class TapirUsers(Base):
                                 secondaryjoin  ="arXiv_paper_owners.c.document_id == Documents.document_id")
 
     demographics = relationship('Demographics', foreign_keys="[Demographics.user_id]", uselist=False)
+
+    @property
+    def display_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def nickname(self):
+        try:
+            return self.tapir_nicknames.nickname
+        except ValueError:
+            return f"no-nick-{self.user_id}"
