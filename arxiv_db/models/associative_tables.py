@@ -2,6 +2,8 @@ from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, F
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
+from arxiv_db.models.sqa_types import EpochIntArxivTz
+
 from .. import Base
 
 metadata = Base.metadata
@@ -225,26 +227,6 @@ t_arXiv_moderators = Table(
     Index('arXiv_moderators_idx_no_web_email', 'no_web_email'),
     Index('user_id', 'archive', 'subject_class', 'user_id', unique=True),
     Index('user_id_2', 'user_id')
-)
-
-t_arXiv_paper_owners = Table(
-    'arXiv_paper_owners', metadata,
-    Column('document_id', MEDIUMINT, nullable=False, server_default=text("'0'")),
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('date', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('added_by', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('remote_addr', String(16), nullable=False, server_default=text("''")),
-    Column('remote_host', String(255), nullable=False, server_default=text("''")),
-    Column('tracking_cookie', String(32), nullable=False, server_default=text("''")),
-    Column('valid', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_author', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('flag_auto', INTEGER, nullable=False, server_default=text("'1'")),
-    ForeignKeyConstraint(['added_by'], ['tapir_users.user_id'], name='0_595'),
-    ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_593'),
-    ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_594'),
-    Index('added_by', 'added_by'),
-    Index('document_id', 'document_id', 'user_id', unique=True),
-    Index('user_id', 'user_id')
 )
 
 t_tapir_email_change_tokens_used = Table(

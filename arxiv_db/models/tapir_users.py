@@ -2,11 +2,11 @@ from sqlalchemy import BINARY, BigInteger, CHAR, Column, Date, DateTime, Enum, F
 from sqlalchemy.dialects.mysql import CHAR, DECIMAL, INTEGER, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
+
 from .. import Base
 
 metadata = Base.metadata
 
-from .associative_tables import t_arXiv_paper_owners
 from .sqa_types import EpochIntArxivTz
 # tapir_users
 
@@ -84,18 +84,17 @@ class TapirUsers(Base):
     tapir_email_mailings_ = relationship('TapirEmailMailings', foreign_keys='[TapirEmailMailings.sent_by]', back_populates='tapir_users_')
     tapir_permanent_tokens = relationship('TapirPermanentTokens', back_populates='user')
     tapir_recovery_tokens_used = relationship('TapirRecoveryTokensUsed', back_populates='user')
+
     endorsee_of = relationship('Endorsements', foreign_keys='[Endorsements.endorsee_id]', back_populates='endorsee')
     endorses = relationship('Endorsements', foreign_keys='[Endorsements.endorser_id]', back_populates='endorser')
+
     arXiv_ownership_requests = relationship('OwnershipRequests', back_populates='user')
     arXiv_submission_category_proposal = relationship('SubmissionCategoryProposal', back_populates='user')
     arXiv_submission_flag = relationship('SubmissionFlag', back_populates='user')
     arXiv_submission_hold_reason = relationship('SubmissionHoldReason', back_populates='user')
     arXiv_submission_view_flag = relationship('SubmissionViewFlag', back_populates='user')
 
-    owned_papers = relationship("Documents",
-                                secondary=t_arXiv_paper_owners,
-                                primaryjoin="TapirUsers.user_id == arXiv_paper_owners.c.user_id",
-                                secondaryjoin  ="arXiv_paper_owners.c.document_id == Documents.document_id")
+    owned_papers = relationship("PaperOwners",  foreign_keys="[PaperOwners.user_id]", back_populates="owner")
 
     demographics = relationship('Demographics', foreign_keys="[Demographics.user_id]", uselist=False)
 
@@ -105,7 +104,13 @@ class TapirUsers(Base):
 
     @property
     def nickname(self):
+        """Gets user's nickname.
+
+        This will query out to the DB if the tapir_nicknames isn't already loaded.
+        Do that with `.options(loadjoin(TapirUsers.tapir_nicknames))`.
+        """
         try:
             return self.tapir_nicknames.nickname
         except ValueError:
             return f"no-nick-{self.user_id}"
+

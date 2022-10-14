@@ -43,3 +43,10 @@ class Documents(Base):
     arXiv_submissions = relationship('Submissions', back_populates='document')
     arXiv_top_papers = relationship('TopPapers', back_populates='document')
     arXiv_versions = relationship('Versions', back_populates='document')
+    owners = relationship('PaperOwners', back_populates='document')
+    password = relationship('PaperPw', uselist=False)
+    """Paper ownership claim password.
+
+    Warning: there should be only one password but it is not
+    constrained in the DB schema.
+    """

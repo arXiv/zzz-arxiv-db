@@ -131,7 +131,7 @@ from .trackback_sites import TrackbackSites
 from .tracking import Tracking
 from .versions_checksum import VersionsChecksum
 from .versions import Versions
-
+from .paper_owners import PaperOwners
 
 
 def add_all_models_to_sqlalchemy():

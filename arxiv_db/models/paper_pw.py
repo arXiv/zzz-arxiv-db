@@ -8,9 +8,7 @@ metadata = Base.metadata
 
 # arXiv_paper_pw
 
-from .documents import Documents
-
-class PaperPw(Documents):
+class PaperPw(Base):
     __tablename__ = 'arXiv_paper_pw'
     __table_args__ = (
         ForeignKeyConstraint(['document_id'], ['arXiv_documents.document_id'], name='0_585'),
