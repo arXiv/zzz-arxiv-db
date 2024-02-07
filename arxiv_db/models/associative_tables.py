@@ -209,25 +209,25 @@ t_arXiv_in_category = Table(
     Index('document_id', 'document_id')
 )
 
-t_arXiv_moderators = Table(
-    'arXiv_moderators', metadata,
-    Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
-    Column('archive', String(16), nullable=False, server_default=text("''")),
-    Column('subject_class', String(16), nullable=False, server_default=text("''")),
-    Column('is_public', TINYINT, nullable=False, server_default=text("'0'")),
-    Column('no_email', TINYINT(1), server_default=text("'0'")),
-    Column('no_web_email', TINYINT(1), server_default=text("'0'")),
-    Column('no_reply_to', TINYINT(1), server_default=text("'0'")),
-    Column('daily_update', TINYINT(1), server_default=text("'0'")),
-    ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_591'),
-    ForeignKeyConstraint(['archive'], ['arXiv_archive_group.archive_id'], name='fk_archive_id'),
-    ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_590'),
-    Index('arXiv_moderators_idx_no_email', 'no_email'),
-    Index('arXiv_moderators_idx_no_reply_to', 'no_reply_to'),
-    Index('arXiv_moderators_idx_no_web_email', 'no_web_email'),
-    Index('user_id', 'archive', 'subject_class', 'user_id', unique=True),
-    Index('user_id_2', 'user_id')
-)
+# t_arXiv_moderators = Table(
+#     'arXiv_moderators', metadata,
+#     Column('user_id', INTEGER, nullable=False, server_default=text("'0'")),
+#     Column('archive', String(16), nullable=False, server_default=text("''")),
+#     Column('subject_class', String(16), nullable=False, server_default=text("''")),
+#     Column('is_public', TINYINT, nullable=False, server_default=text("'0'")),
+#     Column('no_email', TINYINT(1), server_default=text("'0'")),
+#     Column('no_web_email', TINYINT(1), server_default=text("'0'")),
+#     Column('no_reply_to', TINYINT(1), server_default=text("'0'")),
+#     Column('daily_update', TINYINT(1), server_default=text("'0'")),
+#     ForeignKeyConstraint(['archive', 'subject_class'], ['arXiv_categories.archive', 'arXiv_categories.subject_class'], name='0_591'),
+#     ForeignKeyConstraint(['archive'], ['arXiv_archive_group.archive_id'], name='fk_archive_id'),
+#     ForeignKeyConstraint(['user_id'], ['tapir_users.user_id'], name='0_590'),
+#     Index('arXiv_moderators_idx_no_email', 'no_email'),
+#     Index('arXiv_moderators_idx_no_reply_to', 'no_reply_to'),
+#     Index('arXiv_moderators_idx_no_web_email', 'no_web_email'),
+#     Index('user_id', 'archive', 'subject_class', 'user_id', unique=True),
+#     Index('user_id_2', 'user_id')
+# )
 
 t_tapir_email_change_tokens_used = Table(
     'tapir_email_change_tokens_used', metadata,
