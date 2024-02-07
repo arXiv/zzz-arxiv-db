@@ -20,12 +20,29 @@ Here is an example of using SQLAlchemy ORM:
     from sqlalchemy.orm import Session
     from arxiv_db.models.tapir_users import TapirUsers
 
-    engine = create_engine("mysql+pymysql://bdc34:onion@localhost/arXiv")
+    engine = create_engine("mysql://bdc34:onion@localhost/arXiv")
     with Session(engine) as session:
         statement = select(TapirUsers).limit(10)
         result = session.execute(statement).scalars().all()
         for item in result:
             print(f"{item.first_name} {item.last_name}")
+
+
+
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+from arxiv_db.models.tapir_users import TapirUsers
+
+engine = create_engine("mysql://bdc34:onion@localhost/arXiv")
+with Session(engine) as session:
+    statement = select(TapirUsers).limit(10)
+    result = session.execute(statement).scalars().all()
+    for item in result:
+        print(f"{item.first_name} {item.last_name} {item.demographics.flag_suspect}")
+
+
+
+
 
 # How to use with Flask?
 
