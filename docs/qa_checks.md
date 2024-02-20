@@ -1,3 +1,4 @@
+```mermaid
 ---
 title: QA checks and Staff responses
 ---
@@ -69,3 +70,4 @@ erDiagram
         datetime created
         varchar message
     }
+```
