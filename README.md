@@ -1,3 +1,5 @@
+This was moved into arxiv-base in 2024
+
 # arXiv DB
 
 SQLAlchemy models for arXiv DB tables.
